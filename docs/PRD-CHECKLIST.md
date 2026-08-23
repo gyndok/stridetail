@@ -41,7 +41,7 @@ Last updated: 2026-08-23
   | 3 | `media` bucket, tenant-scoped storage policies | [x] | 821cb3a |
   | 4 | clients api + owner list | [x] | fa233df |
   | 5 | client form w/ geocoding + detail | [x] | c62b52f |
-  | 6 | pets crud + photo + profile | [ ] | |
+  | 6 | pets crud + photo + profile | [x] | e2a36ef |
   | 7 | vaccine documents + access codes UI | [ ] | |
   | 8 | hosted deploy, checklist, build | [ ] | |
 - [ ] Plan 3 — services, availability, time off, visits, series, assignment, accept/decline (stage 5)
