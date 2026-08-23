@@ -21,7 +21,7 @@ Last updated: 2026-08-23
 | — | **Checkpoint 1** — offline walk survives force-kill on a real iPhone | [x] | 2026-08-23, EAS preview `91abd85f`; ~5-min walk, see `checkpoints.md` |
 | 6 | Supabase core schema, RLS, RPCs (`create_business`, `create_invite`, `accept_invite`), pgTAP | [!] | needs Docker Desktop |
 | 7 | Supabase client, encrypted session storage, auto-refresh | [x] | `5eadb27` |
-| 8 | Session store, sign-in / sign-up | [ ] | |
+| 8 | Session store, sign-in / sign-up | [x] | `a2b0ffc` |
 | 9 | Business creation, active-business store, onboarding | [ ] | |
 | 10 | Role-based routing, owner/walker tab shells, settings, business switch | [ ] | |
 | 11 | Invitations: owner creates, `invite-accept` edge function, walker mode | [ ] | |
