@@ -320,3 +320,34 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   shape (table, business scoping, order, conditional ilike) plus the pure helpers; no
   RNTL screen render (the screen is markup over the tested helpers, matching the
   existing screens' test approach).
+
+## Plan 2, Task 5 — client form, geocoding, detail screen (2026-08-23)
+
+- Geocoding permissions, verified against the expo-location v57 docs: **iOS needs no
+  location permission for forward geocoding** (the plan's assumption holds); **Android
+  requires foreground location permission before `geocodeAsync`**. `geocodeAddress`
+  therefore checks/requests foreground permission once on Android only; a denial resolves
+  to null (save proceeds, no pin) rather than throwing. `geocodeAsync` is Android/iOS
+  only — on web the call rejects and the wrapper's catch → null path applies. The docs
+  also warn geocoding is rate-limited/resource-heavy; the form geocodes at most once per
+  save, only when the address is new/changed.
+- Geocode retry beyond the plan's "if address changed": saving with an **unchanged**
+  address whose previous geocode failed (`lat` null) retries, so a client stuck without a
+  pin can be fixed by re-saving; the detail screen's "no map pin" hint says exactly that.
+- Phones are a single comma-separated field (the plan allowed "comma or multi-field")
+  parsed to `text[]` by `parsePhones` (trim, drop empties). `telUrl` strips non-digits
+  but keeps a leading `+` so international numbers stay dialable.
+- "Mark meet & greet done" sets `mg_completed_at` client-side to
+  `new Date().toISOString()` via `updateClient` — an owner shortcut; **Plan 3's
+  visit-driven flow will own meet & greet completion** (recorded per the plan).
+- The nested clients stack hides native headers (Task 4 layout), so the detail screen
+  gets a ghost "Back" button and both form usages a ghost "Cancel"; not in the plan but
+  otherwise `new.tsx` reached from a cold link has no way back.
+- "Pets" and "Access codes" render as inert half-opacity cards naming Tasks 6/7 (the
+  plan's "section"/"entry point" placeholders — nothing tappable yet).
+- The Task 4 `as Href` casts stay (also used in `new.tsx`/`[id].tsx`): `.expo/types`
+  route types only regenerate when the dev server runs, which this task didn't do.
+- Tests cover the pure layer (geocode wrapper with mocked expo-location incl. the
+  Android permission branch via `jest.replaceProperty(Platform, 'OS', …)`; parsePhones /
+  validateClient / telUrl / needsGeocode); screens stay untested markup over tested
+  helpers, matching Task 4's approach.
