@@ -110,3 +110,23 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   schema/config) is being executed separately and `supabase/` is out of scope for this task.
 - Manual simulator verification (Step 5) not performed in this session; `bun run test`,
   `typecheck` and `lint` pass.
+
+## Task 6 — supabase core schema, rls, pgtap (2026-08-23)
+
+- Executed after Tasks 7–8 (Docker was not available earlier); Supabase CLI 2.115, Postgres 17,
+  Docker via colima (`DOCKER_HOST=unix://~/.colima/default/docker.sock`).
+- `supabase start` failed its health check on `supabase_analytics` / `supabase_vector` under
+  colima. Set `[analytics] enabled = false` in `supabase/config.toml` (local dev only; no
+  product impact). `[auth.email] enable_confirmations = false` was already the CLI default, so
+  Task 8's note is satisfied without an edit.
+- pgTAP run failed with `permission denied for table businesses`: the CLI applies migrations as
+  `supabase_admin`, so Supabase's default privileges (declared for the `postgres` role) did not
+  apply to the new tables. Added an explicit `grant usage on schema public` + table grants to
+  `authenticated`/`service_role` at the end of the migration. `anon` gets no table grants; RLS
+  still governs every row.
+- Test extended from the plan's 10 assertions to 14: profile-trigger check, and a second
+  owner/business to assert cross-business zero rows (spec §10 pgTAP line).
+- "Failing first" could not be observed literally: `supabase start` applies migrations on boot,
+  so the test was first run against the migrated DB (where it failed on the grants above).
+- `supabase/seed.sql` created as an empty placeholder so `db reset` does not warn; fixtures
+  live in the test file.

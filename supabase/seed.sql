@@ -1,0 +1,1 @@
+-- Local dev seed. Intentionally empty for Plan 1; test fixtures live in supabase/tests/*.sql.
