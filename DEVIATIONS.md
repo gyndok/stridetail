@@ -98,3 +98,15 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   `removeItem` async aliases) verified against the v57 docs; all match the plan.
 - Key-per-name with fixed CTR counter kept exactly as the plan (Supabase reference pattern); not
   changed.
+
+## Task 8 — session store and auth screens (2026-08-23)
+
+- Sign-in / sign-up catch blocks narrow `unknown` with `instanceof Error` instead of the plan's
+  `(e as Error).message` cast (same call as Task 5's spike screen; strict typing).
+- `app/index.tsx` loading state paints `backgroundColor: t.colors.surface` and the spinner
+  `t.colors.primary` via `useTheme()` rather than an unstyled `View`/`ActivityIndicator`, so the
+  gate does not flash a white screen against the cream surface. Colors come from tokens only.
+- `supabase/config.toml` `[auth] enable_confirmations = false` NOT set here: Task 6 (Supabase
+  schema/config) is being executed separately and `supabase/` is out of scope for this task.
+- Manual simulator verification (Step 5) not performed in this session; `bun run test`,
+  `typecheck` and `lint` pass.

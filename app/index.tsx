@@ -1,10 +1,19 @@
-import { Text, View } from 'react-native';
-import { APP_NAME } from '@/src/lib/brand';
+import { Redirect } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
+
+import { useSession } from '@/src/features/auth/session';
+import { useTheme } from '@/src/ui/theme';
 
 export default function Index() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>{APP_NAME}</Text>
-    </View>
-  );
+  const t = useTheme();
+  const { status } = useSession();
+  if (status === 'loading') {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: t.colors.surface }}>
+        <ActivityIndicator color={t.colors.primary} />
+      </View>
+    );
+  }
+  if (status === 'signed-out') return <Redirect href="/sign-in" />;
+  return <Redirect href="/onboarding/create-business" />;
 }
