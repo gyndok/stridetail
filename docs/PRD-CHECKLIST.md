@@ -22,7 +22,7 @@ Last updated: 2026-08-23
 | 6 | Supabase core schema, RLS, RPCs (`create_business`, `create_invite`, `accept_invite`), pgTAP | [x] | `8586ad7` |
 | 7 | Supabase client, encrypted session storage, auto-refresh | [x] | `5eadb27` |
 | 8 | Session store, sign-in / sign-up | [x] | `a2b0ffc` |
-| 9 | Business creation, active-business store, onboarding | [ ] | |
+| 9 | Business creation, active-business store, onboarding | [x] | `abc0ca3` |
 | 10 | Role-based routing, owner/walker tab shells, settings, business switch | [ ] | |
 | 11 | Invitations: owner creates, `invite-accept` edge function, walker mode | [ ] | |
 | 12 | CI (app + pgTAP), `README.md`, `checkpoints.md`, `DEVIATIONS.md` | [~] | `checkpoints.md`, `DEVIATIONS.md` exist; CI + README pending |
@@ -37,7 +37,7 @@ Last updated: 2026-08-23
 
 ## Spec §2 — In-scope functionality
 
-1. [~] Self-serve business creation (name, logo, brand color, IANA tz, policies) — creator = `owner` *(Task 9)*
+1. [~] Self-serve business creation (name, logo, brand color, IANA tz, policies) — creator = `owner` — *name + device-detected IANA tz via onboarding screen, `create_business` RPC seeds owner membership + 8 services (Task 9); logo, brand color picker, and policies UI still pending (settings, Task 10 / later plan)*
 2. [~] Memberships `owner`/`walker`, SMS/email invite link, `is_platform_admin` flag — *schema + RPCs done (Task 6); invite link UI/edge fn in Task 11*
 3. [ ] Clients + pets: instructions, vet info, vaccine docs w/ expiry, secured access info *(Plan 2)*
 4. [ ] Per-business service catalog seeded with Paw & Whisker's list *(Plan 3)*
