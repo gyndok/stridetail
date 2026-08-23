@@ -82,9 +82,14 @@ breaks on phones.
   use `bunx expo run:ios` with Metro.
 - A reachable Supabase. Local stack works if both devices are on the mini's Tailscale/LAN and
   `EXPO_PUBLIC_SUPABASE_URL` points at the mini's address (not 127.0.0.1) **at build time**.
-  Otherwise create a hosted dev project, push migrations (`supabase db push`), deploy
-  `invite-accept` (`supabase functions deploy invite-accept`), set the URL/anon key in
-  `eas.json` env for `preview`, and rebuild.
+  **Done 2026-08-23:** hosted dev project = the repurposed "Dog Walker" Supabase project
+  (ref `vrxoswukuiaerhwammlh`, us-west-2); old PawPath schema dropped, both migrations applied
+  via the Supabase MCP (`apply_migration`), `invite-accept` deployed (verify_jwt on). URL +
+  anon key live in `eas.json` `preview`/`production` env. Local `.env` still targets the
+  Docker stack for tests.
+  **Before the run:** in the Supabase dashboard → Authentication → Providers → Email, turn
+  **Confirm email OFF** for this dev project (hosted default is ON; the app's sign-up expects an
+  immediate session, as with the local stack).
 
 ### Procedure
 1. Device A: open app → Sign up (email + password) → lands on "Create your business".

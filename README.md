@@ -66,3 +66,10 @@ docs/                spec, plans, handoff, PRD checklist, evidence screenshots
 - Handoff: `docs/HANDOFF.md`
 - Status tracker: `docs/PRD-CHECKLIST.md`
 - Plan deviations: `DEVIATIONS.md` · Checkpoint evidence: `checkpoints.md`
+
+## Hosted dev backend
+
+EAS `preview`/`production` builds point at the hosted Supabase dev project `vrxoswukuiaerhwammlh`
+(env in `eas.json`). Apply new migrations there with `supabase db push --linked` (after
+`supabase link --project-ref vrxoswukuiaerhwammlh`) or via the Supabase MCP; deploy functions with
+`supabase functions deploy <name>`.
