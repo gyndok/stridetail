@@ -19,7 +19,7 @@ Last updated: 2026-08-23
 | 4 | GPS geometry: haversine, accuracy + jitter filters | [x] | `d4a6f88` |
 | 5 | Background-location task, controller, recovery, dev spike screen | [x] | `ab77dd5` |
 | — | **Checkpoint 1** — offline walk survives force-kill on a real iPhone | [x] | 2026-08-23, EAS preview `91abd85f`; ~5-min walk, see `checkpoints.md` |
-| 6 | Supabase core schema, RLS, RPCs (`create_business`, `create_invite`, `accept_invite`), pgTAP | [!] | needs Docker Desktop |
+| 6 | Supabase core schema, RLS, RPCs (`create_business`, `create_invite`, `accept_invite`), pgTAP | [x] | `8586ad7` |
 | 7 | Supabase client, encrypted session storage, auto-refresh | [x] | `5eadb27` |
 | 8 | Session store, sign-in / sign-up | [x] | `a2b0ffc` |
 | 9 | Business creation, active-business store, onboarding | [ ] | |
@@ -38,7 +38,7 @@ Last updated: 2026-08-23
 ## Spec §2 — In-scope functionality
 
 1. [~] Self-serve business creation (name, logo, brand color, IANA tz, policies) — creator = `owner` *(Task 9)*
-2. [ ] Memberships `owner`/`walker`, SMS/email invite link, `is_platform_admin` flag *(Tasks 6, 11)*
+2. [~] Memberships `owner`/`walker`, SMS/email invite link, `is_platform_admin` flag — *schema + RPCs done (Task 6); invite link UI/edge fn in Task 11*
 3. [ ] Clients + pets: instructions, vet info, vaccine docs w/ expiry, secured access info *(Plan 2)*
 4. [ ] Per-business service catalog seeded with Paw & Whisker's list *(Plan 3)*
 5. [ ] Scheduling: one-off + recurring series, assignment, accept/decline, availability, time off, conflict view *(Plan 3)*
@@ -50,7 +50,7 @@ Last updated: 2026-08-23
 
 ## Spec §5 — Data model
 
-- [ ] `profiles`, `businesses`, `memberships` *(Task 6)*
+- [x] `profiles`, `businesses`, `memberships` (+ `services`) *(Task 6)*
 - [ ] `clients`, `client_access` (Vault/pgcrypto — pgsodium deprecated), `pets`, `pet_documents` *(Plan 2)*
 - [ ] `services`, `availability_rules`, `time_off`, `visit_series`, `visits` *(Plan 3)*
 - [ ] `visit_events`, `visit_tracks`, `visit_reports`, `notifications`, `audit_log` *(Plan 4)*
@@ -58,7 +58,7 @@ Last updated: 2026-08-23
 
 ## Spec §6 — Security
 
-- [ ] RLS on every table; no service-role use from the app *(Task 6 onward)*
+- [x] RLS on every table; no service-role use from the app *(Task 6 — 4 tables; holds for later plans)*
 - [ ] Walker visibility limited to own/offered visits; `services_public` view hides prices
 - [ ] `client_access` no select policy; `reveal_access` / `reveal_access_owner` audited *(Plan 2)*
 - [ ] `report-public` returns report-safe fields only *(Plan 4)*
@@ -87,7 +87,7 @@ Last updated: 2026-08-23
 
 - [x] Unit: outbox ordering/idempotency, distance with duplicates *(Tasks 3–4)*
 - [ ] Unit: RRULE expansion across DST in business tz; status-machine transitions
-- [ ] pgTAP: cross-walker isolation, no pricing, `reveal_access` gating, revoked token 404, cross-business zero rows
+- [~] pgTAP: cross-walker isolation, no pricing, `reveal_access` gating, revoked token 404, cross-business zero rows — *no pricing + cross-business zero rows done (Task 6, 14 assertions); rest in Plans 2/4*
 - [ ] Maestro E2E: sign up → business → client → schedule → start → finish → report
 - [ ] CI running lint, tsc, jest, pgTAP *(Task 12)*
 
@@ -106,5 +106,5 @@ Last updated: 2026-08-23
 - [ ] Twilio A2P 10DLC registration (start early — takes days)
 - [ ] Google Maps API key for Android
 - [~] Apple Developer, Google Play, Expo/EAS accounts — Apple (individual, team NJ4JGW72MW) + EAS (`geffreykleins-team`) done; Google Play pending; platform entity TBD
-- [ ] Docker Desktop on the Mac mini (needed for `bun run db:test`)
+- [x] Docker on the Mac mini (colima) — `bun run db:test` runs
 - [ ] Alexandra's Round 0 answers (stridetail-mockups issue #1)
