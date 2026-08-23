@@ -20,7 +20,7 @@ Last updated: 2026-08-23
 | 5 | Background-location task, controller, recovery, dev spike screen | [x] | `ab77dd5` |
 | — | **Checkpoint 1** — offline walk survives force-kill on a real iPhone | [x] | 2026-08-23, EAS preview `91abd85f`; ~5-min walk, see `checkpoints.md` |
 | 6 | Supabase core schema, RLS, RPCs (`create_business`, `create_invite`, `accept_invite`), pgTAP | [!] | needs Docker Desktop |
-| 7 | Supabase client, encrypted session storage, auto-refresh | [x] | `100f839` |
+| 7 | Supabase client, encrypted session storage, auto-refresh | [x] | `5eadb27` |
 | 8 | Session store, sign-in / sign-up | [ ] | |
 | 9 | Business creation, active-business store, onboarding | [ ] | |
 | 10 | Role-based routing, owner/walker tab shells, settings, business switch | [ ] | |
