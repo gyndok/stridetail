@@ -13,6 +13,8 @@ import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
 
+import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
+
 type Row = {
   id: string;
   role: MemberRole;
@@ -41,6 +43,7 @@ export default function Team() {
       return data as unknown as Row[];
     },
   });
+  useRefetchOnFocus(members.refetch);
 
   async function invite() {
     const trimmed = contact.trim();

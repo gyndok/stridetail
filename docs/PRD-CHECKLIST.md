@@ -113,6 +113,11 @@ Last updated: 2026-08-23
 - [x] Docker on the Mac mini (colima) — `bun run db:test` runs
 - [ ] Alexandra's Round 0 answers (stridetail-mockups issue #1)
 
+## Device-test findings (Checkpoint 2, 2026-08-23)
+
+- [x] Team list went stale after invite acceptance — fixed: `focusManager` wired to AppState + `useRefetchOnFocus` on Team
+- [ ] Walker tab shell has no Settings/sign-out — add profile/settings entry for walkers (with Plan 2)
+
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 
 Source: Alexandra's discovery survey (link in `docs/HANDOFF.md`). Spec §1 captures the rest.
