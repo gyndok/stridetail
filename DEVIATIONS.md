@@ -294,3 +294,29 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   single row, helper parse cases, owner insert/update/delete, wrong-tenant and
   malformed-path insert denials, walker read-allowed/write-denied, cross-business zero
   rows and no-op delete).
+
+## Plan 2, Task 4 — clients api and owner clients list (2026-08-23)
+
+- List cards show a **pets count** line (`pets(count)` embed unwrapped by `embeddedCount`)
+  rather than the plan's "pet names line", per task direction; `getClient` likewise embeds
+  `pets(count)` only — the plan's "docs counts" arrives with the documents feature (Task 7).
+- Every api function takes `businessId` and scopes the query with `.eq('business_id', …)`
+  (including `getClient`/`updateClient`, where the plan's signature was `(id)` only), so a
+  stale/foreign id can never cross tenants even before RLS.
+- `listClients` escapes `%`, `_`, and `\` in the search term before building the ilike
+  pattern (not in the plan; without it a user typing `_` matches every name).
+- Added `app/(owner)/clients/_layout.tsx` (Stack, `headerShown: false`) beyond the plan's
+  `index/[id]/new` list: without an explicit layout expo-router wraps the directory in a
+  default stack with its native header, which no other screen shows. The Tabs.Screen name
+  in `app/(owner)/_layout.tsx` stays `clients`; the directory's index resolves for the tab.
+- Card taps push `/clients/<id>` and "Add client" pushes `/clients/new` with an `as Href`
+  cast: `[id].tsx`/`new.tsx` only exist in Task 5, so typed routes cannot know them yet
+  (routes 404 until then, as planned). Casts can come off once Task 5 lands and
+  `.expo/types` regenerates.
+- Search input re-queries per keystroke keyed on the trimmed term, with
+  `placeholderData: keepPreviousData` so the list doesn't flash empty while typing; no
+  debounce (local stack, tiny lists — revisit if the first tenant's list grows).
+- Unit tests mock `@/src/lib/supabase` with a thenable chain recorder and assert query
+  shape (table, business scoping, order, conditional ilike) plus the pure helpers; no
+  RNTL screen render (the screen is markup over the tested helpers, matching the
+  existing screens' test approach).
