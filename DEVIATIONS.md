@@ -130,3 +130,24 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   so the test was first run against the migrated DB (where it failed on the grants above).
 - `supabase/seed.sql` created as an empty placeholder so `db reset` does not warn; fixtures
   live in the test file.
+
+## Task 9 — business creation, active-business store, onboarding (2026-08-23)
+
+- `expo-localization@57.0.1` installed via `bunx expo install`; the CLI auto-appended
+  `"expo-localization"` to `plugins` in `app.json` (same SDK 57 behaviour as Tasks 3/7). Kept.
+  `getCalendars()[0].timeZone` (`string | null`, null only on web) verified against the v57 docs.
+- Onboarding time-zone default: plan falls back to the literal `'UTC'` when the device zone is
+  unavailable. Replaced with `Intl.DateTimeFormat().resolvedOptions().timeZone` (the web runtime
+  zone) and finally an empty string that the form refuses to submit, so no fixed zone is ever
+  written to `businesses.time_zone`. The field stays editable.
+- Empty/whitespace time zone is rejected client-side with an inline error (plan only validated
+  the name). Catch block narrows `unknown` with `instanceof Error` (as in Task 8).
+- `active.test.ts` gained a second case (clearing the active business removes the persisted
+  key) beyond the plan's single test.
+- `api.ts` exports `MemberRole` / `MembershipStatus` unions alongside `Membership` for reuse in
+  Tasks 10–11; shape is otherwise identical to the plan.
+- Step 5 manual simulator run not performed; instead the exact client calls were exercised
+  against local Supabase over REST (signup → `rpc/create_business` with `p_name`, `p_time_zone`,
+  `p_brand_color: null` → `memberships` select with the `business:businesses(...)` embed):
+  business + owner membership + 8 `services` rows created, embed shape matches `Membership`.
+  No migration change needed.

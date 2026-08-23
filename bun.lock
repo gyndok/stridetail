@@ -18,6 +18,7 @@
         "expo-glass-effect": "~57.0.1",
         "expo-image": "~57.0.3",
         "expo-linking": "~57.0.7",
+        "expo-localization": "~57.0.1",
         "expo-location": "~57.0.12",
         "expo-router": "~57.0.15",
         "expo-secure-store": "~57.0.1",
@@ -965,6 +966,8 @@
 
     "expo-linking": ["expo-linking@57.0.7", "", { "dependencies": { "expo-constants": "~57.0.13", "invariant": "^2.2.4" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-Ujn4kY0bd1MoJFLYuvIUWamlZH61pkahrUpug3hBtOeS89LDbPyKNjjmWef6+CPTGQfed2PlfuMZuPO1BCrg5w=="],
 
+    "expo-localization": ["expo-localization@57.0.1", "", { "dependencies": { "rtl-detect": "^1.0.2" }, "peerDependencies": { "expo": "*", "react": "*" } }, "sha512-8Ffl4UTbOsQeGT0v5fxMbyPHyPMPnhSPDFQJa8p9rjJrthFoAtNi+fL6Ssmrvf1/7dmPq1mVY52MEt0TMEfgjA=="],
+
     "expo-location": ["expo-location@57.0.12", "", { "dependencies": { "@expo/image-utils": "^0.11.4" }, "peerDependencies": { "expo": "*" } }, "sha512-Fnh1dzIvZgc2mX7fXuXf6NxbEttZQLEnSXCbFHCLNtxyImUf/sURE93C9Jed+IfS/ozmtl84s/1nfz/cI87e9A=="],
 
     "expo-manifests": ["expo-manifests@57.0.1", "", { "dependencies": { "expo-json-utils": "~57.0.1" }, "peerDependencies": { "expo": "*" } }, "sha512-qB/mDG2dYdl+EvUeQuqP8KFYCFgFCQjJYdWIHo8SFBgDzMYmdF286DFY2M1M9Okr99wkb5M4tgA3aCcwv3aEQA=="],
@@ -1652,6 +1655,8 @@
     "resolve.exports": ["resolve.exports@2.0.3", "", {}, "sha512-OcXjMsGdhL4XnbShKpAcSqPMzQoYkYyhbEaeSko47MjRP9NfEQMhZkXL1DoFlt9LWQn4YttrdnV6X2OiyzBi+A=="],
 
     "restore-cursor": ["restore-cursor@2.0.0", "", { "dependencies": { "onetime": "^2.0.0", "signal-exit": "^3.0.2" } }, "sha512-6IzJLuGi4+R14vwagDHX+JrXmPVtPpn4mffDJ1UdR7/Edm87fl6yi8mMBIVvFtJaNTUvjughmW4hwLhRG7gC1Q=="],
+
+    "rtl-detect": ["rtl-detect@1.1.2", "", {}, "sha512-PGMBq03+TTG/p/cRB7HCLKJ1MgDIi07+QU1faSjiYRfmY5UsAttV9Hs08jDAHVwcOwmVLcSJkpwyfXszVjWfIQ=="],
 
     "safe-array-concat": ["safe-array-concat@1.1.4", "", { "dependencies": { "call-bind": "^1.0.9", "call-bound": "^1.0.4", "get-intrinsic": "^1.3.0", "has-symbols": "^1.1.0", "isarray": "^2.0.5" } }, "sha512-wtZlHyOje6OZTGqAoaDKxFkgRtkF9CnHAVnCHKfuj200wAgL+bSJhdsCD2l0Qx/2ekEXjPWcyKkfGb5CPboslg=="],
 
