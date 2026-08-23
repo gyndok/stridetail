@@ -14,8 +14,10 @@
       "icon": "./assets/expo.icon",
       "infoPlist": {
         "UIBackgroundModes": [
+          "location",
           "location"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
