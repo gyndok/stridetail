@@ -38,7 +38,7 @@ Last updated: 2026-08-23
   |---|-------------|--------|--------|
   | 1 | clients/pets/pet_documents/audit_log migration + pgTAP | [x] | f1a034d |
   | 2 | client_access encrypted (pgcrypto+Vault), audited owner reveal | [x] | c0f5e56 |
-  | 3 | `media` bucket, tenant-scoped storage policies | [ ] | |
+  | 3 | `media` bucket, tenant-scoped storage policies | [x] | 821cb3a |
   | 4 | clients api + owner list | [ ] | |
   | 5 | client form w/ geocoding + detail | [ ] | |
   | 6 | pets crud + photo + profile | [ ] | |
@@ -77,7 +77,7 @@ Last updated: 2026-08-23
 - [~] `client_access` no select policy; `reveal_access` / `reveal_access_owner` audited — *no select policy + zero grants, `reveal_access_owner` + `set_client_access` audited (Plan 2 Task 2); walker-side `reveal_access(visit_id)` in Plan 3*
 - [ ] `report-public` returns report-safe fields only *(Plan 4)*
 - [x] Auth tokens in `expo-secure-store`, auto-refresh on foreground *(Task 7)*
-- [ ] Storage bucket `media`, tenant-scoped paths, signed URLs
+- [~] Storage bucket `media`, tenant-scoped paths, signed URLs — *bucket + member-read/owner-write policies with safe path parse (Plan 2 Task 3); signed URLs in app code (Tasks 6–7)*
 - [ ] Audit log for status/assignment/reveal/resend/revoke
 - [x] Secrets only in edge-function env; `.env` gitignored, `.env.example` tracked *(Task 1)*
 
