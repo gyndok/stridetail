@@ -111,3 +111,14 @@ Last updated: 2026-08-23
 - [~] Apple Developer, Google Play, Expo/EAS accounts — Apple (individual, team NJ4JGW72MW) + EAS (`geffreykleins-team`) done; Google Play pending; platform entity TBD
 - [x] Docker on the Mac mini (colima) — `bun run db:test` runs
 - [ ] Alexandra's Round 0 answers (stridetail-mockups issue #1)
+
+## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
+
+Source: Alexandra's discovery survey (link in `docs/HANDOFF.md`). Spec §1 captures the rest.
+
+- [ ] Video clips in visit events/reports (she rated photo **and** video must-have) — slice 1 Plan 4 or slice 3
+- [ ] Emergency protocol in `policies_md` + "Call owner / vet" action on the active-visit screen; can't-access-home rule (walker stays the window, full charge) — Plan 4
+- [ ] Deposit rules: refundable until 7 days before, forfeited within 24 h — slice 2
+- [ ] Self-booking after meet & greet with "another teammate may be assigned" notice — slice 3
+- [ ] Digital waiver (she already uses one) — slice 3
+- [ ] Live map for clients — rated must-have; confirm slice 3 placement with her
