@@ -416,3 +416,23 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   handling added because a pushed screen keeps the previous one mounted).
 - `has_client_access` raises for non-owners (Task 2 hardening), so the flag query on the
   access screen surfaces the RPC error text rather than pretending "no codes".
+
+## Plan 2, Task 8 — hosted deploy + advisor hardening (2026-08-23)
+
+- Migrations 20260824000001–3 applied to hosted `vrxoswukuiaerhwammlh` via Supabase MCP
+  `apply_migration`; Vault key seeded per-environment by the guarded migration block
+  (hosted key is its own random value, never shared with local dev).
+- Hosted smoke test (SQL role-impersonation, rolled back): owner set → reveal round-trip
+  with both audit rows written.
+- Supabase security advisors then drove `20260824000004_advisor_hardening.sql`:
+  - **Real find:** functions keep PUBLIC EXECUTE unless explicitly revoked, so Plan 1's
+    `revoke ... from authenticated, anon` on `accept_invite` was ineffective — the anon key
+    could still call it (with a valid token it could bind an invite to an arbitrary user id).
+    Now service_role-only; verified 401/42501 via REST with the anon key.
+  - PUBLIC/anon stripped from every RPC; RLS helper functions granted to
+    authenticated+service_role only; `handle_new_user` restricted to `supabase_auth_admin`
+    (hosted signup re-verified working after the change, smoke user deleted).
+  - search_path pinned on `is_owner` and `storage_business_id`.
+  - Accepted findings: `client_access` deny-all no-policy design (INFO); `services_public`
+    SECURITY DEFINER view is the price-hiding mechanism, tenant-scoped internally (ERROR
+    accepted with rationale).

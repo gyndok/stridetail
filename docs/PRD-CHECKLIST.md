@@ -43,7 +43,7 @@ Last updated: 2026-08-23
   | 5 | client form w/ geocoding + detail | [x] | c62b52f |
   | 6 | pets crud + photo + profile | [x] | e2a36ef |
   | 7 | vaccine documents + access codes UI | [x] | d017049 |
-  | 8 | hosted deploy, checklist, build | [ ] | |
+  | 8 | hosted deploy, checklist, build | [x] | migrations 1–4 on hosted, advisor hardening, smoke-tested |
 - [ ] Plan 3 — services, availability, time off, visits, series, assignment, accept/decline (stage 5)
 - [ ] Plan 4 — visit execution UI, reports, `report-public`, SMS retries, Expo Web layout (stages 6–8)
 
