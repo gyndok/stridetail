@@ -19,6 +19,7 @@ export default function WalkerTabs() {
       <Tabs.Screen name="today" options={{ title: 'Today' }} />
       <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
       <Tabs.Screen name="clients" options={{ title: 'Clients' }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );
 }

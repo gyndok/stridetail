@@ -116,7 +116,7 @@ Last updated: 2026-08-23
 ## Device-test findings (Checkpoint 2, 2026-08-23)
 
 - [x] Team list went stale after invite acceptance — fixed: `focusManager` wired to AppState + `useRefetchOnFocus` on Team
-- [ ] Walker tab shell has no Settings/sign-out — add profile/settings entry for walkers (with Plan 2)
+- [x] Walker tab shell has no Settings/sign-out — fixed: shared `SettingsScreen`, walker Settings tab added
 
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 
