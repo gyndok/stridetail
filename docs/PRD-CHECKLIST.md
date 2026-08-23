@@ -23,7 +23,7 @@ Last updated: 2026-08-23
 | 7 | Supabase client, encrypted session storage, auto-refresh | [x] | `5eadb27` |
 | 8 | Session store, sign-in / sign-up | [x] | `a2b0ffc` |
 | 9 | Business creation, active-business store, onboarding | [x] | `abc0ca3` |
-| 10 | Role-based routing, owner/walker tab shells, settings, business switch | [ ] | |
+| 10 | Role-based routing, owner/walker tab shells, settings, business switch | [x] | `5512e50` |
 | 11 | Invitations: owner creates, `invite-accept` edge function, walker mode | [ ] | |
 | 12 | CI (app + pgTAP), `README.md`, `checkpoints.md`, `DEVIATIONS.md` | [~] | `checkpoints.md`, `DEVIATIONS.md` exist; CI + README pending |
 
@@ -79,7 +79,7 @@ Last updated: 2026-08-23
 
 - [x] Direction B tokens (cream `#FFF4E6`, primary `#E8642C`, ink `#2B1D12`, 24 px radius, pill buttons) *(Task 2)*
 - [ ] Field mode (dark map/sheet while recording; `walkTheme` setting)
-- [ ] Owner tabs Today · Schedule · Clients · Team · Settings; walker tabs Today · Schedule · Clients *(Task 10)*
+- [x] Owner tabs Today · Schedule · Clients · Team · Settings; walker tabs Today · Schedule · Clients *(Task 10, placeholder screens)*
 - [ ] Owner Today: needs-attention strip + visits by walker; walker Today: hero card + list
 - [ ] Web ≥ 900 px: left rail, week grid w/ drag-reassign, list + detail
 
