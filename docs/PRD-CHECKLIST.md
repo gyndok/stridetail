@@ -24,7 +24,7 @@ Last updated: 2026-08-23
 | 8 | Session store, sign-in / sign-up | [x] | `a2b0ffc` |
 | 9 | Business creation, active-business store, onboarding | [x] | `abc0ca3` |
 | 10 | Role-based routing, owner/walker tab shells, settings, business switch | [x] | `5512e50` |
-| 11 | Invitations: owner creates, `invite-accept` edge function, walker mode | [ ] | |
+| 11 | Invitations: owner creates, `invite-accept` edge function, walker mode | [x] | `b4c8310` |
 | 12 | CI (app + pgTAP), `README.md`, `checkpoints.md`, `DEVIATIONS.md` | [~] | `checkpoints.md`, `DEVIATIONS.md` exist; CI + README pending |
 
 ## Plans 2–4 (to be written from the spec)
@@ -38,7 +38,7 @@ Last updated: 2026-08-23
 ## Spec §2 — In-scope functionality
 
 1. [~] Self-serve business creation (name, logo, brand color, IANA tz, policies) — creator = `owner` — *name + device-detected IANA tz via onboarding screen, `create_business` RPC seeds owner membership + 8 services (Task 9); logo, brand color picker, and policies UI still pending (settings, Task 10 / later plan)*
-2. [~] Memberships `owner`/`walker`, SMS/email invite link, `is_platform_admin` flag — *schema + RPCs done (Task 6); invite link UI/edge fn in Task 11*
+2. [~] Memberships `owner`/`walker`, SMS/email invite link, `is_platform_admin` flag — *schema + RPCs (Task 6); owner creates invite + shares `stridetail://invite/<token>` via share sheet, `invite-accept` edge function + accept screen, walker routed to walker tabs (Task 11, verified against local stack); SMS delivery of the link in Plan 4 (`send-sms`); `is_platform_admin` is a column only, no UI*
 3. [ ] Clients + pets: instructions, vet info, vaccine docs w/ expiry, secured access info *(Plan 2)*
 4. [ ] Per-business service catalog seeded with Paw & Whisker's list *(Plan 3)*
 5. [ ] Scheduling: one-off + recurring series, assignment, accept/decline, availability, time off, conflict view *(Plan 3)*
