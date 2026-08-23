@@ -115,5 +115,5 @@ Screenshots → `docs/evidence/cp2-owner-tabs.png`, `cp2-walker-tabs.png`, `cp2-
 | Device A / B | |
 | Build (EAS id or local) | |
 | Supabase (local via Tailscale / hosted project ref) | |
-| Steps passed | |
+| Steps passed | 1–2 on Device A (sign-up, business created, tz America/Chicago auto-detected, owner tabs) — 2026-08-23 build `afae2a77`; found iOS icon still Expo's (`ios.icon` template override) → fixed, rebuilt |
 | Result (PASS / FAIL + notes) | |
