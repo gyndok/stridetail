@@ -25,7 +25,9 @@ Last updated: 2026-08-23
 | 9 | Business creation, active-business store, onboarding | [x] | `abc0ca3` |
 | 10 | Role-based routing, owner/walker tab shells, settings, business switch | [x] | `5512e50` |
 | 11 | Invitations: owner creates, `invite-accept` edge function, walker mode | [x] | `b4c8310` |
-| 12 | CI (app + pgTAP), `README.md`, `checkpoints.md`, `DEVIATIONS.md` | [~] | `checkpoints.md`, `DEVIATIONS.md` exist; CI + README pending |
+| 12 | CI (app + pgTAP), `README.md`, `checkpoints.md`, `DEVIATIONS.md` | [x] | `42a12fa` |
+
+**Plan 1 — Definition of done** (2026-08-23): *Met* — `bun run test`, `typecheck`, `lint`, `db:test` pass locally (CI workflow committed, not yet observed green: nothing pushed); Checkpoint 1 recorded in `checkpoints.md` (~5-min walk, not the full 10 min); pgTAP covers outsider isolation, inactive invitee, walker no-price, service-role accept (17 assertions); no service-role/Twilio key or hardcoded time zone in `app/`/`src/`. *Deferred* — the end-to-end sign-up → business → invite → walker-accepts-on-second-device flow was not exercised manually (simulator/device runs skipped); covered only by unit tests and pgTAP.
 
 ## Plans 2–4 (to be written from the spec)
 
@@ -89,7 +91,7 @@ Last updated: 2026-08-23
 - [ ] Unit: RRULE expansion across DST in business tz; status-machine transitions
 - [~] pgTAP: cross-walker isolation, no pricing, `reveal_access` gating, revoked token 404, cross-business zero rows — *no pricing + cross-business zero rows done (Task 6, 14 assertions); rest in Plans 2/4*
 - [ ] Maestro E2E: sign up → business → client → schedule → start → finish → report
-- [ ] CI running lint, tsc, jest, pgTAP *(Task 12)*
+- [x] CI running lint, tsc, jest, pgTAP *(Task 12)*
 
 ## Spec §10 — On-device judging script
 
