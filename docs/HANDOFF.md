@@ -96,5 +96,5 @@ kickoff, a numbered on-device **judging script** in the spec, `DEVIATIONS.md` an
 
 - Alexandra's Round 0 answers (direction B confirmation, active-walk default, Today-screen gaps,
   quick-button set).
-- Trademark/domain checks and registration for Stridetail.
+- Trademark checks for Stridetail (USPTO phonetic search classes 9/42, App Store / Play name reservation). **stridetail.com registered 2026-08-23** (Squarespace Domains, auto-renew, privacy, lock; renews 2029-08-23). stridetail.app still to register.
 - Developer accounts (Apple, Google Play, Expo) under the platform entity.
