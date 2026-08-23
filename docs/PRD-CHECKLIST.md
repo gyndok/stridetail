@@ -36,7 +36,7 @@ Last updated: 2026-08-23
 
   | # | Plan 2 task | Status | Commit |
   |---|-------------|--------|--------|
-  | 1 | clients/pets/pet_documents/audit_log migration + pgTAP | [ ] | |
+  | 1 | clients/pets/pet_documents/audit_log migration + pgTAP | [x] | f1a034d |
   | 2 | client_access encrypted (pgcrypto+Vault), audited owner reveal | [ ] | |
   | 3 | `media` bucket, tenant-scoped storage policies | [ ] | |
   | 4 | clients api + owner list | [ ] | |
