@@ -106,10 +106,10 @@ Last updated: 2026-08-23
 
 ## Spec §13 / handoff — Open items (sponsor)
 
-- [ ] USPTO + App Store / Play name checks for "Stridetail"; register stridetail.com + stridetail.app
+- [x] USPTO + App Store / Play knockout searches clean; **stridetail.com and stridetail.app registered** (Squarespace, auto-renew to 2029-08-23, WHOIS privacy + lock on) — 2026-08-23
 - [ ] Twilio A2P 10DLC registration (start early — takes days)
 - [ ] Google Maps API key for Android
-- [~] Apple Developer, Google Play, Expo/EAS accounts — Apple (individual, team NJ4JGW72MW) + EAS (`geffreykleins-team`) done; Google Play pending; platform entity TBD
+- [~] Apple Developer, Google Play, Expo/EAS accounts — Apple (individual, team NJ4JGW72MW) + EAS (`geffreykleins-team`) done; **App Store Connect app record "Stridetail" created (1.0 Prepare for Submission)**; Google Play pending; platform entity TBD
 - [x] Docker on the Mac mini (colima) — `bun run db:test` runs
 - [ ] Alexandra's Round 0 answers (stridetail-mockups issue #1)
 
