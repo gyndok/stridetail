@@ -21,3 +21,15 @@ jest.mock('expo-task-manager', () => ({
   defineTask: jest.fn(),
   isTaskRegisteredAsync: jest.fn(async () => false),
 }));
+
+process.env.EXPO_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
+process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = 'test-anon';
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn(),
+  setItemAsync: jest.fn(),
+  deleteItemAsync: jest.fn(),
+}));
+jest.mock('expo-sqlite/kv-store', () => ({
+  __esModule: true,
+  default: { getItem: jest.fn(), setItem: jest.fn(), removeItem: jest.fn() },
+}));

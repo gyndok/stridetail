@@ -20,7 +20,7 @@ Last updated: 2026-08-23
 | 5 | Background-location task, controller, recovery, dev spike screen | [x] | `ab77dd5` |
 | — | **Checkpoint 1** — offline walk survives force-kill on a real iPhone | [x] | 2026-08-23, EAS preview `91abd85f`; ~5-min walk, see `checkpoints.md` |
 | 6 | Supabase core schema, RLS, RPCs (`create_business`, `create_invite`, `accept_invite`), pgTAP | [!] | needs Docker Desktop |
-| 7 | Supabase client, encrypted session storage, auto-refresh | [ ] | |
+| 7 | Supabase client, encrypted session storage, auto-refresh | [x] | `100f839` |
 | 8 | Session store, sign-in / sign-up | [ ] | |
 | 9 | Business creation, active-business store, onboarding | [ ] | |
 | 10 | Role-based routing, owner/walker tab shells, settings, business switch | [ ] | |
@@ -62,7 +62,7 @@ Last updated: 2026-08-23
 - [ ] Walker visibility limited to own/offered visits; `services_public` view hides prices
 - [ ] `client_access` no select policy; `reveal_access` / `reveal_access_owner` audited *(Plan 2)*
 - [ ] `report-public` returns report-safe fields only *(Plan 4)*
-- [ ] Auth tokens in `expo-secure-store`, auto-refresh on foreground *(Task 7)*
+- [x] Auth tokens in `expo-secure-store`, auto-refresh on foreground *(Task 7)*
 - [ ] Storage bucket `media`, tenant-scoped paths, signed URLs
 - [ ] Audit log for status/assignment/reveal/resend/revoke
 - [x] Secrets only in edge-function env; `.env` gitignored, `.env.example` tracked *(Task 1)*

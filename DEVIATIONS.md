@@ -83,3 +83,18 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   available to the app; `preview` build embeds the JS bundle so nothing was fetched.
 - Checkpoint used the `preview` EAS profile, not the `development` client the plan assumed,
   because a dev client cannot reload its bundle from Metro after a force-kill offline.
+
+## Task 7 — supabase client and encrypted session storage (2026-08-23)
+
+- `@supabase/supabase-js` pinned to `2.112.3` (plan says "2.112"; `2.112.0`–`2.112.3` exist on
+  npm, latest patch of the 2.112 line taken). Other versions resolved: `expo-secure-store@57.0.1`,
+  `react-native-url-polyfill@4.0.0`, `@tanstack/react-query@5.102.2`, `zustand@5.0.15`.
+- `aes-js` pinned to `3.1.2` (not the latest `4.0.0`): the plan's code uses the v3 API
+  (`ModeOfOperation.ctr`, `Counter`, `utils.hex/utf8`) and `@types/aes-js@3.1.4` only types v3.
+- `bunx expo install expo-secure-store` auto-appended `"expo-secure-store"` to `plugins` in
+  `app.json` (same SDK 57 CLI behaviour as Task 3). Kept with defaults.
+- `expo-secure-store` (`getItemAsync` / `setItemAsync` / `deleteItemAsync`), `expo-crypto`
+  (`getRandomBytes`, 0–1024 bytes) and `expo-sqlite/kv-store` (`getItem` / `setItem` /
+  `removeItem` async aliases) verified against the v57 docs; all match the plan.
+- Key-per-name with fixed CTR counter kept exactly as the plan (Supabase reference pattern); not
+  changed.
