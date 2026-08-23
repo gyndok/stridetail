@@ -25,6 +25,8 @@ derivable from the code.
   `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 - Unresolved decisions: make the conservative call, record it in `DEVIATIONS.md`.
 - Checkpoint evidence (device, screenshots, numbers) goes in `checkpoints.md`; screenshots under `docs/evidence/`.
+- Status tracker: `docs/PRD-CHECKLIST.md`. Tick the task row (status + commit hash) and any spec items it
+  completes in the same commit that finishes the task; bump "Last updated".
 - Checks: `bun run test` · `bun run typecheck` · `bun run lint` · `bun run db:test` (needs Docker + Supabase CLI).
 
 ## Feedback loop with the first tenant
