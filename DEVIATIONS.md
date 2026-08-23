@@ -234,3 +234,34 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
 - Test fixtures insert businesses/memberships directly as superuser with fixed uuids
   instead of the `create_business` RPC (001 already covers the RPC), so cross-tenant
   failure tests can target real row ids without selectable subqueries.
+
+## Plan 2, Task 2 — encrypted client access codes (2026-08-23)
+
+- Owner guards use `public.is_owner(b) is not true`, not `not public.is_owner(b)`:
+  `is_owner` returns **null** (not false) when the caller has no membership in the
+  business at all (`role_in` finds no row), and `if not null` never fires — the first
+  test run showed a cross-business owner sailing straight through the check. Null is
+  falsy in policy `using` clauses, so the core migration's `is_owner` is unchanged.
+- The plan's grant line ("grant only insert/update/delete to nothing") is implemented
+  as `revoke all on client_access from authenticated, anon`. The revoke is load-bearing:
+  this stack has `alter default privileges` for the `postgres` role that auto-grant
+  every new table to `anon`/`authenticated`/`service_role`, so "just don't grant" is not
+  enough. `service_role` keeps its default grants (it bypasses RLS anyway and the
+  deploy/service path may need it); RLS stays enabled with zero policies as specified.
+- `has_client_access` raises for non-owners (same message pattern as set/reveal) rather
+  than returning false, so a walker cannot probe which clients have codes on file.
+- `reveal_access_owner` writes its audit row before decrypting, and also when the client
+  has no `client_access` row yet (the authorized reveal *attempt* is logged; the query
+  then returns zero rows). Denied attempts write nothing (asserted in pgTAP).
+- Local Vault secret is seeded as 32 random bytes hex-encoded via
+  `extensions.gen_random_bytes` (the plan names the secret but not its local value),
+  guarded by a `vault.secrets` name lookup so `db reset` reruns don't duplicate.
+  Verified locally: `supabase_vault` extension is installed in the `vault` schema;
+  migrations apply as `postgres`, which holds usage on `vault`, execute on
+  `vault.create_secret`, and select on `vault.decrypted_secrets` — the security definer
+  functions therefore read the key while `authenticated`/`anon` have no vault access
+  (`has_schema_privilege` = false for both).
+- pgTAP grew from the plan's 4 bullet points to 24 assertions (direct table access for
+  authenticated + anon, null-safe round trip, upsert path, walker + cross-business
+  denials for all three functions, ciphertext-at-rest checks, audit-row accounting,
+  vault secret uniqueness).
