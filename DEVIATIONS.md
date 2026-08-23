@@ -47,3 +47,27 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
 - `expo-sqlite` SDK 57 API verified against the docs: `openDatabaseSync`, `execSync`,
   `runAsync` / `getAllAsync` / `getFirstAsync` with `$name` object bindings all exist as the
   plan assumed. No code changes needed beyond Prettier-style line wrapping.
+
+## Task 5 — background location task and controller (2026-08-23)
+
+- `expo-location` SDK 57 config-plugin option names (`locationAlwaysAndWhenInUsePermission`,
+  `locationWhenInUsePermission`, `isIosBackgroundLocationEnabled`,
+  `isAndroidBackgroundLocationEnabled`, `isAndroidForegroundServiceEnabled`) and the runtime API
+  (`startLocationUpdatesAsync` options incl. `foregroundService`, `pausesUpdatesAutomatically`,
+  `showsBackgroundLocationIndicator`; `hasStartedLocationUpdatesAsync`;
+  `TaskManager.defineTask` / `isTaskRegisteredAsync`) verified against the v57 docs. All match
+  the plan; no renames needed.
+- `isIosBackgroundLocationEnabled: true` already injects `location` into `UIBackgroundModes`.
+  The plan's explicit `ios.infoPlist.UIBackgroundModes: ["location"]` was kept as well (belt and
+  braces; the plugin merges without duplicating — confirmed via `expo config --type introspect`).
+- Added `"expo-task-manager"` to `plugins` (SDK 57 CLI did not auto-append it this time; it is
+  a no-op plugin on iOS but harmless and documents the dependency).
+- Foreground-service `notificationColor` uses `tokens.colors.primary` instead of the plan's
+  literal `'#E8642C'` (CLAUDE.md: no literal colors outside `src/ui/tokens.ts`).
+- `ingestLocations` reads the last row as `acc: number | null` and maps to `undefined`, rather
+  than casting the row directly to `Pt` (strict null typing).
+- Spike screen error handler narrows `unknown` with `instanceof Error` (the plan's
+  `e.message ?? e` does not typecheck under strict).
+- Checkpoint 1 on-device run NOT performed: no physical iPhone attached in this session.
+  `checkpoints.md` created with the checkpoint marked PENDING and the exact procedure/evidence
+  list. Task 5 is committed without the device evidence; it must be run before Task 6 per spec.
