@@ -39,7 +39,7 @@ Last updated: 2026-08-23
   | 1 | clients/pets/pet_documents/audit_log migration + pgTAP | [x] | f1a034d |
   | 2 | client_access encrypted (pgcrypto+Vault), audited owner reveal | [x] | c0f5e56 |
   | 3 | `media` bucket, tenant-scoped storage policies | [x] | 821cb3a |
-  | 4 | clients api + owner list | [ ] | |
+  | 4 | clients api + owner list | [x] | fa233df |
   | 5 | client form w/ geocoding + detail | [ ] | |
   | 6 | pets crud + photo + profile | [ ] | |
   | 7 | vaccine documents + access codes UI | [ ] | |
