@@ -111,9 +111,12 @@ Screenshots → `docs/evidence/cp2-owner-tabs.png`, `cp2-walker-tabs.png`, `cp2-
 
 | Field | Value |
 | --- | --- |
-| Date | |
-| Device A / B | |
-| Build (EAS id or local) | |
-| Supabase (local via Tailscale / hosted project ref) | |
+| Date | 2026-08-23 |
+| Device A / B | A: sponsor's iPhone (EAS preview `fb8619bc`) · B: iPhone 17 Pro simulator (local dev build, Xcode 26.3) |
+| Build (EAS id or local) | A: `fb8619bc-0bb6-46af-a5ca-8ccf2b8b1f02` · B: `expo run:ios` |
+| Supabase (local via Tailscale / hosted project ref) | hosted `vrxoswukuiaerhwammlh` |
 | Steps passed | 1–2 on Device A (sign-up, business created, tz America/Chicago auto-detected, owner tabs) — 2026-08-23 build `afae2a77`; found iOS icon still Expo's (`ios.icon` template override) → fixed, rebuilt |
-| Result (PASS / FAIL + notes) | |
+| Result (PASS / FAIL + notes) | Steps 1–5 PASS. 1–2: sign-up + business on Device A (tz America/Chicago auto). 3: invite created + share sheet. 4: deep link on B routed signed-out user to sign-up → "You're invited" → Accept → **walker tabs** (evidence `docs/evidence/cp2-walker-tabs.png`); DB shows both memberships active, token cleared. 5: pending owner confirming Team list. 6–7 **blocked: walker shell has no Settings tab → no sign-out for walkers** (logged below). 8 pending on Device A. |
+
+**Follow-up:** add a Settings (or profile) entry to the walker tab shell with sign-out — walkers
+currently cannot sign out. Small fix; do alongside Plan 2 or before.
