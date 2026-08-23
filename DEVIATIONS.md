@@ -167,3 +167,34 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
 - Step 4 manual sign-in → owner Today → Settings → Sign out run on a simulator not performed in
   this session (no device run); unit test, typecheck, and lint are green. To be covered by the
   Checkpoint 2 device pass.
+
+## Task 11 — invitations, `invite-accept` edge function, accept screen (2026-08-23)
+
+- SMS delivery of the invite link is not wired (Plan 4 `send-sms`); the owner shares the
+  `stridetail://invite/<token>` link through the system share sheet, as the plan prescribes.
+  Share text uses `APP_NAME` from `src/lib/brand.ts` rather than the plan's literal "Stridetail".
+- `memberships.user_id` references `auth.users`, so PostgREST cannot resolve the plan's
+  `profile:profiles(display_name)` embed. `20260823000002_profiles_visibility.sql` adds a second
+  FK `memberships.user_id → public.profiles(user_id)` (1:1 with `auth.users` via the signup
+  trigger) alongside the plan's "members read teammate profiles" policy. Verified over REST.
+- `listMyMemberships` now filters `user_id = session.user.id`. The "members read memberships"
+  policy returns every membership in a business, so once a walker existed the owner's row came
+  back first and `resolveHome` would have routed the walker to the owner tabs. Latent since
+  Task 9; could not manifest before invites worked. Uses `auth.getSession()` (local) not
+  `getUser()` (network).
+- pgTAP: plan's `plan(12)` assumed 10 prior assertions; the file had 14 (Task 6), so it is now
+  `plan(17)`: +2 accept-invite assertions from the plan, +1 asserting a walker reads exactly
+  the teammate profiles (owner + self). Assertion 1 (profiles per auth user) is scoped to the
+  four fixture ids: it counted all profiles and failed whenever the local DB held users from
+  REST exercises.
+- `tsconfig.json` excludes `supabase/functions` — `bun run typecheck` otherwise fails on
+  `Deno` globals in the edge function. Edge code is type-checked by the Deno runtime, not tsc.
+- Edge function hardened slightly vs. the plan: 405 on non-POST, 500 if env vars are missing
+  (no `!` assertions), body parsed as `unknown`, admin client with `persistSession: false`.
+- Pending-invite persistence lives in `src/features/business/pendingInvite.ts` (KV-injectable,
+  unit-tested) instead of inline `Storage` calls in the screens. `app/index.tsx` gates on it
+  and redirects to `/invite/<token>` after sign-up, per the plan.
+- Edge function exercised locally via `supabase functions serve` against the local stack:
+  401 without JWT, 400 short token, 200 `{ businessId }` on accept, 400 "invalid or used
+  invite" on replay; walker then lists one active `walker` membership and the owner's Team
+  query returns both rows with display names. Manual simulator deep-link run not performed.

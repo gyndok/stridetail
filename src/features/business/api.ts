@@ -18,9 +18,16 @@ export type Membership = {
 };
 
 export async function listMyMemberships(): Promise<Membership[]> {
+  // RLS lets members read every membership in their businesses (Team screen), so filter to
+  // the caller's own rows here or a walker would pick up the owner's membership as home.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return [];
   const { data, error } = await supabase
     .from('memberships')
     .select('id, business_id, role, status, business:businesses(id, name, brand_color, time_zone, logo_path)')
+    .eq('user_id', session.user.id)
     .eq('status', 'active');
   if (error) throw error;
   return (data ?? []) as unknown as Membership[];
