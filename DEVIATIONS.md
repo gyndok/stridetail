@@ -215,3 +215,22 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   not rewritten.
 - CI has not yet been observed green on GitHub: nothing has been pushed (push deferred to the
   user). Workflow YAML was parsed locally and the exact commands were run locally.
+
+## Plan 2, Task 1 — clients, pets, documents, audit log (2026-08-23)
+
+- The plan's RLS line ("select for members of the business") contradicts its own pgTAP
+  requirement ("walker of business A cannot read A's clients") and the plan header ("Walkers
+  see no clients in Plan 2"): a walker is an active member, so a member-select policy would
+  expose clients to walkers. Resolved in favour of the testable requirement: `clients`,
+  `pets`, and `pet_documents` are **owner-only for select as well as writes** in Plan 2;
+  Plan 3 adds the walker read path via assigned visits.
+- `audit_log` grants: `authenticated` gets select only (no insert grant, and no insert
+  policy — an insert fails with permission denied, asserted in pgTAP); `service_role` gets
+  select + insert only (no update/delete), keeping the trail append-only even for the
+  service key. `audit_log.id` is a `bigint identity` (append-only log; ordered, cheap),
+  not a uuid like the entity tables.
+- `pet_documents` carries an `updated_at` column (spec §5 lists content columns only; the
+  other tables all have timestamps) so expiry/type corrections don't need delete+recreate.
+- Test fixtures insert businesses/memberships directly as superuser with fixed uuids
+  instead of the `create_business` RPC (001 already covers the RPC), so cross-tenant
+  failure tests can target real row ids without selectable subqueries.
