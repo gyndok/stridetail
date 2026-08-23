@@ -80,6 +80,7 @@ Last updated: 2026-08-23
 ## Spec §9 — UI
 
 - [x] Direction B tokens (cream `#FFF4E6`, primary `#E8642C`, ink `#2B1D12`, 24 px radius, pill buttons) *(Task 2)*
+- [x] App icon + splash + favicon (iconikai line-art dog on `#F57D33`, iOS/Android adaptive/monochrome/web) *(2026-08-23)*
 - [ ] Field mode (dark map/sheet while recording; `walkTheme` setting)
 - [x] Owner tabs Today · Schedule · Clients · Team · Settings; walker tabs Today · Schedule · Clients *(Task 10, placeholder screens)*
 - [ ] Owner Today: needs-attention strip + visits by walker; walker Today: hero card + list
