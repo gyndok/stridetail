@@ -351,3 +351,41 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   Android permission branch via `jest.replaceProperty(Platform, 'OS', …)`; parsePhones /
   validateClient / telUrl / needsGeocode); screens stay untested markup over tested
   helpers, matching Task 4's approach.
+
+## Plan 2, Task 6 — pets crud, photo upload, profile (2026-08-23)
+
+- Route restructure not in the plan's file list: nested pet routes need a directory, so
+  `app/(owner)/clients/[id].tsx` moved (git mv) to `app/(owner)/clients/[id]/index.tsx`
+  with `pets/new.tsx` and `pets/[petId].tsx` beneath it. Resolved paths are unchanged;
+  the existing `as Href` casts stay (`.expo/types` regenerate only when the dev server
+  runs — Task 4/5 precedent), and two new casts cover the pet routes.
+- Age is plain calendar math (`petAge` in `helpers.ts`), not the plan's "date-fns in
+  business tz": `pets.birthdate` is a date-only column, so age is day-arithmetic on
+  Y/M/D parts with an injected `now` — no zone is consulted and no date-fns dependency
+  was added. Format `N y` from the first birthday, `N mo` before it; null for missing,
+  malformed, or future dates.
+- Photo upload happens **after** create/update, not inside the form: the storage path
+  `business_id/pets/<pet_id>/photo.jpg` needs the pet id, so `PetForm` hands the picked
+  local uri to the caller and the screens call `uploadPetPhoto` once the row exists.
+  Upload fetches the file uri to an ArrayBuffer (supabase-js RN pattern), uploads with
+  `upsert: true` + `contentType: image/jpeg`, then persists `photo_path` on the row.
+- expo-image-picker v57 API verified against the docs: `launchCameraAsync` /
+  `launchImageLibraryAsync` with `mediaTypes: ['images']` (string-literal `MediaType`),
+  `allowsEditing`, `quality: 0.7`; result is `{ canceled, assets }`. The camera path
+  requests permission via `requestCameraPermissionsAsync` first; the library path needs
+  no runtime request on modern iOS/Android pickers.
+- `bunx expo install` did **not** auto-add the config plugin; added manually to
+  `app.json` with `cameraPermission`/`photosPermission` strings and
+  `microphonePermission: false` (photos only — avoids the default `RECORD_AUDIO`
+  Android permission the plugin would otherwise inject).
+- Birthdate is a plain `YYYY-MM-DD` TextField (no datepicker dependency), so
+  `validatePet` checks shape *and* calendar validity (rejects `2023-02-30`) alongside
+  the required name/species.
+- Added a `warning` color token (`#B7791F`) to `src/ui/tokens.ts` for the reactivity
+  card (tokens had only danger/success; no literal colors in screens per CLAUDE.md).
+- `getPet` and `petPhotoUrl` added beyond the plan's "list, create, update": the
+  profile screen loads one pet by id and signs the private photo path (1 h,
+  `staleTime` 55 min so a cached url never outlives its signature).
+- Tests cover the pure layer (petAge, storagePetPhotoPath, validatePet) and query/
+  storage shape with a mocked supabase (chain recorder + storage upload/sign log,
+  fetch spied); screens stay untested markup over tested helpers (Task 4/5 approach).

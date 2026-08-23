@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Pressable, Text } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
 import { getClient, isMeetGreetPending, updateClient } from '@/src/features/clients/api';
 import { ClientForm } from '@/src/features/clients/ClientForm';
 import { telUrl } from '@/src/features/clients/form';
+import { listPets } from '@/src/features/pets/api';
+import { petAge } from '@/src/features/pets/helpers';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
@@ -28,6 +30,13 @@ export default function ClientDetail() {
     queryFn: () => getClient(businessId!, id!),
   });
   useRefetchOnFocus(client.refetch);
+
+  const pets = useQuery({
+    queryKey: ['pets', businessId, id],
+    enabled: !!businessId && !!id,
+    queryFn: () => listPets(businessId!, id!),
+  });
+  useRefetchOnFocus(pets.refetch);
 
   const c = client.data;
 
@@ -107,9 +116,37 @@ export default function ClientDetail() {
               <Text style={{ color: t.colors.ink }}>{c.notes_md}</Text>
             </Card>
           ) : null}
-          <Card style={{ opacity: 0.5 }}>
+          <Card>
             <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Pets</Text>
-            <Text style={{ color: t.colors.inkMuted }}>Pet profiles arrive with Task 6.</Text>
+            {(pets.data ?? []).map((pet) => {
+              const age = petAge(pet.birthdate);
+              const line = [pet.species, age].filter(Boolean).join(' · ');
+              return (
+                <Pressable
+                  key={pet.id}
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/clients/${id}/pets/${pet.id}` as Href)}
+                  style={{
+                    paddingVertical: t.space.sm,
+                    borderBottomWidth: 1,
+                    borderBottomColor: t.colors.line,
+                  }}
+                >
+                  <Text style={[t.type.body, { color: t.colors.ink }]}>{pet.name}</Text>
+                  {line ? <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>{line}</Text> : null}
+                </Pressable>
+              );
+            })}
+            {pets.data?.length === 0 ? (
+              <Text style={{ color: t.colors.inkMuted }}>No pets yet</Text>
+            ) : null}
+            <View style={{ marginTop: t.space.sm }}>
+              <Button
+                title="Add pet"
+                variant="secondary"
+                onPress={() => router.push(`/clients/${id}/pets/new` as Href)}
+              />
+            </View>
           </Card>
           <Card style={{ opacity: 0.5 }}>
             <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Access codes</Text>

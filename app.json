@@ -62,6 +62,14 @@
         }
       ],
       "expo-task-manager",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Stridetail uses the camera to take pet profile photos.",
+          "photosPermission": "Stridetail uses your photo library to pick pet profile photos.",
+          "microphonePermission": false
+        }
+      ],
       "expo-secure-store",
       "expo-localization"
     ],
