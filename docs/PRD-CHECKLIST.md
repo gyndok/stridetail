@@ -42,7 +42,7 @@ Last updated: 2026-08-23
   | 4 | clients api + owner list | [x] | fa233df |
   | 5 | client form w/ geocoding + detail | [x] | c62b52f |
   | 6 | pets crud + photo + profile | [x] | e2a36ef |
-  | 7 | vaccine documents + access codes UI | [ ] | |
+  | 7 | vaccine documents + access codes UI | [x] | d017049 |
   | 8 | hosted deploy, checklist, build | [ ] | |
 - [ ] Plan 3 — services, availability, time off, visits, series, assignment, accept/decline (stage 5)
 - [ ] Plan 4 — visit execution UI, reports, `report-public`, SMS retries, Expo Web layout (stages 6–8)
@@ -53,7 +53,7 @@ Last updated: 2026-08-23
 
 1. [~] Self-serve business creation (name, logo, brand color, IANA tz, policies) — creator = `owner` — *name + device-detected IANA tz via onboarding screen, `create_business` RPC seeds owner membership + 8 services (Task 9); logo, brand color picker, and policies UI still pending (settings, Task 10 / later plan)*
 2. [~] Memberships `owner`/`walker`, SMS/email invite link, `is_platform_admin` flag — *schema + RPCs (Task 6); owner creates invite + shares `stridetail://invite/<token>` via share sheet, `invite-accept` edge function + accept screen, walker routed to walker tabs (Task 11, verified against local stack); SMS delivery of the link in Plan 4 (`send-sms`); `is_platform_admin` is a column only, no UI*
-3. [ ] Clients + pets: instructions, vet info, vaccine docs w/ expiry, secured access info *(Plan 2)*
+3. [~] Clients + pets: instructions, vet info, vaccine docs w/ expiry, secured access info — *owner side complete: clients w/ geocoding, pet profiles + photos, vaccine docs w/ expiry badges, audited access-codes screen (Plan 2 Tasks 4–7); walker read paths + visit-gated reveal in Plan 3*
 4. [ ] Per-business service catalog seeded with Paw & Whisker's list *(Plan 3)*
 5. [ ] Scheduling: one-off + recurring series, assignment, accept/decline, availability, time off, conflict view *(Plan 3)*
 6. [~] Visit execution: Today, start/finish, background GPS, per-pet timestamped events, multi-pet, private notes — *GPS + outbox foundation done (Tasks 3–5); UI in Plan 4*
@@ -77,8 +77,8 @@ Last updated: 2026-08-23
 - [~] `client_access` no select policy; `reveal_access` / `reveal_access_owner` audited — *no select policy + zero grants, `reveal_access_owner` + `set_client_access` audited (Plan 2 Task 2); walker-side `reveal_access(visit_id)` in Plan 3*
 - [ ] `report-public` returns report-safe fields only *(Plan 4)*
 - [x] Auth tokens in `expo-secure-store`, auto-refresh on foreground *(Task 7)*
-- [~] Storage bucket `media`, tenant-scoped paths, signed URLs — *bucket + member-read/owner-write policies with safe path parse (Plan 2 Task 3); signed URLs in app code (Tasks 6–7)*
-- [ ] Audit log for status/assignment/reveal/resend/revoke
+- [x] Storage bucket `media`, tenant-scoped paths, signed URLs — *bucket + member-read/owner-write policies with safe path parse (Plan 2 Task 3); signed URLs for pet photos + documents in app code (Plan 2 Tasks 6–7)*
+- [~] Audit log for status/assignment/reveal/resend/revoke — *reveal/set audited server-side (Plan 2 Task 2) and surfaced in the access UI (Task 7); status/assignment/resend/revoke in Plans 3–4*
 - [x] Secrets only in edge-function env; `.env` gitignored, `.env.example` tracked *(Task 1)*
 
 ## Spec §8 — Offline and GPS
