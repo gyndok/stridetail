@@ -32,7 +32,18 @@ Last updated: 2026-08-23
 
 ## Plans 2–4 (to be written from the spec)
 
-- [ ] Plan 2 — clients, pets, documents, access codes with `reveal_access` (spec §11 stage 4)
+- [~] Plan 2 — written 2026-08-23 (`docs/superpowers/plans/2026-08-23-stridetail-plan2-clients-pets-access.md`); executing. Walker-side `reveal_access(visit_id)` deferred to Plan 3 (needs visits).
+
+  | # | Plan 2 task | Status | Commit |
+  |---|-------------|--------|--------|
+  | 1 | clients/pets/pet_documents/audit_log migration + pgTAP | [ ] | |
+  | 2 | client_access encrypted (pgcrypto+Vault), audited owner reveal | [ ] | |
+  | 3 | `media` bucket, tenant-scoped storage policies | [ ] | |
+  | 4 | clients api + owner list | [ ] | |
+  | 5 | client form w/ geocoding + detail | [ ] | |
+  | 6 | pets crud + photo + profile | [ ] | |
+  | 7 | vaccine documents + access codes UI | [ ] | |
+  | 8 | hosted deploy, checklist, build | [ ] | |
 - [ ] Plan 3 — services, availability, time off, visits, series, assignment, accept/decline (stage 5)
 - [ ] Plan 4 — visit execution UI, reports, `report-public`, SMS retries, Expo Web layout (stages 6–8)
 
