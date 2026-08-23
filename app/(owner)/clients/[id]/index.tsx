@@ -148,10 +148,16 @@ export default function ClientDetail() {
               />
             </View>
           </Card>
-          <Card style={{ opacity: 0.5 }}>
-            <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Access codes</Text>
-            <Text style={{ color: t.colors.inkMuted }}>Secured access codes arrive with Task 7.</Text>
-          </Card>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Access codes"
+            onPress={() => router.push(`/clients/${id}/access` as Href)}
+          >
+            <Card>
+              <Text style={[t.type.label, { color: t.colors.inkMuted }]}>🔒 Access codes</Text>
+              <Text style={{ color: t.colors.ink }}>Door, lockbox, gate, and alarm codes</Text>
+            </Card>
+          </Pressable>
           {actionError ? <Text style={{ color: t.colors.danger }}>{actionError}</Text> : null}
           {isMeetGreetPending(c) ? (
             <Button

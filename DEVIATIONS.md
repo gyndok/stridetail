@@ -389,3 +389,30 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
 - Tests cover the pure layer (petAge, storagePetPhotoPath, validatePet) and query/
   storage shape with a mocked supabase (chain recorder + storage upload/sign log,
   fetch spied); screens stay untested markup over tested helpers (Task 4/5 approach).
+
+## Plan 2, Task 7 — vaccine documents and access codes UI (2026-08-23)
+
+- Expiry badges are pure calendar math on `YYYY-MM-DD` parts with an injected `now`
+  (`expiryState` in `documents.ts`), not the plan's "date-fns in device tz": date-fns is not a
+  dependency (same call as Task 6's age math) and the comparison is day-granular display-only
+  logic on the device's local calendar day. A document expiring **today** shows "Expires soon"
+  (still valid through its expiry date), strictly-before-today shows "Expired".
+- No new color token: the task allowed adding a `danger` token if none existed, but
+  `tokens.colors.danger` (`#C53030`) has been there since Task 2. Badges use `danger`/`warning`.
+- `bunx expo install expo-document-picker` did **not** auto-append a config plugin (unlike
+  expo-sqlite/secure-store/localization). Added `"expo-document-picker"` to `app.json` plugins
+  manually with no options (documents the dependency; the plugin only matters for the iCloud
+  entitlement, which is not needed) — same rationale as Task 5's expo-task-manager entry.
+  `getDocumentAsync({ type: 'application/pdf' })` → `{ canceled, assets: [{ uri, … }] }`
+  verified against the v57 docs.
+- `deleteDocument` deletes the `pet_documents` row first (owner RLS authorises there), then
+  removes the storage object; a storage failure after the row delete leaves an orphan object
+  rather than a row pointing at a missing file.
+- Access screen "Edit" reveals first (audited like any reveal) when codes are on file, to
+  prefill the form: `set_client_access` upserts **all** columns, so an unprefilled form would
+  silently wipe fields the owner never touched. The plan did not specify prefill behaviour.
+- Revealed codes and the edit form live only in component state; a `useFocusEffect` cleanup
+  wipes them on screen **blur** as well as unmount (the plan said "component state" — blur
+  handling added because a pushed screen keeps the previous one mounted).
+- `has_client_access` raises for non-owners (Task 2 hardening), so the flag query on the
+  access screen surfaces the RPC error text rather than pretending "no codes".

@@ -3,7 +3,7 @@
 const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /** Parse 'YYYY-MM-DD' into calendar parts; null when malformed or not a real date. */
-function parseDateOnly(value: string): { y: number; m: number; d: number } | null {
+export function parseDateOnly(value: string): { y: number; m: number; d: number } | null {
   const match = DATE_ONLY.exec(value);
   if (!match) return null;
   const y = Number(match[1]);

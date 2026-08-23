@@ -7,6 +7,7 @@ import { Linking, Pressable, Text } from 'react-native';
 import { useActiveBusiness } from '@/src/features/business/active';
 import { telUrl } from '@/src/features/clients/form';
 import { getPet, petPhotoUrl, updatePet, uploadPetPhoto } from '@/src/features/pets/api';
+import { DocumentsSection } from '@/src/features/pets/DocumentsSection';
 import { petAge } from '@/src/features/pets/helpers';
 import { PetForm } from '@/src/features/pets/PetForm';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
@@ -129,10 +130,7 @@ export default function PetProfile() {
               <Text style={{ color: t.colors.inkMuted }}>No vet on file</Text>
             ) : null}
           </Card>
-          <Card style={{ opacity: 0.5 }}>
-            <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Vaccine documents</Text>
-            <Text style={{ color: t.colors.inkMuted }}>Vaccine documents arrive with Task 7.</Text>
-          </Card>
+          <DocumentsSection businessId={businessId!} petId={p.id} />
           <Button title="Edit pet" onPress={() => setEditing(true)} />
         </>
       ) : null}
