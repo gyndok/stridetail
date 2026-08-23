@@ -4,9 +4,11 @@ Evidence for spec checkpoints. Screenshots go under `docs/evidence/`.
 
 ## Checkpoint 1 — background GPS survives airplane mode + force-kill (Plan 1, Task 5)
 
-**Status: PENDING — requires physical iPhone dev build.** Code, tests, typecheck and lint are
-done (commit `feat(gps): background location task, controller, spike screen`). No device was
-connected in the session that implemented Task 5, so the on-device run has not been performed.
+**Status: PASS (2026-08-23, with caveats).** Run on the sponsor's iPhone using the `preview`
+EAS build `91abd85f`, airplane mode on, reached via `stridetail://dev/gps-spike` from a Note.
+Recording survived a force-kill: 37 pts / 494 m before kill → relaunch showed **Recording**
+with 40 pts / 524 m → Finish → Idle, 5 outbox items. Caveats: walk was ~5 min, not the full
+10; Wi-Fi radio stayed on under airplane mode (no data). See DEVIATIONS.md.
 
 ### Prerequisites
 1. Apple Developer account signed in to EAS (`bunx eas-cli login`), or Xcode with a signing team.
@@ -47,16 +49,19 @@ Builds done 2026-08-23 (EAS, team `geffreykleins-team`, device UDID `00008140-00
 
 | Field | Value |
 | --- | --- |
-| Date | |
-| Device model | |
-| iOS version | |
-| Build type (EAS dev / local Xcode) | |
-| Points before force-kill | |
-| Points after relaunch | |
-| Final points | |
-| Final meters | |
-| Outbox items at Finish | |
-| Result (PASS / FAIL) | |
+| Date | 2026-08-23, ~13:10–13:16 CDT |
+| Device model | iPhone, UDID `00008140-001C71C021BB001C` (model/iOS to fill in) |
+| iOS version | (fill in) |
+| Build type (EAS dev / local Xcode) | EAS `preview` build `91abd85f-e06a-461c-8036-9296bb49dfff` |
+| Points before force-kill | 37 (494 m, 4 outbox) |
+| Points after relaunch | 40 (524 m, 4 outbox, status Recording) |
+| Final points | 40 |
+| Final meters | 524 |
+| Outbox items at Finish | 5 |
+| Result (PASS / FAIL) | PASS — short walk (~5 min) and Wi-Fi radio on; kill/relaunch recovery verified |
+
+Screenshots were captured on the phone and shared in the working session; copy them to
+`docs/evidence/cp1-before-kill.png`, `cp1-after-relaunch.png`, `cp1-finished.png`.
 
 ### If it fails
 Fix before any further task (spec section 11). Common causes: `UIBackgroundModes` missing

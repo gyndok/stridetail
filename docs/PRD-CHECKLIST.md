@@ -18,8 +18,8 @@ Last updated: 2026-08-23
 | 3 | SQLite schema + outbox store (memory + SQLite) | [x] | `d306ef1` |
 | 4 | GPS geometry: haversine, accuracy + jitter filters | [x] | `d4a6f88` |
 | 5 | Background-location task, controller, recovery, dev spike screen | [x] | `ab77dd5` |
-| — | **Checkpoint 1** — offline 10-min walk survives force-kill on a real iPhone | [!] | needs EAS/Apple dev build |
-| 6 | Supabase core schema, RLS, RPCs (`create_business`, `create_invite`, `accept_invite`), pgTAP | [!] | needs Docker + Checkpoint 1 |
+| — | **Checkpoint 1** — offline walk survives force-kill on a real iPhone | [x] | 2026-08-23, EAS preview `91abd85f`; ~5-min walk, see `checkpoints.md` |
+| 6 | Supabase core schema, RLS, RPCs (`create_business`, `create_invite`, `accept_invite`), pgTAP | [!] | needs Docker Desktop |
 | 7 | Supabase client, encrypted session storage, auto-refresh | [ ] | |
 | 8 | Session store, sign-in / sign-up | [ ] | |
 | 9 | Business creation, active-business store, onboarding | [ ] | |
@@ -72,7 +72,7 @@ Last updated: 2026-08-23
 - [ ] Day cache (today ±2 d) via persisted TanStack cache; codes never cached, grace-window reveal
 - [~] Outbox: local-first writes, in-order sync worker, idempotent by `client_uuid` — *store done; worker pending*
 - [x] GPS task: 5 s / 10 m, High accuracy, SQLite `track_points`, 60 s segment roll-up *(Task 5)*
-- [x] Recovery: re-register task + restore active visit on relaunch *(Task 5 — unverified on device)*
+- [x] Recovery: re-register task + restore active visit on relaunch *(Task 5 — verified on device, Checkpoint 1)*
 - [ ] Notification retry with backoff (1/5/15/60 min, 6 attempts) + "Report not sent" badge
 
 ## Spec §9 — UI
@@ -96,7 +96,7 @@ Last updated: 2026-08-23
 1. [ ] Create business; invite contractor; contractor accepts on second phone
 2. [ ] Client w/ codes + pet w/ vaccine PDF; schedule walk; contractor accepts; owner sees it
 3. [ ] Reveal codes denied before Start, shown after; owner sees audit entry
-4. [!] **Checkpoint 1** — airplane mode, 10-min walk, events, force-kill, relaunch, finish, sync
+4. [~] **Checkpoint 1** — airplane mode, force-kill, relaunch, finish: PASS (GPS only); events/photos/sync pending Plan 4
 5. [ ] Client phone gets "started"/"finished" SMS; report shows branding/map/photos, no address/codes/price
 6. [ ] Owner reschedules on laptop week grid; walker sees change
 
@@ -105,6 +105,6 @@ Last updated: 2026-08-23
 - [ ] USPTO + App Store / Play name checks for "Stridetail"; register stridetail.com + stridetail.app
 - [ ] Twilio A2P 10DLC registration (start early — takes days)
 - [ ] Google Maps API key for Android
-- [ ] Apple Developer, Google Play, Expo/EAS accounts under the platform entity
+- [~] Apple Developer, Google Play, Expo/EAS accounts — Apple (individual, team NJ4JGW72MW) + EAS (`geffreykleins-team`) done; Google Play pending; platform entity TBD
 - [ ] Docker Desktop on the Mac mini (needed for `bun run db:test`)
 - [ ] Alexandra's Round 0 answers (stridetail-mockups issue #1)

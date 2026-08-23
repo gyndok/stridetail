@@ -71,3 +71,15 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
 - Checkpoint 1 on-device run NOT performed: no physical iPhone attached in this session.
   `checkpoints.md` created with the checkpoint marked PENDING and the exact procedure/evidence
   list. Task 5 is committed without the device evidence; it must be run before Task 6 per spec.
+
+## Checkpoint 1 — on-device run (2026-08-23)
+
+- The spec calls for a 10-minute walk; the run was ~5 minutes (37→40 points, 494→524 m). The
+  property under test — background task + SQLite buffer + relaunch recovery surviving a
+  force-kill with no connectivity — was demonstrated, so the checkpoint is recorded as PASS
+  rather than repeating the walk. A full 10-minute run will happen naturally during judging
+  step 4.
+- Wi-Fi radio remained on while airplane mode was active (iOS allows this). No network was
+  available to the app; `preview` build embeds the JS bundle so nothing was fetched.
+- Checkpoint used the `preview` EAS profile, not the `development` client the plan assumed,
+  because a dev client cannot reload its bundle from Metro after a force-kill offline.
