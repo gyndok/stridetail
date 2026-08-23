@@ -17,6 +17,15 @@ connected in the session that implemented Task 5, so the on-device run has not b
    - `bunx expo run:ios --device` (local Xcode build).
 4. Install on the iPhone, start Metro with `bun run start`, open the app.
 
+**Use the `preview` profile for the actual checkpoint run.** A `development` build loads JS from
+Metro, so after a force-kill in airplane mode it cannot reload. `preview` embeds the bundle.
+Reach the spike screen with the deep link `stridetail://dev/gps-spike` (type it in Safari or
+tap it from a Note — works offline).
+
+Builds done 2026-08-23 (EAS, team `geffreykleins-team`, device UDID `00008140-001C71C021BB001C`):
+- development: `fb918661-2f2c-4996-878b-67db28ab9c02`
+- preview: `91abd85f-e06a-461c-8036-9296bb49dfff`
+
 ### Procedure
 1. Navigate to `stridetail://dev/gps-spike` (or type `/dev/gps-spike` in the dev menu).
 2. Airplane mode ON (Wi-Fi and cellular off).
