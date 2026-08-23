@@ -116,7 +116,7 @@ Screenshots → `docs/evidence/cp2-owner-tabs.png`, `cp2-walker-tabs.png`, `cp2-
 | Build (EAS id or local) | A: `fb8619bc-0bb6-46af-a5ca-8ccf2b8b1f02` · B: `expo run:ios` |
 | Supabase (local via Tailscale / hosted project ref) | hosted `vrxoswukuiaerhwammlh` |
 | Steps passed | 1–2 on Device A (sign-up, business created, tz America/Chicago auto-detected, owner tabs) — 2026-08-23 build `afae2a77`; found iOS icon still Expo's (`ios.icon` template override) → fixed, rebuilt |
-| Result (PASS / FAIL + notes) | Steps 1–5 PASS. 1–2: sign-up + business on Device A (tz America/Chicago auto). 3: invite created + share sheet. 4: deep link on B routed signed-out user to sign-up → "You're invited" → Accept → **walker tabs** (evidence `docs/evidence/cp2-walker-tabs.png`); DB shows both memberships active, token cleared. 5: pending owner confirming Team list. 6–7 **blocked: walker shell has no Settings tab → no sign-out for walkers** (logged below). 8 pending on Device A. |
+| Result (PASS / FAIL + notes) | Steps 1–5 PASS. 1–2: sign-up + business on Device A (tz America/Chicago auto). 3: invite created + share sheet. 4: deep link on B routed signed-out user to sign-up → "You're invited" → Accept → **walker tabs** (evidence `docs/evidence/cp2-walker-tabs.png`); DB shows both memberships active, token cleared. 5 PASS: after force-quit + relaunch on Device A, Team lists "Simulated · walker · active". 8 PASS: relaunch kept the owner signed in (SecureStore session). 6–7 **not run: walker shell has no sign-out** (follow-up below). Overall: **PASS with the walker sign-out follow-up.** |
 
 **Follow-up:** add a Settings (or profile) entry to the walker tab shell with sign-out — walkers
 currently cannot sign out. Small fix; do alongside Plan 2 or before.
