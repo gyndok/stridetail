@@ -38,3 +38,12 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   for an `onPress` prop and found `Button`'s own prop, so setting `onPress={undefined}` on the
   Pressable alone did not block it. Added `disabled={inactive}` on the `Pressable` (correct RN
   behaviour anyway; RNTL honours it). `onPress={inactive ? undefined : onPress}` kept as well.
+
+## Task 3 — sqlite and outbox (2026-08-23)
+
+- `bunx expo install expo-sqlite expo-crypto` automatically appended `"expo-sqlite"` to
+  `plugins` in `app.json` (SDK 57 CLI behaviour). The plan does not mention it; kept, as it is
+  the documented config-plugin registration and uses defaults (no FTS / SQLCipher options).
+- `expo-sqlite` SDK 57 API verified against the docs: `openDatabaseSync`, `execSync`,
+  `runAsync` / `getAllAsync` / `getFirstAsync` with `$name` object bindings all exist as the
+  plan assumed. No code changes needed beyond Prettier-style line wrapping.
