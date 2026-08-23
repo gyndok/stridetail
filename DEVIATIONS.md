@@ -151,3 +151,19 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   `p_brand_color: null` → `memberships` select with the `business:businesses(...)` embed):
   business + owner membership + 8 `services` rows created, embed shape matches `Membership`.
   No migration change needed.
+
+## Task 10 — role-based routing, tab shells, settings (2026-08-23)
+
+- `app/index.tsx`: plan dereferences `home!.href` after the ready gate. Rewrote the gate as
+  `!ready || (status === 'signed-in' && !home)` so the redirect needs no non-null assertion;
+  behaviour is identical (signed-in users only redirect once memberships have loaded).
+  The sync-active-business effect depends on `home.businessId` only (plan's intent), with an
+  explicit `react-hooks/exhaustive-deps` disable rather than re-running on every store change.
+- Root spinner keeps the Task 8 token colours (`surface` background, `primary` indicator)
+  instead of the plan's unstyled `ActivityIndicator`.
+- `typedRoutes` is on in `app.json` but `.expo/types` is not generated in this checkout, so
+  `Href` is currently the loose string type; `bun run typecheck` passes. Once `bunx expo start`
+  generates the route types the group hrefs (`/(owner)/today`, `/(walker)/today`) remain valid.
+- Step 4 manual sign-in → owner Today → Settings → Sign out run on a simulator not performed in
+  this session (no device run); unit test, typecheck, and lint are green. To be covered by the
+  Checkpoint 2 device pass.

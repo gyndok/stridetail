@@ -5,18 +5,30 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initSession } from '@/src/features/auth/session';
+import { hydrateActiveBusiness, useActiveBusiness } from '@/src/features/business/active';
+import { useMemberships } from '@/src/features/business/useMemberships';
 import { ThemeProvider } from '@/src/ui/theme';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 1 } } });
 
+function Providers({ children }: { children: React.ReactNode }) {
+  const { businessId } = useActiveBusiness();
+  const memberships = useMemberships();
+  const accent = memberships.data?.find((m) => m.business_id === businessId)?.business.brand_color;
+  return <ThemeProvider accent={accent}>{children}</ThemeProvider>;
+}
+
 export default function RootLayout() {
-  useEffect(() => initSession(), []);
+  useEffect(() => {
+    void hydrateActiveBusiness();
+    return initSession();
+  }, []);
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
+        <Providers>
           <Stack screenOptions={{ headerShown: false }} />
-        </ThemeProvider>
+        </Providers>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
