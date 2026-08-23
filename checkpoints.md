@@ -67,3 +67,48 @@ Screenshots were captured on the phone and shared in the working session; copy t
 Fix before any further task (spec section 11). Common causes: `UIBackgroundModes` missing
 `location` (verify with `bunx expo config --type introspect`), `src/lib/gps/task.ts` not
 imported first in `app/_layout.tsx`, location permission not set to "Always".
+
+## Checkpoint 2 — end-to-end tenancy on two devices (after Plan 1, before Plan 2)
+
+**Status: PENDING.** Sign-up → create business → invite → accept → role routing is covered by
+21 jest tests, 17 pgTAP assertions and a REST-level run of `invite-accept`, but no human has
+driven it on a device. Deep links and auth redirects are exactly what passes in tests and
+breaks on phones.
+
+### Prerequisites
+- Two devices: Device A (owner — sponsor's iPhone) and Device B (walker — Alexandra's iPhone
+  or the iOS simulator). Register B with `bunx eas-cli device:create` (Website flow) if it is a
+  phone, then build `bunx eas-cli build --profile preview --platform ios`. For the simulator
+  use `bunx expo run:ios` with Metro.
+- A reachable Supabase. Local stack works if both devices are on the mini's Tailscale/LAN and
+  `EXPO_PUBLIC_SUPABASE_URL` points at the mini's address (not 127.0.0.1) **at build time**.
+  Otherwise create a hosted dev project, push migrations (`supabase db push`), deploy
+  `invite-accept` (`supabase functions deploy invite-accept`), set the URL/anon key in
+  `eas.json` env for `preview`, and rebuild.
+
+### Procedure
+1. Device A: open app → Sign up (email + password) → lands on "Create your business".
+   Expected: time zone pre-filled from the device, not blank, not UTC.
+2. Create "Paw & Whisker Pet Care" → owner tabs appear (Today · Schedule · Clients · Team ·
+   Settings). Settings shows the business name and a Sign out.
+3. Team → Invite → enter Device B's email (or phone) → share sheet → send the link to B
+   (Messages/AirDrop). Note the token.
+4. Device B (signed out, app installed): tap the link. Expected: opens the app at
+   `/invite/<token>`, prompts sign-up, and after sign-up lands in **walker** tabs
+   (Today · Schedule · Clients) — not the owner tabs.
+5. Device A: Team now lists B as an active walker with display name.
+6. Device B: Settings/sign out, relaunch → back to sign-in, not a blank screen.
+7. Device B: sign in again → walker tabs restored (session persisted via SecureStore).
+8. Device A: kill and relaunch → still signed in, still owner tabs.
+
+### Evidence
+Screenshots → `docs/evidence/cp2-owner-tabs.png`, `cp2-walker-tabs.png`, `cp2-team-list.png`.
+
+| Field | Value |
+| --- | --- |
+| Date | |
+| Device A / B | |
+| Build (EAS id or local) | |
+| Supabase (local via Tailscale / hosted project ref) | |
+| Steps passed | |
+| Result (PASS / FAIL + notes) | |

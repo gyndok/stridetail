@@ -23,7 +23,7 @@
     "android": {
       "package": "app.stridetail",
       "adaptiveIcon": {
-        "backgroundColor": "#F57D33",
+        "backgroundColor": "#E8642C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -47,7 +47,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F57D33",
+          "backgroundColor": "#E8642C",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200
         }

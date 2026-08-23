@@ -26,6 +26,7 @@ Last updated: 2026-08-23
 | 10 | Role-based routing, owner/walker tab shells, settings, business switch | [x] | `5512e50` |
 | 11 | Invitations: owner creates, `invite-accept` edge function, walker mode | [x] | `b4c8310` |
 | 12 | CI (app + pgTAP), `README.md`, `checkpoints.md`, `DEVIATIONS.md` | [x] | `42a12fa` |
+| — | **Checkpoint 2** — sign-up → business → invite → walker accepts, on two devices | [ ] | script in `checkpoints.md`; needs second device + reachable Supabase |
 
 **Plan 1 — Definition of done** (2026-08-23): *Met* — `bun run test`, `typecheck`, `lint`, `db:test` pass locally (CI workflow committed, not yet observed green: nothing pushed); Checkpoint 1 recorded in `checkpoints.md` (~5-min walk, not the full 10 min); pgTAP covers outsider isolation, inactive invitee, walker no-price, service-role accept (17 assertions); no service-role/Twilio key or hardcoded time zone in `app/`/`src/`. *Deferred* — the end-to-end sign-up → business → invite → walker-accepts-on-second-device flow was not exercised manually (simulator/device runs skipped); covered only by unit tests and pgTAP.
 
@@ -80,7 +81,7 @@ Last updated: 2026-08-23
 ## Spec §9 — UI
 
 - [x] Direction B tokens (cream `#FFF4E6`, primary `#E8642C`, ink `#2B1D12`, 24 px radius, pill buttons) *(Task 2)*
-- [x] App icon + splash + favicon (iconikai line-art dog on `#F57D33`, iOS/Android adaptive/monochrome/web) *(2026-08-23)*
+- [x] App icon + splash + favicon (iconikai line-art dog recolored onto token primary `#E8642C`, iOS/Android adaptive/monochrome/web) *(2026-08-23)*
 - [ ] Field mode (dark map/sheet while recording; `walkTheme` setting)
 - [x] Owner tabs Today · Schedule · Clients · Team · Settings; walker tabs Today · Schedule · Clients *(Task 10, placeholder screens)*
 - [ ] Owner Today: needs-attention strip + visits by walker; walker Today: hero card + list
