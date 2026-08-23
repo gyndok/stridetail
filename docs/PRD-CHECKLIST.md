@@ -37,7 +37,7 @@ Last updated: 2026-08-23
   | # | Plan 2 task | Status | Commit |
   |---|-------------|--------|--------|
   | 1 | clients/pets/pet_documents/audit_log migration + pgTAP | [x] | f1a034d |
-  | 2 | client_access encrypted (pgcrypto+Vault), audited owner reveal | [ ] | |
+  | 2 | client_access encrypted (pgcrypto+Vault), audited owner reveal | [x] | c0f5e56 |
   | 3 | `media` bucket, tenant-scoped storage policies | [ ] | |
   | 4 | clients api + owner list | [ ] | |
   | 5 | client form w/ geocoding + detail | [ ] | |
@@ -65,7 +65,7 @@ Last updated: 2026-08-23
 ## Spec §5 — Data model
 
 - [x] `profiles`, `businesses`, `memberships` (+ `services`) *(Task 6)*
-- [ ] `clients`, `client_access` (Vault/pgcrypto — pgsodium deprecated), `pets`, `pet_documents` *(Plan 2)*
+- [x] `clients`, `client_access` (Vault/pgcrypto — pgsodium deprecated), `pets`, `pet_documents` *(Plan 2 Tasks 1–2)*
 - [ ] `services`, `availability_rules`, `time_off`, `visit_series`, `visits` *(Plan 3)*
 - [ ] `visit_events`, `visit_tracks`, `visit_reports`, `notifications`, `audit_log` *(Plan 4)*
 - [x] Local SQLite: `outbox`, `track_points`, `active_visit` *(Task 3/5)*
@@ -74,7 +74,7 @@ Last updated: 2026-08-23
 
 - [x] RLS on every table; no service-role use from the app *(Task 6 — 4 tables; holds for later plans)*
 - [ ] Walker visibility limited to own/offered visits; `services_public` view hides prices
-- [ ] `client_access` no select policy; `reveal_access` / `reveal_access_owner` audited *(Plan 2)*
+- [~] `client_access` no select policy; `reveal_access` / `reveal_access_owner` audited — *no select policy + zero grants, `reveal_access_owner` + `set_client_access` audited (Plan 2 Task 2); walker-side `reveal_access(visit_id)` in Plan 3*
 - [ ] `report-public` returns report-safe fields only *(Plan 4)*
 - [x] Auth tokens in `expo-secure-store`, auto-refresh on foreground *(Task 7)*
 - [ ] Storage bucket `media`, tenant-scoped paths, signed URLs
