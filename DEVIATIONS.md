@@ -265,3 +265,32 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   authenticated + anon, null-safe round trip, upsert path, walker + cross-business
   denials for all three functions, ciphertext-at-rest checks, audit-row accounting,
   vault secret uniqueness).
+
+## Plan 2, Task 3 — media bucket, tenant-scoped storage policies (2026-08-23)
+
+- Privilege check the plan asked for: `postgres` (the role migrations apply as) does NOT
+  own `storage.objects` (`supabase_storage_admin` does) and is not a member of that
+  role, yet `create policy` on `storage.objects` succeeds on this stack (CLI image,
+  Postgres 17.6) — verified with a probe transaction before writing the migration, so
+  no fallback was needed. `authenticated`/`anon`/`service_role` already hold full DML
+  grants on `storage.objects` from the stack's defaults; no grant lines added, RLS
+  decides everything.
+- Invalid-uuid guard is an immutable helper `public.storage_business_id(text)` with a
+  strict uuid regex rather than the plan-sketched `^[0-9a-f-]{36}/` check: the loose
+  class accepts a 36-hyphen first segment, which would still blow up the `::uuid` cast.
+  The helper returns null for bad prefixes; null is falsy in policy clauses, so
+  malformed paths are denied (42501), never a 22P02 — both trap shapes asserted in pgTAP.
+- The stack's storage image adds a statement-level `before delete` trigger
+  (`storage.protect_delete`) that rejects ANY direct SQL delete on `storage.objects`
+  unless the GUC `storage.allow_delete_query` is `'true'` (the Storage API sets it for
+  its own deletes). The pgTAP transaction sets it with `set local`, so the delete
+  policies are exercised under RLS exactly as the API would; walker/cross-business
+  delete denials are asserted as zero matched rows (RLS filtering), not as errors.
+- Data-modifying CTEs cannot be nested in a `select is((with d as (delete ...) ...))`
+  subquery (Postgres allows them at top level only), so delete assertions use
+  `lives_ok` plus a row-count check, done as superuser where the actor cannot see the
+  surviving row.
+- pgTAP grew from the plan's 3 bullets to 21 assertions (bucket private + idempotent
+  single row, helper parse cases, owner insert/update/delete, wrong-tenant and
+  malformed-path insert denials, walker read-allowed/write-denied, cross-business zero
+  rows and no-op delete).
