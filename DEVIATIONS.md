@@ -198,3 +198,20 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   401 without JWT, 400 short token, 200 `{ businessId }` on accept, 400 "invalid or used
   invite" on replay; walker then lists one active `walker` membership and the owner's Team
   query returns both rows with display names. Manual simulator deep-link run not performed.
+
+## Task 12 — CI workflow and README (2026-08-23)
+
+- `ci.yml` triggers on `push` to `main` and all `pull_request`s (plan: every push on every
+  branch) to avoid double runs on PR branches; adds a `concurrency` group.
+- Jest step is `bun run test --ci` rather than the plan's `bun run test -- --ci`; Bun forwards
+  extra args without the `--` separator.
+- `db` job excludes more services than the plan lists: the plan's `inbucket` is now `mailpit`
+  in CLI 2.x (unknown `-x` names fail validation), and `realtime`, `storage-api`, `supavisor`
+  are also skipped because pgTAP only needs postgres, gotrue, kong, postgrest. Adds
+  `supabase stop --no-backup` on `always()`. Verified the same exclude list locally
+  (CLI 2.115, colima): `supabase test db` → 17 assertions PASS.
+- README expanded beyond the plan's stub (prerequisites, EAS profiles, repo layout, doc links)
+  per the task brief. `checkpoints.md` / `DEVIATIONS.md` were already created in Tasks 5–11;
+  not rewritten.
+- CI has not yet been observed green on GitHub: nothing has been pushed (push deferred to the
+  user). Workflow YAML was parsed locally and the exact commands were run locally.
