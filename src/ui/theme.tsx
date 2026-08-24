@@ -28,17 +28,23 @@ export function useTheme(): Theme {
   return t;
 }
 
+export type FieldMode = 'warm' | 'dark';
+
 /**
  * Field-mode theme scope (Plan 4 Task 5, spec §9): wraps ONE screen (the
- * active visit) in the dark sub-palette while everything else keeps the light
- * theme. Only the surface/ink/line tokens flip; primary stays the business
- * accent inherited from the parent ThemeProvider.
+ * active visit). `mode='dark'` flips the surface/ink/line tokens to the dark
+ * sub-palette; primary stays the business accent inherited from the parent
+ * ThemeProvider.
+ *
+ * Round 0 (Alexandra): the default is **warm** — the parent theme passes
+ * through untouched — which overrides spec §9's dark-by-default field mode.
+ * Dark remains available through the `walkTheme` setting.
  */
-export function FieldTheme({ children }: PropsWithChildren) {
+export function FieldTheme({ mode = 'warm', children }: PropsWithChildren<{ mode?: FieldMode }>) {
   const parent = useTheme();
   const value = useMemo<Theme>(
-    () => ({ ...parent, colors: { ...parent.colors, ...tokens.dark } }),
-    [parent],
+    () => (mode === 'dark' ? { ...parent, colors: { ...parent.colors, ...tokens.dark } } : parent),
+    [parent, mode],
   );
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

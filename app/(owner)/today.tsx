@@ -119,7 +119,15 @@ export default function Today() {
                 visit={v}
                 statusLabel={STATUS_LABELS[v.status] ?? v.status}
                 onPress={() => openVisit(v)}
-              />
+              >
+                {/* Round 0: the client and pet profile is one tap from Today,
+                    not only from the visit detail. */}
+                <Button
+                  title="Client & pets"
+                  variant="ghost"
+                  onPress={() => router.push(`/clients/${v.client_id}` as Href)}
+                />
+              </VisitCard>
             ))}
           </View>
         ))

@@ -23,6 +23,7 @@ import {
 } from '@/src/features/visit/active';
 import { appendVisitEvent, appendVisitFinish } from '@/src/features/visit/api';
 import { fetchVisitDetail, type VisitDetail } from '@/src/features/visit/detail';
+import { useWalkTheme } from '@/src/features/settings/walkTheme';
 import { getLocalTrack, getLocalVisitStart, stopVisitTracking } from '@/src/lib/gps/controller';
 import { trackDistanceMeters } from '@/src/lib/gps/geo';
 import { getDb } from '@/src/lib/offline/db';
@@ -103,6 +104,8 @@ function ActiveVisitBody() {
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentEvent[]>([]);
   const [noteOpen, setNoteOpen] = useState(false);
+  // Round 0: Ate/Drank/Meds are demoted behind this toggle, collapsed by default.
+  const [moreOpen, setMoreOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [eventError, setEventError] = useState<string | null>(null);
 
@@ -334,18 +337,36 @@ function ActiveVisitBody() {
 
           {eventError ? <Text style={{ color: t.colors.danger }}>{eventError}</Text> : null}
 
-          {/* Event buttons: primary row + secondary row */}
+          {/* Event buttons. Round 0: Pee · Poop · Photo · Note are "the 4 main
+              things I would like to mark"; Ate/Drank/Meds sit behind More
+              ("any additional pet needs can be added to the notes"). */}
           <View style={{ flexDirection: 'row', gap: t.space.sm }}>
             <EventButton title="Pee" onPress={() => void appendEvent('pee')} />
             <EventButton title="Poop" onPress={() => void appendEvent('poop')} />
             <EventButton title="Photo" onPress={() => void onPhoto()} />
             <EventButton title="Note" onPress={() => setNoteOpen((v) => !v)} />
           </View>
-          <View style={{ flexDirection: 'row', gap: t.space.sm }}>
-            <EventButton title="Ate" onPress={() => void appendEvent('ate')} />
-            <EventButton title="Drank" onPress={() => void appendEvent('drank')} />
-            <EventButton title="Meds" onPress={() => void appendEvent('meds')} />
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: moreOpen }}
+            onPress={() => setMoreOpen((v) => !v)}
+            style={({ pressed }) => ({
+              alignSelf: 'flex-start',
+              paddingVertical: t.space.xs,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Text style={[t.type.label, { color: t.colors.inkMuted }]}>
+              {moreOpen ? 'Less ▲' : 'More ▼'}
+            </Text>
+          </Pressable>
+          {moreOpen ? (
+            <View style={{ flexDirection: 'row', gap: t.space.sm }}>
+              <EventButton title="Ate" onPress={() => void appendEvent('ate')} />
+              <EventButton title="Drank" onPress={() => void appendEvent('drank')} />
+              <EventButton title="Meds" onPress={() => void appendEvent('meds')} />
+            </View>
+          ) : null}
 
           {noteOpen ? (
             <Card style={{ gap: t.space.sm }}>
@@ -436,12 +457,15 @@ function ActiveVisitBody() {
 }
 
 /**
- * Active-visit field screen (Plan 4 Task 5, spec §9): dark field-mode surfaces
- * scoped to this screen only via <FieldTheme>; the business accent stays.
+ * Active-visit field screen (Plan 4 Task 5, spec §9), scoped by <FieldTheme>.
+ * Round 0: the default is the WARM theme (Alexandra's answer overrides spec
+ * §9's dark-by-default); a walker who wants the dark field palette picks it in
+ * Settings → Walk screen, which this reads from the persisted `walkTheme`.
  */
 export default function ActiveVisit() {
+  const { walkTheme } = useWalkTheme();
   return (
-    <FieldTheme>
+    <FieldTheme mode={walkTheme}>
       <ActiveVisitBody />
     </FieldTheme>
   );

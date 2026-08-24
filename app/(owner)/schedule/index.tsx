@@ -33,6 +33,16 @@ const FILTERS = [
 
 type FilterKey = (typeof FILTERS)[number]['key'];
 
+// Suffix on the walker line. accepted/completed are the "covered" states and
+// get the green accent (Round 0); everything else stays muted.
+const STATUS_SUFFIX: Record<string, string> = {
+  offered: ' · offered',
+  accepted: ' · accepted',
+  in_progress: ' · walking',
+  completed: ' · completed',
+};
+const POSITIVE_STATUSES = new Set(['accepted', 'completed']);
+
 function applyFilter(visits: Visit[], filter: FilterKey): Visit[] {
   if (filter === 'unassigned') return visits.filter((v) => v.status === 'unassigned');
   if (filter === 'attention') return visits.filter(needsAttention);
@@ -102,9 +112,15 @@ export default function ScheduleIndex() {
                 >
                   <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>{visitTimeRange(v)}</Text>
                   {v.walker_id ? (
-                    <Text style={{ color: t.colors.inkMuted, fontSize: 12, fontWeight: '700' }}>
+                    <Text
+                      style={{
+                        color: POSITIVE_STATUSES.has(v.status) ? t.colors.green : t.colors.inkMuted,
+                        fontSize: 12,
+                        fontWeight: '700',
+                      }}
+                    >
                       {memberName(members.data ?? [], v.walker_id)}
-                      {v.status === 'offered' ? ' · offered' : ''}
+                      {STATUS_SUFFIX[v.status] ?? ''}
                     </Text>
                   ) : (
                     <View

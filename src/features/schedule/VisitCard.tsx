@@ -16,13 +16,18 @@ type Props = PropsWithChildren<{
   onPress?: () => void;
 }>;
 
+/** Statuses that earn the green accent (Round 0): the visit is covered or done. */
+const POSITIVE_STATUSES = new Set(['accepted', 'completed']);
+
 /**
  * Shared visit card: local time range in the visit's business tz, client name,
- * service name/duration. Deliberately plain composition (Round 0 pending).
+ * service name/duration. Deliberately plain composition; the only color is the
+ * green badge on an accepted/completed status (Round 0).
  * Children render below the facts — action rows, decline forms, etc.
  */
 export function VisitCard({ visit, walkerLine, statusLabel, showDay, onPress, children }: Props) {
   const t = useTheme();
+  const positive = statusLabel != null && POSITIVE_STATUSES.has(visit.status);
   const body = (
     <Card style={{ gap: t.space.xs }}>
       {showDay ? (
@@ -39,8 +44,21 @@ export function VisitCard({ visit, walkerLine, statusLabel, showDay, onPress, ch
       <Text style={{ color: t.colors.inkMuted }}>
         {visit.service?.name ?? 'Service'}
         {visit.service ? ` · ${visit.service.duration_min} min` : ''}
-        {statusLabel ? ` · ${statusLabel}` : ''}
+        {statusLabel && !positive ? ` · ${statusLabel}` : ''}
       </Text>
+      {positive ? (
+        <View
+          style={{
+            alignSelf: 'flex-start',
+            backgroundColor: t.colors.greenSoft,
+            borderRadius: t.radius.pill,
+            paddingHorizontal: t.space.sm,
+            paddingVertical: t.space.xs / 2,
+          }}
+        >
+          <Text style={{ color: t.colors.green, fontSize: 12, fontWeight: '700' }}>{statusLabel}</Text>
+        </View>
+      ) : null}
       {walkerLine ? <Text style={{ color: t.colors.inkMuted }}>{walkerLine}</Text> : null}
       {children}
     </Card>

@@ -1175,3 +1175,55 @@ scoped to the session user by design.
   `?token=` → 200; unknown, malformed, and missing tokens → 404 with byte-identical bodies;
   `revoked_at` set by SQL → same 404; the rate limiter returned 429 on exactly request 31.
   Fixtures removed by `db:reset` afterwards (visit_reports and storage.objects both back to 0).
+
+## Round 0 feedback (Alexandra, 2026-08-24) — greens, warm walk default, Today links, quick buttons
+
+- **SPEC DEVIATION — the active-walk screen defaults to WARM, not dark.** Spec §9 specifies a
+  dark-by-default field mode; the first tenant's Round 0 answer overrides it: *"Active-walk
+  screen: WARM by default."* `FieldTheme` now takes `mode?: 'warm' | 'dark'` defaulting to
+  `'warm'`, where warm passes the parent theme through **unchanged** (no token override at all,
+  so a business accent and every other token survive) and `'dark'` applies `tokens.dark` exactly
+  as before. Dark is not deleted — it moves behind a persisted `walkTheme` preference. Spec §9
+  should be amended at the next spec revision; the code is the tenant's answer, not the spec's.
+- **`walkTheme` store** (`src/features/settings/walkTheme.ts`) mirrors
+  `src/features/business/active.ts` exactly: zustand + `expo-sqlite/kv-store`, an injectable `KV`
+  (its `KV` type is imported rather than redeclared), `hydrateWalkTheme()` called next to
+  `hydrateActiveBusiness()` in `app/_layout.tsx`. Any unrecognized persisted value (absent key,
+  stale write, a future third mode read by an older build) parses back to `'warm'` — the
+  conservative call is the tenant's default, never a crash or a dark screen. Unit-tested
+  round-trip both directions plus the fallback.
+- **Settings row is on the SHARED `SettingsScreen`, not walker-only.** Both roles get "Walk
+  screen · Warm/Dark"; walkers are the ones who use it, but an owner walks their own visits and
+  would otherwise have no way to reach the setting. Rendered above the `extra` slot so the
+  owner's role-specific rows keep their position next to sign-out.
+- **Greens: one green, accent only, zero surfaces repainted.** `green: '#3A7D5C'` and
+  `greenSoft: '#E4F0E8'` added to `src/ui/tokens.ts`. The pre-existing `success: '#2F855A'` is
+  now a **deliberate alias of `green`** (kept, not deleted): it was a second, near-identical
+  green, and the palette should carry exactly one — `success` survives as the semantic name for
+  the sync badge's "it worked" state, whose only consumer (`active.tsx`) needed no edit. Green is
+  used in exactly four places, all of them a genuine positive/nature note: the accepted/completed
+  badge on `VisitCard` (greenSoft fill, green text), the accepted/completed walker line on the
+  owner schedule list, the walker picker's "Available" flag (was `success`), and the new
+  offer-accepted confirmation. The warm cream/orange base, `primary`, and every surface token are
+  untouched.
+- **Owner schedule list gained `· accepted` / `· walking` / `· completed` suffixes** next to the
+  walker name (it previously showed only `· offered`). Without them the green had nothing to
+  attach to, and "assigned" vs "accepted" was invisible on that list.
+- **Offer cards get an explicit "View details" button rather than a card-wide press.** Round 0
+  asks for every Today card to reach the visit; an offer card already contains Accept/Decline
+  (and the inline decline form), and nesting those inside a card-level `Pressable` makes the tap
+  target ambiguous to read even where the RN responder resolves it correctly. The explicit button
+  is the non-interfering affordance. Non-offer walker cards keep their existing card-wide press.
+- **Accept now shows a green confirmation** naming the client, because the accepted offer
+  immediately disappears from the list on invalidate and nothing else confirmed the action. The
+  mutation takes the whole `Visit` (not just the id) so the banner can name the client; it clears
+  itself after 5 s rather than adding a dismiss control.
+- **Owner Today's "Client & pets" link** navigates to `/clients/<client_id>` using `visit.client_id`
+  (already on the `Visit` type — no query change). Walker Today does **not** get the same link:
+  the walker client route is a flat list, not a `/clients/[id]` detail, and inventing one is a
+  Round 1 question, not a Round 0 fix.
+- **Quick buttons:** Pee · Poop · Photo · Note stay as the one primary row; Ate/Drank/Meds move
+  behind a "More ▼" text toggle, collapsed on every mount (not persisted — the tenant's position
+  is that these are exceptions, so the default should always be the collapsed one). No event type
+  was removed: the buttons still write the same `ate`/`drank`/`meds` events, so nothing that
+  already exists in a report or the outbox changes meaning.

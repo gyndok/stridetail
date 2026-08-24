@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { initSession } from '@/src/features/auth/session';
 import { hydrateActiveBusiness, useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
+import { hydrateWalkTheme } from '@/src/features/settings/walkTheme';
 import { setSegmentRollListener } from '@/src/lib/gps/controller';
 import { persistOptions } from '@/src/lib/offline/queryPersister';
 import { hasActiveVisit, kickSync } from '@/src/lib/offline/sync';
@@ -28,6 +29,7 @@ function Providers({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   useEffect(() => {
     void hydrateActiveBusiness();
+    void hydrateWalkTheme();
     return initSession();
   }, []);
   // TanStack Query cannot see app focus in React Native on its own; wire it to

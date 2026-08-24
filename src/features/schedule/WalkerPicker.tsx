@@ -65,7 +65,8 @@ export function WalkerPicker({ members, ctx, window, tz, selectedId, onSelect, e
               {flags ? (
                 <Text
                   style={{
-                    color: good ? t.colors.success : t.colors.warning,
+                    // Round 0 green: "Available" is the positive note here.
+                    color: good ? t.colors.green : t.colors.warning,
                     fontSize: 12,
                     fontWeight: '700',
                   }}
