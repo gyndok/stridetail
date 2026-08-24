@@ -5,7 +5,7 @@ Living status of Slice 1 "Operate" against the spec
 same commit that completes a task. Legend: `[x]` done · `[ ]` not started · `[~]` in progress ·
 `[!]` blocked.
 
-Last updated: 2026-08-23
+Last updated: 2026-08-24
 
 ---
 
@@ -62,7 +62,7 @@ Last updated: 2026-08-23
 
   | # | Plan 4 task | Status | Commit |
   |---|-------------|--------|--------|
-  | 1 | events/tracks/reports/notifications schema + start/finish RPCs | [ ] | |
+  | 1 | events/tracks/reports/notifications schema + start/finish RPCs | [x] | `b1bd3b5` |
   | 2 | ingest-track function + walker media policy | [ ] | |
   | 3 | offline day cache + outbox sync worker | [ ] | |
   | 4 | walker visit detail + gated start | [ ] | |
@@ -93,7 +93,7 @@ Last updated: 2026-08-23
 - [x] `profiles`, `businesses`, `memberships` (+ `services`) *(Task 6)*
 - [x] `clients`, `client_access` (Vault/pgcrypto — pgsodium deprecated), `pets`, `pet_documents` *(Plan 2 Tasks 1–2)*
 - [x] `services` (Plan 1), `availability_rules`, `time_off`, `visit_series`, `visits` *(Plan 3)*
-- [ ] `visit_events`, `visit_tracks`, `visit_reports`, `notifications`, `audit_log` *(Plan 4)*
+- [x] `visit_events`, `visit_tracks`, `visit_reports`, `notifications` (+ `audit_log` since Plan 2) *(Plan 4 Task 1)*
 - [x] Local SQLite: `outbox`, `track_points`, `active_visit` *(Task 3/5)*
 
 ## Spec §6 — Security
