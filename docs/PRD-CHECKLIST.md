@@ -50,7 +50,7 @@ Last updated: 2026-08-23
   |---|-------------|--------|--------|
   | 1 | scheduling schema + status machine + assignment RPCs | [x] | 4239897 |
   | 2 | walker visibility via visits + `reveal_access(visit_id)` | [x] | 234aa59 |
-  | 3 | recurrence + conflict lib (DST-proof) | [ ] | |
+  | 3 | recurrence + conflict lib (DST-proof) | [x] | 7d2c21e |
   | 4 | expand-series edge function + nightly cron | [ ] | |
   | 5 | services management UI | [ ] | |
   | 6 | walker availability + time off UI | [ ] | |
