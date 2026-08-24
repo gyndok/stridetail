@@ -68,7 +68,7 @@ Last updated: 2026-08-24
   | 4 | walker visit detail + gated start | [x] | `fc09520` |
   | 5 | active visit: field mode, events, photos, reveal, finish | [x] | `7d7a403` |
   | 6 | send-sms + notification queue + owner surfacing | [x] | `1ca1e04` |
-  | 7 | report-public + web report page + resend/revoke | [ ] | |
+  | 7 | report-public + web report page + resend/revoke | [x] | `1e83f2a` |
   | 8 | Expo Web rail + week grid | [ ] | |
   | 9 | hosted deploy, advisors, builds | [ ] | |
   | 10 | **Checkpoint 4** — full field run | [ ] | |
@@ -101,7 +101,7 @@ Last updated: 2026-08-24
 - [x] RLS on every table; no service-role use from the app *(Task 6 — 4 tables; holds for later plans)*
 - [x] Walker visibility limited to own/offered visits; prices hidden via column grants + `services_public`; clients/pets visible only via visits *(Plan 3)*
 - [~] `client_access` no select policy; `reveal_access` / `reveal_access_owner` audited — *no select policy + zero grants, `reveal_access_owner` + `set_client_access` audited (Plan 2 Task 2); walker-side `reveal_access(visit_id)` in Plan 3*
-- [ ] `report-public` returns report-safe fields only *(Plan 4)*
+- [x] `report-public` returns report-safe fields only — *explicit allow-list payload (business/brand/logo, pet names, service, times, duration, distance, route, timeline); unknown/revoked/malformed tokens all 404; leak-check E2E asserts no address, phone, email, price, walker name, or private notes (Plan 4 Task 7)*
 - [x] Auth tokens in `expo-secure-store`, auto-refresh on foreground *(Task 7)*
 - [x] Storage bucket `media`, tenant-scoped paths, signed URLs — *bucket + member-read/owner-write policies with safe path parse (Plan 2 Task 3); signed URLs for pet photos + documents in app code (Plan 2 Tasks 6–7)*
 - [~] Audit log for status/assignment/reveal/resend/revoke — *reveal/set audited server-side (Plan 2 Task 2) and surfaced in the access UI (Task 7); status/assignment/resend/revoke in Plans 3–4*
