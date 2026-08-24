@@ -55,7 +55,7 @@ Last updated: 2026-08-23
   | 5 | services management UI | [x] | a48dc65 |
   | 6 | walker availability + time off UI | [x] | eb68cfb |
   | 7 | owner scheduling + walker picker | [x] | 5732474 |
-  | 8 | walker accept/decline + owner needs-attention | [ ] | |
+  | 8 | walker accept/decline + owner needs-attention | [x] | 7ce1221 |
   | 9 | hosted deploy, advisors, build | [ ] | |
   | 10 | **Checkpoint 3** — two-device scheduling + reveal denied before start | [ ] | |
 - [ ] Plan 4 — visit execution UI, reports, `report-public`, SMS retries, Expo Web layout (stages 6–8)
