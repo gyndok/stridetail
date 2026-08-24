@@ -393,6 +393,12 @@ deno_version = 2
 enabled = true
 verify_jwt = true
 
+# Walker-JWT only; the function itself verifies caller = the visit's walker and
+# the visit is in_progress before any service-role write.
+[functions.ingest-track]
+enabled = true
+verify_jwt = true
+
 [analytics]
 enabled = false
 port = 54327

@@ -830,3 +830,44 @@ scoped to the session user by design.
   business column.
 - `queue_client_sms` extracted as a definer helper (three call sites); execute revoked
   from public/anon/authenticated — only the RPCs reach it.
+
+## Plan 4, Task 2 — ingest-track function, walker media upload policy (2026-08-24)
+
+- **Walker READ of visit photos needs no new storage policy (verified):** the Plan-2
+  "member reads media objects" policy grants select via `current_business_ids()`, which
+  covers any ACTIVE member — walkers included. Asserted in 008; a side effect (Plan-2
+  behavior, unchanged) is that member read is business-wide, so a teammate walker can
+  also read the object — asserted and documented rather than tightened, since pet
+  photos already share this scope.
+- `storage_second_uuid(text)` requires BOTH the first and second path segments to be
+  strict uuids followed by `/` (the storage_business_id rationale doubled): a
+  `biz/pets/...` path returns null → policy denial (42501), never a 22P02 cast. The
+  walker insert policy additionally pins `visits.business_id =
+  storage_business_id(name)`, so a real visit id under a foreign tenant prefix is
+  denied even for the visit's own walker.
+- 008 walker-update denial is asserted as lives_ok + zero matched rows (RLS `using`
+  filters updates like the 004 delete pattern), not 42501 — the stack's default DML
+  grants mean the statement itself succeeds.
+- **ingest-track status codes:** 403 deliberately collapses "visit not visible under
+  the caller's RLS" and "visible but not your visit" (no existence oracle for foreign
+  visit ids; the owner, who CAN see the visit, also gets 403 — asserted in E2E). A
+  visible own visit that is not running is 409 with the status in the message.
+  Sanity caps: >100 segments or >5000 total points → 400.
+- Response is `{distanceM, inserted}` (the plan sketch said `{distanceM}`); `inserted`
+  is the count of rows the upsert actually created, which the E2E and the Task-3
+  worker use to observe idempotency.
+- A duplicate `client_uuid` WITHIN one batch is fine: ignoreDuplicates compiles to
+  `ON CONFLICT DO NOTHING`, which (unlike DO UPDATE) tolerates in-payload duplicates —
+  covered in E2E (3 segments sent, one an in-batch dup → inserted 2).
+- CORS comes from `../_shared/cors.ts` exactly like expand-series/invite-accept; no
+  per-function copy exists locally (`_shared` stays the single source of truth; the
+  hosted deploy in Task 9 handles layout as before).
+- `uploadVisitPhoto` returns the storage path (`business_id/visit_id/<client_uuid>.jpg`)
+  for the caller to stamp on the `photo` event row; the pet-photo ArrayBuffer upload
+  pattern is reused. `pushTrackSegments` is a thin functions.invoke wrapper.
+- E2E against `supabase functions serve` (fetch script, Task-1 fixture geometry):
+  first post of seg 111.19493 m + seg 222.38985 m + in-batch dup → 200
+  `{distanceM: 333.5852, inserted: 2}`; re-post → `{inserted: 0}`, distance unchanged;
+  wrong-walker JWT 403, owner JWT 403, accepted visit 409, no JWT 401, missing
+  segments 400, 101 segments 400, 5001 points 400; visit_tracks holds exactly 2 rows
+  and `visits.distance_m` persisted. 15/15 checks passed.
