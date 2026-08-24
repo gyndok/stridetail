@@ -152,12 +152,15 @@ Last updated: 2026-08-24
 
 ## Round 0 feedback items (Alexandra, 2026-08-24)
 
-- [ ] Direction B **plus greens** — add a green accent to `src/ui/tokens.ts` and use it where a
-  positive/nature note helps (accepted states, completed visits); do not repaint the warm base
-- [ ] **Active-walk screen defaults to WARM** (overrides spec §9 dark-by-default); dark remains
-  the `walkTheme` setting
-- [ ] **Today → client and pet profile in one tap** (walker and owner); today only visits link out
-- [ ] Quick buttons stay **Pee · Poop · Photo · Note**; Ate/Drank/Meds demoted (notes carry them)
+- [x] Direction B **plus greens** — `green`/`greenSoft` in `src/ui/tokens.ts` (`success` aliased to
+  the one green); accepted/completed badge, owner schedule walker line, picker "Available", and
+  the offer-accepted confirmation. Warm base untouched — d202e9c
+- [x] **Active-walk screen defaults to WARM** (overrides spec §9 dark-by-default); dark remains
+  the persisted `walkTheme` setting (Settings → Walk screen) — d202e9c
+- [x] **Today → client and pet profile in one tap** — walker offers get "View details"
+  (`/visit/[id]`), owner cards get "Client & pets" (`/clients/[id]`) — d202e9c
+- [x] Quick buttons stay **Pee · Poop · Photo · Note**; Ate/Drank/Meds behind a collapsed "More"
+  toggle (notes carry them) — d202e9c
 
 ## Device-test findings (Checkpoint 2, 2026-08-23)
 
