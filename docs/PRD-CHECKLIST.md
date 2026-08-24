@@ -48,7 +48,7 @@ Last updated: 2026-08-23
 
   | # | Plan 3 task | Status | Commit |
   |---|-------------|--------|--------|
-  | 1 | scheduling schema + status machine + assignment RPCs | [ ] | |
+  | 1 | scheduling schema + status machine + assignment RPCs | [x] | 4239897 |
   | 2 | walker visibility via visits + `reveal_access(visit_id)` | [ ] | |
   | 3 | recurrence + conflict lib (DST-proof) | [ ] | |
   | 4 | expand-series edge function + nightly cron | [ ] | |
