@@ -750,3 +750,15 @@ in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
   screens, and `VisitCard` share one business-tz renderer — extended, not
   duplicated, per the plan.
 - Composition on both screens is deliberately plain (Round 0 pending).
+
+## Plan 3, Task 9 — hosted deploy (2026-08-23)
+
+- Migrations 5–8 applied hosted via Supabase MCP; expand-series deployed (verify_jwt on);
+  Vault expand_project_url/expand_anon_key updated to real hosted values.
+- `supabase secrets set EXPAND_CRON_SECRET=…` hangs from a non-interactive shell on the mini
+  (CLI keychain read); the sponsor runs it in their own terminal. Until then the cron path
+  returns 500 "misconfigured" by design and the nightly job no-ops harmlessly; the app path
+  (owner-JWT seriesId expansion) works regardless — it does not use the secret.
+- Advisors post-Plan 3: no anon-executable definer functions (all revoked from public at
+  creation); authenticated-executable RPC WARNs are intentional (guarded RPCs are the API);
+  pg_net moved public → extensions (migration 0008).

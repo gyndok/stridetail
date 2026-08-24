@@ -56,7 +56,7 @@ Last updated: 2026-08-23
   | 6 | walker availability + time off UI | [x] | eb68cfb |
   | 7 | owner scheduling + walker picker | [x] | 5732474 |
   | 8 | walker accept/decline + owner needs-attention | [x] | 7ce1221 |
-  | 9 | hosted deploy, advisors, build | [ ] | |
+  | 9 | hosted deploy, advisors, build | [~] | migrations 5–8 + expand-series deployed hosted; EXPAND_CRON_SECRET awaiting sponsor's `supabase secrets set`; advisors clean (pg_net moved to extensions; RPC WARNs intentional) |
   | 10 | **Checkpoint 3** — two-device scheduling + reveal denied before start | [ ] | |
 - [ ] Plan 4 — visit execution UI, reports, `report-public`, SMS retries, Expo Web layout (stages 6–8)
 
@@ -67,8 +67,8 @@ Last updated: 2026-08-23
 1. [~] Self-serve business creation (name, logo, brand color, IANA tz, policies) — creator = `owner` — *name + device-detected IANA tz via onboarding screen, `create_business` RPC seeds owner membership + 8 services (Task 9); logo, brand color picker, and policies UI still pending (settings, Task 10 / later plan)*
 2. [~] Memberships `owner`/`walker`, SMS/email invite link, `is_platform_admin` flag — *schema + RPCs (Task 6); owner creates invite + shares `stridetail://invite/<token>` via share sheet, `invite-accept` edge function + accept screen, walker routed to walker tabs (Task 11, verified against local stack); SMS delivery of the link in Plan 4 (`send-sms`); `is_platform_admin` is a column only, no UI*
 3. [~] Clients + pets: instructions, vet info, vaccine docs w/ expiry, secured access info — *owner side complete: clients w/ geocoding, pet profiles + photos, vaccine docs w/ expiry badges, audited access-codes screen (Plan 2 Tasks 4–7); walker read paths + visit-gated reveal in Plan 3*
-4. [ ] Per-business service catalog seeded with Paw & Whisker's list *(Plan 3)*
-5. [ ] Scheduling: one-off + recurring series, assignment, accept/decline, availability, time off, conflict view *(Plan 3)*
+4. [x] Per-business service catalog seeded (Plan 1) + owner management UI *(Plan 3 Task 5)*
+5. [~] Scheduling: one-off + weekly series (8-week expansion), assignment offer/accept/decline, availability, time off, conflict-aware picker, needs-attention *(Plan 3; device verification = Checkpoint 3)*
 6. [~] Visit execution: Today, start/finish, background GPS, per-pet timestamped events, multi-pet, private notes — *GPS + outbox foundation done (Tasks 3–5); UI in Plan 4*
 7. [ ] Reports: tokenised public page, SMS on start/finish, retry, owner resend/revoke *(Plan 4)*
 8. [~] Offline: day cache + ordered outbox sync — *outbox + GPS buffer done; cache + sync worker in Plan 4*
@@ -79,14 +79,14 @@ Last updated: 2026-08-23
 
 - [x] `profiles`, `businesses`, `memberships` (+ `services`) *(Task 6)*
 - [x] `clients`, `client_access` (Vault/pgcrypto — pgsodium deprecated), `pets`, `pet_documents` *(Plan 2 Tasks 1–2)*
-- [ ] `services`, `availability_rules`, `time_off`, `visit_series`, `visits` *(Plan 3)*
+- [x] `services` (Plan 1), `availability_rules`, `time_off`, `visit_series`, `visits` *(Plan 3)*
 - [ ] `visit_events`, `visit_tracks`, `visit_reports`, `notifications`, `audit_log` *(Plan 4)*
 - [x] Local SQLite: `outbox`, `track_points`, `active_visit` *(Task 3/5)*
 
 ## Spec §6 — Security
 
 - [x] RLS on every table; no service-role use from the app *(Task 6 — 4 tables; holds for later plans)*
-- [ ] Walker visibility limited to own/offered visits; `services_public` view hides prices
+- [x] Walker visibility limited to own/offered visits; prices hidden via column grants + `services_public`; clients/pets visible only via visits *(Plan 3)*
 - [~] `client_access` no select policy; `reveal_access` / `reveal_access_owner` audited — *no select policy + zero grants, `reveal_access_owner` + `set_client_access` audited (Plan 2 Task 2); walker-side `reveal_access(visit_id)` in Plan 3*
 - [ ] `report-public` returns report-safe fields only *(Plan 4)*
 - [x] Auth tokens in `expo-secure-store`, auto-refresh on foreground *(Task 7)*
@@ -114,7 +114,7 @@ Last updated: 2026-08-23
 ## Spec §10 — Testing
 
 - [x] Unit: outbox ordering/idempotency, distance with duplicates *(Tasks 3–4)*
-- [ ] Unit: RRULE expansion across DST in business tz; status-machine transitions
+- [x] Unit: RRULE expansion across DST in business tz (both 2026 boundaries, pinned instants); status-machine matrix (144 cases) *(Plan 3 Task 3)*
 - [~] pgTAP: cross-walker isolation, no pricing, `reveal_access` gating, revoked token 404, cross-business zero rows — *no pricing + cross-business zero rows done (Task 6, 14 assertions); rest in Plans 2/4*
 - [ ] Maestro E2E: sign up → business → client → schedule → start → finish → report
 - [x] CI running lint, tsc, jest, pgTAP *(Task 12)*
