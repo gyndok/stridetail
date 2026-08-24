@@ -780,3 +780,12 @@ in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
   in `new.tsx` kept intact.
 - Pet birthdate, walker document expiry, and time-off date fields are still plain text —
   candidates to adopt `DateField` later.
+
+## Post-Plan 3 — owner-group role guard (2026-08-23)
+
+Simulator testing of the new date/time pickers reached `(owner)/schedule/new` via the
+`stridetail://schedule/new` deep link while signed in as the walker. RLS held (services
+empty, price invisible, inserts would be rejected), but the owner shell rendered.
+`(owner)/_layout.tsx` now redirects non-owners of the active business to `/` once the
+membership roster loads. Walker tabs need no mirror guard: every screen there is
+scoped to the session user by design.
