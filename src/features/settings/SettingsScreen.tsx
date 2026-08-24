@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { ReactNode } from 'react';
 import { Text } from 'react-native';
 
 import { signOut } from '@/src/features/auth/session';
@@ -9,7 +10,12 @@ import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
 import { useTheme } from '@/src/ui/theme';
 
-export function SettingsScreen() {
+/**
+ * Shared by the owner and walker settings tabs. `extra` renders role-specific
+ * rows (e.g. the owner's Services link) above the sign-out button; the walker
+ * route passes nothing.
+ */
+export function SettingsScreen({ extra }: { extra?: ReactNode }) {
   const t = useTheme();
   const qc = useQueryClient();
   const { businessId, setBusinessId } = useActiveBusiness();
@@ -31,6 +37,7 @@ export function SettingsScreen() {
             />
           ))
         : null}
+      {extra}
       <Button
         title="Sign out"
         variant="ghost"

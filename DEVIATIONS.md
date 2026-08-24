@@ -609,3 +609,34 @@ in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
   expands nothing. 22/22 checks passed.
 - `createSeries` throws if the post-insert invoke fails — the series row then exists with
   no visits until the nightly cron catches it; callers may retry the invoke idempotently.
+
+## Plan 3, Task 5 — services management UI (2026-08-23)
+
+- Confirmed against `20260823000001_core.sql` before writing queries: the owner select
+  policy on `services` exposes full rows **including prices**, so `listServices` uses
+  `select('*')` — the price-hiding column grant (Plan 3 Task 1) exists only on
+  `visits.price_cents_snapshot`; walkers' price-free path is the `services_public` view,
+  which this owner-only screen does not touch.
+- Money/validation helpers live in `src/features/services/form.ts` (matching the
+  `clients/form.ts` split), with queries in `api.ts`. `dollarsStringToCents` accepts
+  `"12"`, `"12.5"`, `"12.50"` plus surrounding whitespace and an optional leading `$`;
+  it rejects negatives, `>2` decimals, and bare-dot forms (`"12."`, `".50"`).
+  `centsToDollarsString` always renders two decimals so editor prefill round-trips.
+- `SettingsScreen` (shared by both roles) gained an optional `extra?: ReactNode` prop
+  rendered above the sign-out button. Only `app/(owner)/settings/index.tsx` passes it
+  (the Services link Card), so walkers never see the catalog entry point; the walker
+  route re-export needed no change and still typechecks.
+- Added `app/(owner)/settings/_layout.tsx` (Stack, `headerShown: false`) beyond the
+  plan's file list — same reason as Plan 2 Task 4's clients `_layout.tsx`: without it
+  expo-router wraps the new directory in a default stack with a native header.
+- The plan's "requires GPS / active toggles": `src/ui` has no Switch component, so both
+  are `Button`s flipping variant (`primary` = on) — tokens-only styling, no new
+  component. Kind selection is the same button-row pattern.
+- New-service editor prefills duration `30` and prices `0.00` (the DB defaults) rather
+  than empty strings, so a bare "create" attempt fails only on the truly missing
+  name/kind.
+- The `/settings/services` push keeps the `as Href` cast (`.expo/types` regenerate only
+  when the dev server runs — Plan 2 Task 4/5/6 precedent).
+- Screens stay untested markup over tested helpers (`form.test.ts` 12 tests,
+  `api.test.ts` 4 query-shape tests with the chain-recorder mock), matching the
+  established approach.
