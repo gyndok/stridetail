@@ -66,7 +66,7 @@ Last updated: 2026-08-24
   | 2 | ingest-track function + walker media policy | [x] | `6cad8c7` |
   | 3 | offline day cache + outbox sync worker | [x] | `42ec5a3` |
   | 4 | walker visit detail + gated start | [x] | `fc09520` |
-  | 5 | active visit: field mode, events, photos, reveal, finish | [ ] | |
+  | 5 | active visit: field mode, events, photos, reveal, finish | [x] | `7d7a403` |
   | 6 | send-sms + notification queue + owner surfacing | [ ] | |
   | 7 | report-public + web report page + resend/revoke | [ ] | |
   | 8 | Expo Web rail + week grid | [ ] | |
@@ -82,9 +82,9 @@ Last updated: 2026-08-24
 3. [~] Clients + pets: instructions, vet info, vaccine docs w/ expiry, secured access info — *owner side complete: clients w/ geocoding, pet profiles + photos, vaccine docs w/ expiry badges, audited access-codes screen (Plan 2 Tasks 4–7); walker read paths + visit-gated reveal in Plan 3*
 4. [x] Per-business service catalog seeded (Plan 1) + owner management UI *(Plan 3 Task 5)*
 5. [~] Scheduling: one-off + weekly series (8-week expansion), assignment offer/accept/decline, availability, time off, conflict-aware picker, needs-attention *(Plan 3; device verification = Checkpoint 3)*
-6. [~] Visit execution: Today, start/finish, background GPS, per-pet timestamped events, multi-pet, private notes — *GPS + outbox foundation done (Tasks 3–5); UI in Plan 4*
+6. [~] Visit execution: Today, start/finish, background GPS, per-pet timestamped events, multi-pet, private notes — *full walker UI built: detail + gated start (Plan 4 Task 4), field-mode active screen with per-pet events/photos/notes, gated reveal w/ grace fallback, finish w/ private notes, resume banner (Plan 4 Task 5); device verification = Checkpoint 4*
 7. [ ] Reports: tokenised public page, SMS on start/finish, retry, owner resend/revoke *(Plan 4)*
-8. [~] Offline: day cache + ordered outbox sync — *sync worker + persisted query cache + grace-window reveal helpers done (Plan 4 Task 3); field screens consuming them in Tasks 4–5*
+8. [~] Offline: day cache + ordered outbox sync — *sync worker + persisted query cache + grace-window reveal helpers done (Plan 4 Task 3); field screens consume them (Tasks 4–5: outbox-first events/finish, per-visit sync badge, offline reveal fallback); airplane-mode device pass = Checkpoint 4*
 9. [ ] Expo Web owner layout ≥ 900 px: rail nav, week grid *(Plan 4)*
 10. [~] White-label: name/logo/accent everywhere — *theme provider accent override done (Task 2); surfaces pending*
 
