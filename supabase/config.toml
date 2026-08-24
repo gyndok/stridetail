@@ -385,6 +385,14 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# verify_jwt = true (the default) is kept explicit: every request must carry a
+# valid JWT. The nightly pg_cron/pg_net job authenticates with the anon key as
+# Bearer plus the x-cron-secret header the function checks itself
+# (see supabase/migrations/20260824000007_expand_series_cron.sql).
+[functions.expand-series]
+enabled = true
+verify_jwt = true
+
 [analytics]
 enabled = false
 port = 54327

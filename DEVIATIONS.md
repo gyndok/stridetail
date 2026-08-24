@@ -551,3 +551,61 @@ in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
   6×6×4 matrix (144 cases) is looped in `machine.test.ts` against an independently
   written restatement of the trigger, and the allow-list lives in one literal table in
   `machine.ts` so a future change is one edit.
+
+## Plan 3, Task 4 — expand-series edge function + nightly cron (2026-08-23)
+
+- **`visits_series_start` swapped from a partial to a full unique index** (migration
+  `20260824000007`, not an edit of the committed Task 1 migration). The function dedupes
+  with a PostgREST upsert (`on_conflict=series_id,scheduled_start` + ignore-duplicates),
+  which compiles to `ON CONFLICT (series_id, scheduled_start) DO NOTHING` — and Postgres
+  cannot infer a PARTIAL unique index from a bare column-list conflict target (the index
+  predicate would be required, and PostgREST never emits one). Semantics are unchanged:
+  one-off visits carry `series_id NULL` and unique indexes treat NULLs as distinct, so
+  one-offs still never conflict with each other.
+- **Cron mechanism (checked against current Supabase docs): pg_cron + pg_net** POSTing the
+  function URL — the portable hosted mechanism; the CLI has no native function schedule in
+  `config.toml`. Nightly `0 3 * * *` — 03:00 in the cluster's `cron.timezone` (GMT on
+  Supabase), i.e. 03:00 UTC, deliberately NOT the business tz (the 8-week look-ahead makes
+  the firing hour immaterial). **Cron-path auth:** `verify_jwt` stays ON (explicit in
+  `config.toml`), the job sends the anon key as Bearer (satisfies the platform JWT check)
+  plus an `x-cron-secret` header the function compares constant-time against its
+  `EXPAND_CRON_SECRET` env; the anon JWT alone unlocks nothing, and `{all: true}` without
+  the secret is 403. Secrets live in Vault per the plan: `expand_cron_secret` (seeded
+  `gen_random_bytes`), plus `expand_project_url` / `expand_anon_key` (guarded creates with
+  local placeholders); the cron command reads all three from `vault.decrypted_secrets` at
+  run time.
+- **Local cron is a deliberate no-op:** pg_cron runs inside the db container and cannot
+  reach `supabase functions serve` on the host, so the scheduled POST just fails in
+  `net._http_response` nightly with no other effect (`db reset`/`db test` unaffected —
+  verified). Local testing is `supabase functions serve` + a Deno fetch script
+  (context-mode blocks curl). Local `EXPAND_CRON_SECRET` lives in the gitignored
+  `supabase/functions/.env` (auto-loaded by `functions serve`); hosted needs
+  `supabase secrets set EXPAND_CRON_SECRET=<vault value>` plus the two vault URL/key
+  updates listed in the migration comment.
+- **Status choice (recorded per the plan):** inserted visits are `accepted` when the
+  series walker holds an ACTIVE OWNER membership in the business (self-assigned, matching
+  the Task 7 force-assign path), else `offered`.
+- **rrule canonical form decided** (spec §5 left `rrule text` unspecified):
+  `FREQ=WEEKLY;BYDAY=MO,WE,FR` with RFC 5545 weekday codes, written by
+  `buildWeeklyRRule` in `src/features/schedule/api.ts` and parsed by
+  `parseWeeklyRRule` in the function (case/order tolerant). A non-weekly or malformed
+  rrule marks that series `error: 'unsupported rrule'` in the results and the run
+  continues — one bad series never aborts the nightly sweep.
+- **Window semantics:** occurrences in `[max(now, starts_on 00:00 local), min(now + 56d,
+  ends_on + 1 day 00:00 local))` — `ends_on` is inclusive, and expansion never backfills
+  occurrences earlier than the invocation instant.
+- **DST parity:** the Deno mirror (`expand.ts`) is dependency-free (Intl-based two-pass
+  offset resolution; date-fns-tz cannot be imported in the edge runtime). The plan's
+  vector-table option chosen: a separate `deno test` file (`expand.test.ts`) carries the
+  vectors COPIED from `recur.test.ts` as a comment table + assertions — gap wall times
+  resolve with the post-transition offset, ambiguous take the first occurrence, both
+  pinned identically in both files. 10/10 pass under `deno test`.
+- **E2E (local, functions serve):** Mon/Wed/Fri 09:00 America/Chicago series → 24 visits
+  over now→+8 weeks, every instant exactly 14:00:00Z (09:00 CDT), `offered`,
+  `price_cents_snapshot 3000` (2500 + 500 × 1 extra pet), end = start + 30 min; re-invoke
+  inserted 0 (count stayed 24). Cron path with the correct secret: 200, series1 0 inserted,
+  owner-walker Tue 07:15 series → 8 visits `accepted` at 12:15:00Z, price 2500. 401 with no
+  JWT, 403 for walker JWT / wrong secret / missing secret, 400 bad body; deactivated series
+  expands nothing. 22/22 checks passed.
+- `createSeries` throws if the post-insert invoke fails — the series row then exists with
+  no visits until the nightly cron catches it; callers may retry the invoke idempotently.
