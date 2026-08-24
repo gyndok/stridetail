@@ -65,7 +65,7 @@ Last updated: 2026-08-24
   | 1 | events/tracks/reports/notifications schema + start/finish RPCs | [x] | `b1bd3b5` |
   | 2 | ingest-track function + walker media policy | [x] | `6cad8c7` |
   | 3 | offline day cache + outbox sync worker | [x] | `42ec5a3` |
-  | 4 | walker visit detail + gated start | [ ] | |
+  | 4 | walker visit detail + gated start | [x] | `fc09520` |
   | 5 | active visit: field mode, events, photos, reveal, finish | [ ] | |
   | 6 | send-sms + notification queue + owner surfacing | [ ] | |
   | 7 | report-public + web report page + resend/revoke | [ ] | |
