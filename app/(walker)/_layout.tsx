@@ -20,6 +20,11 @@ export default function WalkerTabs() {
       <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
       <Tabs.Screen name="clients" options={{ title: 'Clients' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      {/* Visit detail + active screens live inside the tab navigator but are
+          kept out of the bar with href: null (expo-router hidden tab screens);
+          the tabs stay usable while a visit is open. */}
+      <Tabs.Screen name="visit/[id]/index" options={{ href: null }} />
+      <Tabs.Screen name="visit/[id]/active" options={{ href: null }} />
     </Tabs>
   );
 }

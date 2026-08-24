@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
@@ -23,6 +24,7 @@ function errorText(e: unknown): string {
 
 export default function Today() {
   const t = useTheme();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { businessId } = useActiveBusiness();
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +131,13 @@ export default function Today() {
       ) : today.length === 0 ? (
         <Text style={{ color: t.colors.inkMuted }}>Nothing scheduled today.</Text>
       ) : (
-        today.map((v) => <VisitCard key={v.id} visit={v} />)
+        today.map((v) => (
+          <VisitCard
+            key={v.id}
+            visit={v}
+            onPress={() => router.push(`/visit/${v.id}` as Href)}
+          />
+        ))
       )}
     </Screen>
   );

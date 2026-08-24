@@ -931,3 +931,46 @@ scoped to the session user by design.
 - `accessCache.ts` keys are `revealed-codes.<clientId>` (SecureStore charset
   safe); the loader deletes the entry on expiry, corrupt JSON, or bad shape
   before returning null, so stale codes never outlive the grace window on disk.
+
+## Plan 4, Task 4 — walker visit detail + gated start (2026-08-24)
+
+- **Routing (recorded per the task): hidden tab screens, not a group reshuffle.**
+  `app/(walker)/visit/[id]/index.tsx` and `.../active.tsx` are registered on the
+  existing walker Tabs with `href: null` (expo-router keeps them out of the bar)
+  instead of restructuring the group into a Stack wrapping `(tabs)/`. The
+  `[id]/index.tsx` + `active.tsx` directory shape is used from the start so
+  Task 5's active screen never collides with a flat `[id].tsx`.
+- **Pet info is inline on the visit detail** (`PetSection`: photo thumb via the
+  existing 1-h signed-url query, species/breed line, reactivity warning card,
+  present-only Feeding/Medications/Allergies/Vet rows). Walkers get no pet
+  route: the owner pet screen sits behind the post-Plan-3 owner-group role
+  guard, so cross-group navigation would bounce; walker RLS (Plan 3 Task 2)
+  covers the reads.
+- `fetchVisitDetail` fetches the visit first (MY_VISIT_COLUMNS — named columns,
+  no services embed under walker RLS), then client/pets/services_public in
+  parallel. Client and service use `maybeSingle` and null-tolerant assembly;
+  `visit.service` is filled client-side from the `services_public` row (which
+  also carries `requires_gps` for the start flow). Pets are re-ordered to
+  `pet_ids` order (PostgREST `in` has no order guarantee).
+- **Start flow:** outbox append (`appendVisitStart`) → optimistic
+  `setQueryData` to `in_progress` + `myVisits` invalidation → when
+  `service.requires_gps`, `startVisitTracking(visitId)` (it requests
+  foreground+background permissions itself; a denial throws BEFORE
+  `active_visit` is written, so the Alert explains GPS is off while the visit
+  stays started) → `kickSync()` (redundant with the append's own kick but per
+  the plan; the kicker debounces to one drain) → `router.replace` to
+  `/visit/[id]/active`.
+- The Start button renders disabled with the `canStart` reason text for every
+  non-startable status; an `in_progress` visit instead shows "Open active
+  visit" so re-entering the detail after the optimistic start (or a relaunch)
+  is not a dead end. `canStart` delegates to the Task-3 `canTransition` mirror
+  (`accepted -> in_progress`, assignee) — the reasons are the only new logic.
+- `active.tsx` is the plan's placeholder ("Active visit — Task 5") plus a
+  "Back to Today" ghost button (the detail screen was `replace`d away, so the
+  placeholder would otherwise strand the walker).
+- `mapsUrl` uses `encodeURIComponent` (not the task text's `encodeURI`, which
+  leaves `#`/`&` unescaped and would truncate addresses in the query) into a
+  `https://maps.google.com/?q=` link — opens the platform maps handler on both
+  OSes; display-only, no geocoding.
+- Walker Today: only the accepted ("Today") cards navigate to the detail;
+  offer cards keep their inline Accept/Decline actions, per the plan.
