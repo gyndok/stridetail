@@ -53,7 +53,7 @@ Last updated: 2026-08-23
   | 3 | recurrence + conflict lib (DST-proof) | [x] | 7d2c21e |
   | 4 | expand-series edge function + nightly cron | [x] | 17e72cf |
   | 5 | services management UI | [x] | a48dc65 |
-  | 6 | walker availability + time off UI | [ ] | |
+  | 6 | walker availability + time off UI | [x] | eb68cfb |
   | 7 | owner scheduling + walker picker | [ ] | |
   | 8 | walker accept/decline + owner needs-attention | [ ] | |
   | 9 | hosted deploy, advisors, build | [ ] | |
