@@ -444,3 +444,43 @@ Accepted for now: the key never leaves security-definer functions, no client rol
 the ciphertext, and slice 1 has effectively one tenant. Future path before multi-tenant GA:
 per-tenant keys derived/created at business creation (e.g. `client_access_key:<business_id>`
 in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
+
+## Plan 3, Task 1 — scheduling schema, status machine, assignment RPCs (2026-08-23)
+
+- **Decline reading (recorded per the plan):** the `visit_status` enum has NO `declined`
+  value. Spec §5 says a decline "returns to owner as unassigned with reason", so decline is
+  `offered -> unassigned` + `decline_reason` set + `walker_id` cleared. The transition guard
+  enforces all three (reason required, walker cleared inside the trigger), so the invariant
+  holds even for callers that bypass the `decline_visit` RPC.
+- **Price hiding = column-level grants** (the plan offered column grants vs a no-price
+  `security_invoker` view; one mechanism to be implemented). A `security_invoker` view alone
+  cannot hide the column: the walker RLS select policy the plan requires on `visits` keeps
+  the base table queryable, price included. The column grant (`select` granted on every
+  `visits` column except `price_cents_snapshot`) makes the price unreadable to any client
+  role on any row — "the UI cannot leak what it cannot query". No `visits_walker` view was
+  created. Consequences: `select *` / supabase-js `select('*')` on `visits` fails with 42501
+  for owners too — app queries in Tasks 7–8 must name columns; owner-side price display
+  (slice 2 invoicing) will need a definer view or RPC. `insert`/`update` stay whole-table
+  grants, so the owner still stamps `price_cents_snapshot` at creation.
+- **Audit rows are written by an `after update` trigger** on `visits` (actions
+  `visit.offer/accept/decline/cancel/start/complete/reassign`), not inside the RPCs: the
+  owner may legally force-assign or reassign by direct table update (RLS allows it, the
+  guard validates it), and spec §6.7 wants those audited too. RPC-level inserts would miss
+  them; trigger-level cannot. pgTAP asserts a direct force-assign writes `visit.accept`.
+- **RPCs are granted to `authenticated` only, not `service_role`:** the `is not true` /
+  `walker = auth.uid()` guards require a JWT sub, which service-role calls lack, so the
+  grant would be dead. Service paths (Task 4 expansion) use direct DML — the guard trigger's
+  elevated branch (`auth.uid() is null`) skips only the who-check, never the matrix, and the
+  audit trigger still fires.
+- `visit_series.active boolean not null default true` added beyond the spec §5 column list:
+  Task 4's expansion iterates "each active series" and needs the flag now to avoid a Task 4
+  schema migration. `visit_series.walker_id` is `not null` (spec lists it unqualified;
+  expansion stamps the series walker onto every generated visit).
+- `visits.series_id` is `on delete set null` (deleting a series must not destroy completed
+  visit history); `visits.walker_id` is `on delete set null`; `service_id` FKs have no
+  cascade (services are deactivated, not deleted).
+- Sanity check constraints added beyond the plan text: `weekday between 0 and 6` (plan),
+  `end_local > start_local`, `ends_at > starts_at`, `scheduled_end > scheduled_start`.
+- Table grants follow the established revoke-all-then-grant-exactly pattern so local
+  (supabase_admin applies migrations, no default privileges) and hosted (postgres applies,
+  default privileges auto-grant) end up identical.
