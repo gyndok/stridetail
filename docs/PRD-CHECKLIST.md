@@ -129,6 +129,19 @@ Last updated: 2026-08-23
 - [x] Team list went stale after invite acceptance — fixed: `focusManager` wired to AppState + `useRefetchOnFocus` on Team
 - [x] Walker tab shell has no Settings/sign-out — fixed: shared `SettingsScreen`, walker Settings tab added
 
+## Before real users (launch blockers — none block dev/testing)
+
+- [ ] Re-enable **email confirmation** on hosted auth (turned OFF 2026-08-23 for dev) and build a
+  proper confirmation flow in the app (signed-up-but-unconfirmed state, resend link)
+- [ ] Revisit dev-only settings before launch (local `config.toml` analytics-disabled is
+  local-only and fine; audit hosted auth/settings against production expectations)
+- [ ] Rotate the Vault `client_access_key` if it was ever pasted anywhere outside Vault during
+  deploys (as of 2026-08-23 it never was — both environments seeded it inside the migration via
+  `gen_random_bytes`; rotation requires re-encrypting `client_access` rows, script it then)
+- [ ] Orphaned-object cleanup: `deleteDocument` removes the DB row before the storage object
+  (correct order for authorization), so a failed second step orphans the object. Add a periodic
+  cleanup job (list `media` objects without matching rows) before launch
+
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 
 Source: Alexandra's discovery survey (link in `docs/HANDOFF.md`). Spec §1 captures the rest.

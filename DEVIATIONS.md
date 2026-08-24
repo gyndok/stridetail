@@ -436,3 +436,11 @@ Conservative calls made while executing plans autonomously. Newest at the bottom
   - Accepted findings: `client_access` deny-all no-policy design (INFO); `services_public`
     SECURITY DEFINER view is the price-hiding mechanism, tenant-scoped internally (ERROR
     accepted with rationale).
+
+## Plan 2 — accepted design: single symmetric key for all tenants (2026-08-23, review pass)
+
+All tenants' access codes are encrypted under the one Vault secret `client_access_key`.
+Accepted for now: the key never leaves security-definer functions, no client role can select
+the ciphertext, and slice 1 has effectively one tenant. Future path before multi-tenant GA:
+per-tenant keys derived/created at business creation (e.g. `client_access_key:<business_id>`
+in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.

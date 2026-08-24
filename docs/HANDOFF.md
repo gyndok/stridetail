@@ -90,6 +90,10 @@ kickoff, a numbered on-device **judging script** in the spec, `DEVIATIONS.md` an
   Developer Program membership before the first device build.
 - Prefer a hosted Supabase project for dev (always on, reachable from phones); keep Docker for
   `supabase test db`.
+- The hosted dev project is `vrxoswukuiaerhwammlh` — deliberately **repurposed from the old
+  "Dog Walker" / PawPath learning project** (sponsor-approved wipe of its schema and users on
+  2026-08-23; the existing $10/mo project was reused instead of paying for a new one). All
+  Stridetail migrations are tracked there via the Supabase MCP.
 - Start Twilio A2P 10DLC registration early (days to approve); Google Maps API key for Android.
 
 ## Open items
