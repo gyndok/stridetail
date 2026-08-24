@@ -54,7 +54,7 @@ Last updated: 2026-08-23
   | 4 | expand-series edge function + nightly cron | [x] | 17e72cf |
   | 5 | services management UI | [x] | a48dc65 |
   | 6 | walker availability + time off UI | [x] | eb68cfb |
-  | 7 | owner scheduling + walker picker | [ ] | |
+  | 7 | owner scheduling + walker picker | [x] | 5732474 |
   | 8 | walker accept/decline + owner needs-attention | [ ] | |
   | 9 | hosted deploy, advisors, build | [ ] | |
   | 10 | **Checkpoint 3** — two-device scheduling + reveal denied before start | [ ] | |
