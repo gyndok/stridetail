@@ -57,8 +57,21 @@ Last updated: 2026-08-23
   | 7 | owner scheduling + walker picker | [x] | 5732474 |
   | 8 | walker accept/decline + owner needs-attention | [x] | 7ce1221 |
   | 9 | hosted deploy, advisors, build | [x] | migrations 5–8 + expand-series live; cron secret set + verified (200 good / 403 bad); advisors clean; build `c76a4186` |
-  | 10 | **Checkpoint 3** — two-device scheduling + reveal denied before start | [ ] | |
-- [ ] Plan 4 — visit execution UI, reports, `report-public`, SMS retries, Expo Web layout (stages 6–8)
+  | 10 | **Checkpoint 3** — two-device scheduling + reveal denied before start | [x] | PASS 2026-08-23 (iPhone + simulator); see `checkpoints.md` |
+- [~] Plan 4 — written 2026-08-24 (`docs/superpowers/plans/2026-08-24-stridetail-plan4-execution-reports.md`); executing
+
+  | # | Plan 4 task | Status | Commit |
+  |---|-------------|--------|--------|
+  | 1 | events/tracks/reports/notifications schema + start/finish RPCs | [ ] | |
+  | 2 | ingest-track function + walker media policy | [ ] | |
+  | 3 | offline day cache + outbox sync worker | [ ] | |
+  | 4 | walker visit detail + gated start | [ ] | |
+  | 5 | active visit: field mode, events, photos, reveal, finish | [ ] | |
+  | 6 | send-sms + notification queue + owner surfacing | [ ] | |
+  | 7 | report-public + web report page + resend/revoke | [ ] | |
+  | 8 | Expo Web rail + week grid | [ ] | |
+  | 9 | hosted deploy, advisors, builds | [ ] | |
+  | 10 | **Checkpoint 4** — full field run | [ ] | |
 
 ---
 
