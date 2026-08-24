@@ -83,6 +83,18 @@ kickoff, a numbered on-device **judging script** in the spec, `DEVIATIONS.md` an
   the start of a session.
 - Sponsor sends update emails from his Gmail; drafts are prepared for his approval.
 
+### Round 0 answers (Alexandra, by email 2026-08-24)
+
+1. **Direction B — yes, "but would like greens added."** Keep the warm cream/orange base; add a
+   green accent to the palette (success/nature notes), don't repaint.
+2. **Active-walk screen: WARM by default.** This overrides spec §9's dark-by-default field mode;
+   dark stays available as the `walkTheme` setting.
+3. **Today needs a direct way into the client and pet profile** — she wants to reach the profile
+   from a Today card, not only from a visit.
+4. **Quick buttons Pee · Poop · Photo · Note are the right four.** "Any additional pet needs can
+   be added to the notes" — Ate/Drank/Meds do not deserve top-level buttons.
+5. **Nothing reads as "that's Doggy Logs again."**
+
 ## Environment
 
 - Development moves to an always-on Mac mini: clone this repo there; needs Bun, Xcode
@@ -98,7 +110,7 @@ kickoff, a numbered on-device **judging script** in the spec, `DEVIATIONS.md` an
 
 ## Open items
 
-- Alexandra's Round 0 answers (direction B confirmation, active-walk default, Today-screen gaps,
-  quick-button set).
+- ~~Alexandra's Round 0 answers~~ — **received 2026-08-24, see Feedback loop above.** Round 1
+  (execution screens: warm field mode, Today profile shortcuts, report page) is the next ask.
 - Trademark checks for Stridetail (USPTO phonetic search classes 9/42, App Store / Play name reservation). **stridetail.com registered 2026-08-23** (Squarespace Domains, auto-renew, privacy, lock; renews 2029-08-23). **stridetail.app registered 2026-08-23** (same settings, renews 2029-08-23). Domains done. **Knockout searches clean (2026-08-24):** USPTO wordmark search — zero live or dead marks for stridetail / stridetale / strydetail / stridetails; App Store and Google Play — no app named Stridetail (closest: Stride Fitness, Stridist, StrideTV — different words/fields). **App Store Connect record created 2026-08-24** (name 'Stridetail' reserved, bundle `app.stridetail`, team NJ4JGW72MW, status 'Prepare for Submission' — leave untouched until TestFlight). Remaining: Play Console listing when that account exists (names not globally unique there; low urgency), and decide on a 1(b) intent-to-use USPTO filing in classes 9+42 (attorney search opinion recommended before filing).
 - Developer accounts (Apple, Google Play, Expo) under the platform entity.

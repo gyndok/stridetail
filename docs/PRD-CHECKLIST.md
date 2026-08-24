@@ -148,7 +148,16 @@ Last updated: 2026-08-24
 - [ ] Google Maps API key for Android
 - [~] Apple Developer, Google Play, Expo/EAS accounts — Apple (individual, team NJ4JGW72MW) + EAS (`geffreykleins-team`) done; **App Store Connect app record "Stridetail" created (1.0 Prepare for Submission)**; Google Play pending; platform entity TBD
 - [x] Docker on the Mac mini (colima) — `bun run db:test` runs
-- [ ] Alexandra's Round 0 answers (stridetail-mockups issue #1)
+- [x] Alexandra's Round 0 answers — received by email 2026-08-24 (recorded in `docs/HANDOFF.md`)
+
+## Round 0 feedback items (Alexandra, 2026-08-24)
+
+- [ ] Direction B **plus greens** — add a green accent to `src/ui/tokens.ts` and use it where a
+  positive/nature note helps (accepted states, completed visits); do not repaint the warm base
+- [ ] **Active-walk screen defaults to WARM** (overrides spec §9 dark-by-default); dark remains
+  the `walkTheme` setting
+- [ ] **Today → client and pet profile in one tap** (walker and owner); today only visits link out
+- [ ] Quick buttons stay **Pee · Poop · Photo · Note**; Ate/Drank/Meds demoted (notes carry them)
 
 ## Device-test findings (Checkpoint 2, 2026-08-23)
 
