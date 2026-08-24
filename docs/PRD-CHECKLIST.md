@@ -56,7 +56,7 @@ Last updated: 2026-08-23
   | 6 | walker availability + time off UI | [x] | eb68cfb |
   | 7 | owner scheduling + walker picker | [x] | 5732474 |
   | 8 | walker accept/decline + owner needs-attention | [x] | 7ce1221 |
-  | 9 | hosted deploy, advisors, build | [~] | migrations 5–8 + expand-series deployed hosted; EXPAND_CRON_SECRET awaiting sponsor's `supabase secrets set`; advisors clean (pg_net moved to extensions; RPC WARNs intentional) |
+  | 9 | hosted deploy, advisors, build | [x] | migrations 5–8 + expand-series live; cron secret set + verified (200 good / 403 bad); advisors clean; build `c76a4186` |
   | 10 | **Checkpoint 3** — two-device scheduling + reveal denied before start | [ ] | |
 - [ ] Plan 4 — visit execution UI, reports, `report-public`, SMS retries, Expo Web layout (stages 6–8)
 
