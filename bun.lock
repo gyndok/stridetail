@@ -8,7 +8,9 @@
         "@expo/ui": "~57.0.12",
         "@react-native-community/datetimepicker": "9.1.0",
         "@supabase/supabase-js": "2.112.3",
+        "@tanstack/query-async-storage-persister": "5.102.2",
         "@tanstack/react-query": "^5.102.2",
+        "@tanstack/react-query-persist-client": "5.102.2",
         "aes-js": "3.1.2",
         "date-fns": "4.4.0",
         "date-fns-tz": "3.2.0",
@@ -491,9 +493,15 @@
 
     "@supabase/supabase-js": ["@supabase/supabase-js@2.112.3", "", { "dependencies": { "@supabase/auth-js": "2.112.3", "@supabase/functions-js": "2.112.3", "@supabase/postgrest-js": "2.112.3", "@supabase/realtime-js": "2.112.3", "@supabase/storage-js": "2.112.3" }, "peerDependencies": { "@opentelemetry/api": ">=1.0.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-Jv1bxVQmEJNkjvPEhFaKjPzsh+Ozyew6lWGD+SoYcsclDEP1z7yEvKvfUQfzy0DkxRIQnZNxmmWtAzw5XLTQoA=="],
 
+    "@tanstack/query-async-storage-persister": ["@tanstack/query-async-storage-persister@5.102.2", "", { "dependencies": { "@tanstack/query-core": "5.102.2", "@tanstack/query-persist-client-core": "5.102.2" } }, "sha512-b/TVFfH/N87LEofrhuOwajORIvBDB4CQBRjzPjXD6s+O64ItZdNW298F1kjaNIT6f+7qI5fsEyl3iKqrtKjXsQ=="],
+
     "@tanstack/query-core": ["@tanstack/query-core@5.102.2", "", {}, "sha512-zQ5794PXBlV5Wl7N23SR1/Ss+wPE/h2Ye4XlKpm3omN8i8b/Fd4DAdqpLS2AXj5M/RMObt3k5qy3E7kzt/AvBA=="],
 
+    "@tanstack/query-persist-client-core": ["@tanstack/query-persist-client-core@5.102.2", "", { "dependencies": { "@tanstack/query-core": "5.102.2" } }, "sha512-qfyKiuJfspASQNz7DcMVGmAUXQe2kbiK7noXY02KWELqxWZRzH8epcOWYciMHAFMRjJbTg/8pIqDThGQ5PEZQQ=="],
+
     "@tanstack/react-query": ["@tanstack/react-query@5.102.2", "", { "dependencies": { "@tanstack/query-core": "5.102.2" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-KxU8ZyOEuJ81eTSgXa8GQbk/jO/rz0elYtNKt3VMtM2pRjeO8ADIu7sqqmEjFKJKqco9h2N1ojIDuHs6VfDItQ=="],
+
+    "@tanstack/react-query-persist-client": ["@tanstack/react-query-persist-client@5.102.2", "", { "dependencies": { "@tanstack/query-persist-client-core": "5.102.2" }, "peerDependencies": { "@tanstack/react-query": "^5.102.2", "react": "^18 || ^19" } }, "sha512-VFfziv9gRzr4ON1DnlYQTBhwXPPDefN4jqzZUMT5FPy/FtT1DsAxCdDUtUhkQte74plKVL+I1qFFRKoqAmu4pA=="],
 
     "@testing-library/react-native": ["@testing-library/react-native@14.0.1", "", { "dependencies": { "jest-matcher-utils": "^30.4.1", "picocolors": "^1.1.1", "pretty-format": "^30.4.1", "redent": "^3.0.0" }, "peerDependencies": { "jest": ">=29.0.0", "react": ">=19.0.0", "react-native": ">=0.78", "test-renderer": "^1.0.0" }, "optionalPeers": ["jest"] }, "sha512-2r2e2y8SkUNRWKRXlUGqDYunB+AkbdXUPn49Bs5rpv9oxRb0K3USBVugbPbAKJjfj4w5Ba91NJ8LcQCZyopUZA=="],
 

@@ -83,8 +83,19 @@ export async function rollSegmentWith(
   return rows.length;
 }
 
-export const rollSegment = (visitId: string) =>
-  rollSegmentWith(visitId, new SqlitePointStore(), new SqliteOutbox(getDb()));
+// Sync-kick hook (Plan 4 Task 3): the app layer registers a callback so a
+// rolled segment can trigger an outbox drain without this GPS lib importing
+// the sync worker (keeps the lib pure and dependency-free).
+let segmentRollListener: (() => void) | null = null;
+export function setSegmentRollListener(fn: (() => void) | null) {
+  segmentRollListener = fn;
+}
+
+export const rollSegment = async (visitId: string) => {
+  const rolled = await rollSegmentWith(visitId, new SqlitePointStore(), new SqliteOutbox(getDb()));
+  if (rolled > 0) segmentRollListener?.();
+  return rolled;
+};
 export const getLocalTrack = (visitId: string) => new SqlitePointStore().all(visitId);
 
 const ROLL_INTERVAL_MS = 60_000;

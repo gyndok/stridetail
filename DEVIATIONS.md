@@ -871,3 +871,63 @@ scoped to the session user by design.
   wrong-walker JWT 403, owner JWT 403, accepted visit 409, no JWT 401, missing
   segments 400, 101 segments 400, 5001 points 400; visit_tracks holds exactly 2 rows
   and `visits.distance_m` persisted. 15/15 checks passed.
+
+## Plan 4, Task 3 — offline day cache + outbox sync worker (2026-08-24)
+
+- **`visit.track` GPS-kind compatibility (recorded per the task):** the Plan-1
+  controller's `rollSegmentWith` payload `{visitId, segmentNo, points}` is kept
+  byte-for-byte — no migration. The worker supplies the server-side idempotency
+  key as `payload.clientUuid ?? item.id`: outbox item ids are already
+  `Crypto.randomUUID()` values and stable across re-drains, so legacy and new
+  items are equally idempotent. New code MAY include an explicit `clientUuid`;
+  nothing yet does.
+- `OutboxState` gained `'error'` and `OutboxStore` gained `markError`/`countErrors`
+  (both stores): the plan's "park with `state='error'`" had no home in the Plan-1
+  store (`pending`/`sent`/`failed` only). The SQLite `state` column is free text,
+  so no local schema migration. `'failed'` keeps its Plan-1 meaning (gave up
+  after MAX_ATTEMPTS retryable failures); `'error'` = permanent server rejection.
+- **Backoff is in-memory** (`Map` item id → eligible-at epoch ms, injectable for
+  tests): attempts-based `min(5 min, 2^attempts s)`. A head item inside its
+  window stops the drain (`'backoff'`) — strict order forbids skipping it. The
+  map resets on relaunch, so a relaunch retries immediately (desirable). The
+  attempt count survives relaunch in the outbox row.
+- **Already-done RPC detection** is a message-regex match against the Task-1
+  raise texts: start → `visit is not accepted (status: in_progress|completed)`,
+  finish → `visit is not in progress (status: completed)` — treated as success
+  (the mutation landed on a previous attempt). `(status: offered)` and every
+  other 4xx stay permanent. postgrest-js reports network failures with
+  `status: 0`; normalized to "no status" → retryable. 401/408/429 retryable per
+  the plan (401 = token refresh race, not a verdict on the item).
+- **`@react-native-community/netinfo` skipped (recorded per the task):** AppState
+  active kick + after-append kicks + after-segment-roll kick + a 30 s interval
+  while `active_visit` has a row cover every trigger the plan lists except
+  "network regain", which the interval/foreground kicks approximate; a kick while
+  offline fails fast into backoff. Avoids a native module + dev-client rebuild.
+  `drainOutbox` takes an injectable `isOnline` so netinfo can slot in later.
+- GPS lib stays pure: `controller.ts` exposes `setSegmentRollListener` and
+  `app/_layout.tsx` registers `kickSync` — the GPS module never imports the sync
+  worker. `rollSegment` fires the listener only when points were actually rolled.
+- **Persister:** `@tanstack/query-async-storage-persister@5.102.2` +
+  `@tanstack/react-query-persist-client@5.102.2` (exact, matching the installed
+  react-query 5.102.2; both pure JS). API names verified against the installed
+  typings: `createAsyncStoragePersister({storage,key,throttleTime})`,
+  `PersistQueryClientProvider persistOptions={{persister,maxAge,dehydrateOptions}}`.
+  `shouldDehydrateQuery` = `defaultShouldDehydrateQuery && whitelist` so only
+  SUCCESSFUL queries under the prefixes `visits`/`myVisits`/`clients`/`pets`/
+  `memberships`/`services_public` persist — `client-access-flag` and every other
+  key stay memory-only. On **web** the storage adapter is an in-memory Map (no
+  persistence): `expo-sqlite/kv-store` needs the wasm setup on web, and spec §8's
+  offline model is field-side; desktop owners are online by design.
+- Whitelist note: the plan says "today ±2 days"; the persisted `visits` queries
+  are the existing 14-day windows (whitelisting is by key prefix, not by range).
+  48 h `maxAge` still bounds staleness.
+- Same-millisecond outbox ordering ties break by item id (Plan-1 `ORDER BY
+  created_at, id` — unchanged): immaterial, because events are server-ordered by
+  `occurred_at` and start/finish bracket the visit at distinct times.
+- `src/features/visit/api.ts` provides the outbox-first mutations
+  (`appendVisitStart/Event/Finish`) with injectable store + kick for tests;
+  event payloads stamp `clientUuid` (expo-crypto) and `occurredAt` at append
+  time and omit absent optional fields.
+- `accessCache.ts` keys are `revealed-codes.<clientId>` (SecureStore charset
+  safe); the loader deletes the entry on expiry, corrupt JSON, or bad shape
+  before returning null, so stale codes never outlive the grace window on disk.

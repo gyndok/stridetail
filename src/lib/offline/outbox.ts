@@ -2,7 +2,12 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
 
 export type OutboxKind = 'visit.start' | 'visit.event' | 'visit.track' | 'visit.finish';
-export type OutboxState = 'pending' | 'sent' | 'failed';
+/**
+ * 'failed' = gave up after MAX_ATTEMPTS retryable failures;
+ * 'error'  = parked by the sync worker on a permanent (non-retryable) server
+ *            rejection — kept for surfacing in the UI, never retried.
+ */
+export type OutboxState = 'pending' | 'sent' | 'failed' | 'error';
 export type OutboxItem = {
   id: string;
   kind: OutboxKind;
@@ -19,7 +24,9 @@ export interface OutboxStore {
   nextPending(limit?: number): Promise<OutboxItem[]>;
   markSent(id: string): Promise<void>;
   markFailed(id: string): Promise<void>;
+  markError(id: string): Promise<void>;
   countPending(): Promise<number>;
+  countErrors(): Promise<number>;
 }
 
 export class MemoryOutbox implements OutboxStore {
@@ -47,8 +54,15 @@ export class MemoryOutbox implements OutboxStore {
     i.attempts += 1;
     if (i.attempts >= MAX_ATTEMPTS) i.state = 'failed';
   }
+  async markError(id: string) {
+    const i = this.items.get(id);
+    if (i) i.state = 'error';
+  }
   async countPending() {
     return (await this.nextPending(Number.MAX_SAFE_INTEGER)).length;
+  }
+  async countErrors() {
+    return [...this.items.values()].filter((i) => i.state === 'error').length;
   }
 }
 
@@ -99,9 +113,18 @@ export class SqliteOutbox implements OutboxStore {
       { $id: id, $max: MAX_ATTEMPTS },
     );
   }
+  async markError(id: string) {
+    await this.db.runAsync("UPDATE outbox SET state = 'error' WHERE id = $id", { $id: id });
+  }
   async countPending() {
     const r = await this.db.getFirstAsync<{ n: number }>(
       "SELECT COUNT(*) AS n FROM outbox WHERE state = 'pending'",
+    );
+    return r?.n ?? 0;
+  }
+  async countErrors() {
+    const r = await this.db.getFirstAsync<{ n: number }>(
+      "SELECT COUNT(*) AS n FROM outbox WHERE state = 'error'",
     );
     return r?.n ?? 0;
   }

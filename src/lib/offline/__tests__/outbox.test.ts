@@ -21,6 +21,16 @@ test('failed items retry until ten attempts then stop', async () => {
   expect((await box.nextPending()).length).toBe(0);
 });
 
+test('markError parks an item outside the pending queue and counts it', async () => {
+  const box = new MemoryOutbox(() => 1);
+  const a = await box.enqueue('visit.event', {});
+  const b = await box.enqueue('visit.event', {}, 'zz-later');
+  await box.markError(a.id);
+  expect((await box.nextPending()).map((i) => i.id)).toEqual([b.id]);
+  expect(await box.countPending()).toBe(1);
+  expect(await box.countErrors()).toBe(1);
+});
+
 test('enqueue accepts a caller-supplied id for idempotency', async () => {
   const box = new MemoryOutbox(() => 1);
   const a = await box.enqueue('visit.event', {}, 'fixed-id');
