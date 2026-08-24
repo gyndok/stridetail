@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Alert, Share, Text } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
 import {
@@ -13,6 +13,13 @@ import {
   offerVisit,
   pickerContext,
 } from '@/src/features/schedule/api';
+import {
+  getVisitReport,
+  reportLink,
+  reportStatusLine,
+  resendReport,
+  revokeReport,
+} from '@/src/features/schedule/report';
 import { WalkerPicker } from '@/src/features/schedule/WalkerPicker';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { canTransition } from '@/src/lib/schedule/machine';
@@ -29,6 +36,94 @@ const STATUS_LABELS: Record<string, string> = {
   completed: 'Completed',
   cancelled: 'Cancelled',
 };
+
+/**
+ * Report card for a completed visit (Plan 4 Task 7): SMS delivery line,
+ * Share link (the native share sheet includes Copy on both platforms —
+ * expo-clipboard is not a dependency, so there is no separate Copy button;
+ * recorded in DEVIATIONS.md), Resend and Revoke through the audited Task-1
+ * owner RPCs, both behind Alert confirms.
+ */
+function ReportSection({
+  businessId,
+  visitId,
+  tz,
+}: {
+  businessId: string;
+  visitId: string;
+  tz: string;
+}) {
+  const t = useTheme();
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const report = useQuery({
+    queryKey: ['visitReport', businessId, visitId],
+    queryFn: () => getVisitReport(businessId, visitId),
+  });
+  const refresh = () => {
+    setError(null);
+    void queryClient.invalidateQueries({ queryKey: ['visitReport', businessId, visitId] });
+  };
+  const fail = (e: unknown) => setError(e instanceof Error ? e.message : String(e));
+  const resendMut = useMutation({ mutationFn: () => resendReport(visitId), onSuccess: refresh, onError: fail });
+  const revokeMut = useMutation({ mutationFn: () => revokeReport(visitId), onSuccess: refresh, onError: fail });
+
+  const r = report.data ?? null;
+  if (!r) {
+    return (
+      <Card style={{ gap: t.space.xs }}>
+        <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Report</Text>
+        <Text style={{ color: t.colors.inkMuted }}>
+          {report.isPending ? 'Loading…' : 'No report for this visit.'}
+        </Text>
+      </Card>
+    );
+  }
+
+  function confirmResend() {
+    Alert.alert('Resend report', 'Send the report link to the client again by SMS?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Resend', onPress: () => resendMut.mutate() },
+    ]);
+  }
+  function confirmRevoke() {
+    Alert.alert(
+      'Revoke report link',
+      'The link stops working immediately for anyone who has it. This cannot be undone.',
+      [
+        { text: 'Keep link', style: 'cancel' },
+        { text: 'Revoke', style: 'destructive', onPress: () => revokeMut.mutate() },
+      ],
+    );
+  }
+
+  return (
+    <>
+      <Card style={{ gap: t.space.xs }}>
+        <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Report</Text>
+        {r.revoked_at ? (
+          <Text style={{ color: t.colors.danger }}>
+            Report link revoked {formatInTimeZone(new Date(r.revoked_at), tz, 'MMM d, HH:mm')}
+          </Text>
+        ) : (
+          <Text style={{ color: t.colors.inkMuted }}>{reportStatusLine(r, tz)}</Text>
+        )}
+        {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
+      </Card>
+      {!r.revoked_at ? (
+        <>
+          <Button
+            title="Share link"
+            variant="secondary"
+            onPress={() => void Share.share({ message: reportLink(r.public_token) })}
+          />
+          <Button title="Resend SMS" variant="secondary" onPress={confirmResend} loading={resendMut.isPending} />
+          <Button title="Revoke link" variant="ghost" onPress={confirmRevoke} loading={revokeMut.isPending} />
+        </>
+      ) : null}
+    </>
+  );
+}
 
 export default function VisitDetail() {
   const t = useTheme();
@@ -153,6 +248,10 @@ export default function VisitDetail() {
             />
           ) : null}
         </>
+      ) : null}
+
+      {v.status === 'completed' && businessId ? (
+        <ReportSection businessId={businessId} visitId={v.id} tz={v.business_tz} />
       ) : null}
 
       {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}

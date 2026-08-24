@@ -1107,3 +1107,71 @@ scoped to the session user by design.
   `sms_status = skipped_no_provider`, `sent_at` null. 13/13 checks passed. Twilio
   send path is code-complete but exercised only at the type level (no credentials —
   by design until A2P 10DLC registration).
+
+## Plan 4, Task 7 — report-public function, public report page, resend/revoke (2026-08-24)
+
+- **Route sketch is a web-only inline `<svg>`, with a native text fallback (recorded per
+  the task).** `react-native-svg` is NOT a dependency and adding a native module for one
+  decorative sketch is not worth a dev-client rebuild, so `app/report/[token].tsx`
+  renders the polyline as a raw DOM `<svg>` behind a `Platform.OS === 'web'` check
+  (react-native-web renders through react-dom, so DOM elements are legal there) and
+  natives show a "Route: 0.21 mi recorded" card instead. The public report is a
+  web-delivered link (SMS → browser); the native path exists only so the route renders
+  if opened in-app. This also stands as the plan's "no map tiles" deviation from a
+  static map: no tile provider, no API key, no client-location leak to a third party.
+- **Every-Nth downsample, not Douglas-Peucker** (the plan allowed either). Deterministic,
+  O(n), no epsilon to tune, and endpoints are always kept: stride =
+  `ceil((n-1)/(max-1))`, so 1000 points → 168 and ≤ 200 points pass through untouched.
+  Canonical impl in `src/lib/schedule/polyline.ts`; the function carries a
+  dependency-free COPY (`supabase/functions/report-public/polyline.ts`) exactly like the
+  expand.ts pattern, with the SAME 7-vector table pinned in both test files
+  (jest + `deno test`, 8 assertions each side).
+- **`routeSvgPath` lives only on the app side** (not mirrored into the function): the
+  function returns raw lat/lng and the page owns projection, so the viewBox can change
+  without redeploying an edge function. Longitude is scaled by `cos(mid latitude)` for a
+  roughly proportion-true sketch.
+- **Malformed tokens get the same 404 as unknown and revoked.** The function shape-checks
+  `^[0-9a-f]{48}$` before touching the database, but answers a bad shape with the
+  identical `{error:'not found'}` body — no oracle for what a real token looks like, and
+  no DB round-trip for junk. Unknown vs revoked are likewise indistinguishable (asserted
+  byte-for-byte in E2E).
+- **Rate limiter is per-isolate, and that is accepted (noted in the file header).** A
+  fixed 30 req/60 s per-IP window in an in-memory Map: counts are per edge-runtime
+  instance, reset on isolate recycle, and a distributed attacker gets 30/min per IP per
+  instance. The 2^192 token space is the real defence; a shared store would cost a
+  round-trip per request for no meaningful gain here. The map self-trims at 10 000 keys
+  (evict-expired, then clear) so it cannot grow without bound.
+- **Payload is an explicit allow-list, never a row spread.** `pickSummary` names the 8
+  report-safe summary keys; the timeline selects exactly `type, occurred_at, text,
+  photo_path`; the business select names `name, brand_color, logo_path`. `private_notes_md`
+  is never selected by the function, and the owner-side `REPORT_COLUMNS` excludes it too
+  (the walker's private notes do not belong beside a shareable link).
+- **`business_tz` comes from the visit row, and the page formats every time in it**
+  (date-fns-tz): the reader may be in any zone, but the visit happened where the business
+  is. The function ships ISO instants only — no server-side formatting.
+- **`REPORT_BASE_URL` exported from `src/lib/brand.ts`** (the product-identity module, per
+  CLAUDE.md's "display name lives only in brand.ts") mirroring send-sms'
+  `DEFAULT_REPORT_BASE` / `REPORT_BASE_URL` env default, so the link an owner shares is
+  byte-identical to the one the client received by SMS. A jest test pins the two together.
+- **"Copy link" folded into "Share link" (deviation from the task's two buttons):**
+  `expo-clipboard` is not a dependency and the RN `Share` sheet already offers Copy on
+  both platforms, so the card has one Share button rather than a new native module for a
+  second one.
+- **Report card renders for `status === 'completed'` only** and asks the DB for the row —
+  a completed visit whose finish RPC has not yet synced simply shows "No report for this
+  visit." rather than an error.
+- **E2E against `supabase functions serve` (bun fetch script, completed-visit fixture:
+  5 events incl. a photo, 2 track segments, a report row, and deliberate leak markers).**
+  25/25 checks passed: valid token with NO auth headers at all → 200 (verify_jwt off
+  proven); business/brand/logo, tz, all 8 summary keys and no others; timeline carries all
+  5 events (arrived/started/finished included) exposing only type/occurredAt/text/photoUrl;
+  route 5 points after the acc-60 fix was dropped, lat/lng keys only; top-level keys exactly
+  business/businessTz/summary/timeline/route. **Leak check:** with signed-URL JWTs scrubbed
+  (their base64 can contain any short substring by chance — the URL PATHS are asserted
+  separately to be `media/<biz>/<visit>/<file>`), the JSON contains none of: the client
+  address, phone, email, client notes, the 7777 price, the walker's display name, the
+  strings `walker`/`price`/`address`/`phones`/`private`/`code`/`access`, or the token
+  itself. Photo and logo signed URLs (24 h) both fetch 200 with the uploaded bytes; GET
+  `?token=` → 200; unknown, malformed, and missing tokens → 404 with byte-identical bodies;
+  `revoked_at` set by SQL → same 404; the rate limiter returned 429 on exactly request 31.
+  Fixtures removed by `db:reset` afterwards (visit_reports and storage.objects both back to 0).

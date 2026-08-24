@@ -407,6 +407,15 @@ verify_jwt = true
 enabled = true
 verify_jwt = true
 
+# PUBLIC BY DESIGN — the only verify_jwt=false function. Report links go to
+# pet-owner clients by SMS; they have no account or JWT. The credential is the
+# 48-hex public_token itself (24 random bytes, unique, revocable); unknown and
+# revoked tokens are the same 404. The function carries its own light per-IP
+# rate limiter. Full rationale in supabase/functions/report-public/index.ts.
+[functions.report-public]
+enabled = true
+verify_jwt = false
+
 [analytics]
 enabled = false
 port = 54327
