@@ -52,7 +52,7 @@ Last updated: 2026-08-23
   | 2 | walker visibility via visits + `reveal_access(visit_id)` | [x] | 234aa59 |
   | 3 | recurrence + conflict lib (DST-proof) | [x] | 7d2c21e |
   | 4 | expand-series edge function + nightly cron | [x] | 17e72cf |
-  | 5 | services management UI | [ ] | |
+  | 5 | services management UI | [x] | a48dc65 |
   | 6 | walker availability + time off UI | [ ] | |
   | 7 | owner scheduling + walker picker | [ ] | |
   | 8 | walker accept/decline + owner needs-attention | [ ] | |
