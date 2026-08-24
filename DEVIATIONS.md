@@ -484,3 +484,30 @@ in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
 - Table grants follow the established revoke-all-then-grant-exactly pattern so local
   (supabase_admin applies migrations, no default privileges) and hosted (postgres applies,
   default privileges auto-grant) end up identical.
+
+## Plan 3, Task 2 — walker visibility via visits, reveal_access(visit_id) (2026-08-23)
+
+- **Visibility scope (recorded per the plan):** ANY visit row with `walker_id = auth.uid()`
+  and a matching client grants read on `clients`/`pets`/`pet_documents` — status is not
+  consulted. Completed and cancelled visits keep the walker's read access (they may need
+  the context afterwards, e.g. a report dispute); a *declined* visit grants nothing
+  automatically, because Task 1's trigger clears `walker_id` on decline. Asserted in
+  pgTAP: a cancelled-only client is visible to its walker.
+- Policy subqueries wrap `auth.uid()` in a scalar subselect (planner evaluates once) and a
+  new partial index `visits_walker_client on visits(walker_id, client_id) where walker_id
+  is not null` serves all three policies; `pet_documents` chains via `pets.client_id`.
+- **Fixture approach for `in_progress` (recorded per the plan):** visits are inserted with
+  their status directly as superuser — the transition guard is a BEFORE **UPDATE** trigger,
+  so fixture inserts may take any status (005 already relies on this for
+  accepted/offered/completed rows).
+- `reveal_access` **raises** `'no access codes on file for this client'` when the visit's
+  client has no `client_access` row (the plan requires the row to exist), whereas
+  `reveal_access_owner` logs the authorized attempt and returns zero rows. Divergence is
+  deliberate: every denial raises *before* the audit insert, so denied walker attempts
+  (wrong walker, wrong status, no codes) leave no audit rows — asserted in pgTAP.
+- The visit's own business owner is NOT exempt from the walker gate (`only the assigned
+  walker...`): owners have `reveal_access_owner`. Asserted in pgTAP.
+- pgTAP grew from the plan's bullet list to 27 assertions (visibility matrix for two
+  walkers incl. the cancelled-visit case and zero-rows walker, walker write denials,
+  all four reveal denial actors + no-audit accounting, decrypt round trip + audit meta,
+  owner-side spot checks, cross-business counts, anon execute denial).
