@@ -789,3 +789,44 @@ empty, price invisible, inserts would be rejected), but the owner shell rendered
 `(owner)/_layout.tsx` now redirects non-owners of the active business to `/` once the
 membership roster loads. Walker tabs need no mirror guard: every screen there is
 scoped to the session user by design.
+
+## Plan 4, Task 1 — execution schema, start/finish RPCs, reports, notifications (2026-08-24)
+
+- **Probe (recorded per the task):** `auth.uid()` inside a SECURITY DEFINER function
+  returns the CALLER's JWT sub (`request.jwt.claims` GUC is not changed by definer
+  context) — verified in psql: with claims sub set, a definer `select auth.uid()`
+  returned the same uuid as the direct call. `start_visit`/`finish_visit` therefore
+  update `visits.status` directly and the Plan-3 transition trigger validates the
+  walker + transition; its audit trigger stamps the walker as actor (asserted in pgTAP).
+- **"Idempotent-safe (re-call → clear error, no dup rows)" read as: a re-call raises a
+  clear, specific error** (`visit is not accepted (status: in_progress)` /
+  `visit is not in progress (status: completed)`) rather than silently no-opping; no
+  duplicate events, reports, or notifications can result (also guarded by
+  `visit_reports.visit_id unique`). Same reading for `revoke_report` re-calls
+  (`report is already revoked`) and resend-after-revoke (`report has been revoked`).
+- **No-phone clients (recorded per the task):** `queue_client_sms` silently skips when
+  `clients.phones[1]` is null — start/finish proceed, nothing is queued (asserted in
+  pgTAP). `resend_report` raises instead (`client has no phone number on file`): an
+  explicit owner action that can deliver nothing deserves an error, not silence.
+- `visit_reports.sent_at` stays NULL at creation (finish only queues the SMS) and is
+  bumped by `resend_report` per the plan; the Task-6 sender owns setting it on a real
+  send. `sms_status` is plain text, wired in Task 6.
+- `visit_events`/`visit_tracks` carry `created_at` only (append-only rows, no client
+  update grant — update attempts are 42501, asserted); `visit_reports`/`notifications`
+  keep the full `created_at`/`updated_at` pair.
+- `notifications."to"` is a reserved word in Postgres; the plan names the column
+  literally, so it is quoted in every statement rather than renamed.
+- `recompute_visit_distance` mirrors `src/lib/gps/geo.ts` exactly: R = 6371008.8,
+  points with `acc > 50` dropped but acc-less points kept
+  (`pt.acc !== undefined && pt.acc > max`), consecutive-pair haversine summed within
+  each segment only (window partitioned by track row). It also persists
+  `visits.distance_m` and returns it (Task 2's ingest returns `{distanceM}` from it).
+  pgTAP fixture is hand-checkable: pure-latitude moves of 0.001°/0.002°
+  (111.19493 m + 222.38985 m = 333.58478 m), a far-away bad-accuracy point that would
+  add thousands of km if not filtered, and segments thousands of km apart so a
+  cross-boundary leg would fail loudly.
+- Event/track insert policies also pin `business_id` to the visit's business (tenant
+  spoofing on insert is 42501, asserted); the plan's RLS bullet did not mention the
+  business column.
+- `queue_client_sms` extracted as a definer helper (three call sites); execute revoked
+  from public/anon/authenticated — only the RPCs reach it.
