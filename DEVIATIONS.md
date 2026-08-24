@@ -712,3 +712,41 @@ in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
   show a subset of the same list.
 - Manual simulator run not performed this session; `bun run test` (341), `typecheck`,
   and `lint` are green. Device coverage arrives with Checkpoint 3.
+
+## Plan 3, Task 8 — walker offers/today + owner needs-attention (2026-08-23)
+
+- **Walkers cannot use the `service:services(...)` embed:** the `services` select
+  policy is owner-only (`"owner reads services"`, core migration), so under walker
+  RLS the embed on `visits` resolves to `service: null` rather than erroring. The
+  walker read path (`listMyVisits`) therefore selects `MY_VISIT_COLUMNS` — the same
+  named columns as `VISIT_COLUMNS` but WITHOUT the services embed — and fills
+  service name/duration client-side from the `services_public` definer view
+  (`joinServices`). The `client:clients(name)` embed DOES work for walkers via the
+  Task 2 walker-visibility policy and is kept. Determined from the migrations, not
+  a live walker session; Checkpoint 3 exercises it on-device.
+- **Decline reason is an inline form, not `Alert.prompt`:** `Alert.prompt` is
+  iOS-only, so tapping Decline swaps the offer card's buttons for a `TextField` +
+  "Confirm decline" / "Keep offer" pair on both platforms. Confirm stays disabled
+  until a non-empty reason is typed (the DB guard requires one).
+- **"Offers on ANY date" is bounded by the fetch window:** `listMyVisits` is called
+  with `[now − 26h, now + 70d)` — 26h back covers "earlier today" in every tz
+  (24h local day + DST fall-back hour), 70 days forward covers the 8-week series
+  expansion horizon, so every offer that can exist is in view. No walker_id filter:
+  walker RLS already pins rows to `auth.uid()`; cancelled visits are excluded.
+- **Owner Today runs ONE visits query** over `[now − 26h, now + 14d)` serving both
+  strips: needs-attention triages the same 14-day upcoming window as the schedule
+  list, and "today's visits" filters client-side to the current LOCAL day per
+  visit's stamped `business_tz` (`visitsOnLocalDay`) — DST-proof and avoids
+  computing business-tz midnight instants.
+- Needs-attention declined rows require `decline_reason != null` AND status
+  `unassigned`: once the owner re-offers, the visit leaves the strip even though
+  the reason column persists (the count line counts unassigned only, same rule).
+- **Grouping order** (`groupTodayByWalker`): owner's own visits first, then walkers
+  alphabetically by display name, "Unassigned" bucket last; empty groups and
+  cancelled visits dropped. Walkers get no visit-detail route yet, so walker Today
+  cards are not pressable; owner cards push `/schedule/[id]`.
+- The Task 7 screen-local `timeRange` helper moved into the api as
+  `visitTimeRange` (plus `visitDayLabel`) so the schedule list, both Today
+  screens, and `VisitCard` share one business-tz renderer — extended, not
+  duplicated, per the plan.
+- Composition on both screens is deliberately plain (Round 0 pending).

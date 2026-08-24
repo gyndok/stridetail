@@ -11,6 +11,7 @@ import {
   listVisits,
   memberName,
   needsAttention,
+  visitTimeRange,
   type Visit,
 } from '@/src/features/schedule/api';
 import { Chip } from '@/src/features/schedule/Chip';
@@ -34,13 +35,6 @@ function applyFilter(visits: Visit[], filter: FilterKey): Visit[] {
   if (filter === 'unassigned') return visits.filter((v) => v.status === 'unassigned');
   if (filter === 'attention') return visits.filter(needsAttention);
   return visits;
-}
-
-/** Local-time range in the visit's own business tz, e.g. "09:00 – 09:30". */
-function timeRange(v: Visit): string {
-  const start = formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'HH:mm');
-  const end = formatInTimeZone(new Date(v.scheduled_end), v.business_tz, 'HH:mm');
-  return `${start} – ${end}`;
 }
 
 export default function ScheduleIndex() {
@@ -96,7 +90,7 @@ export default function ScheduleIndex() {
                 <View
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: t.space.sm }}
                 >
-                  <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>{timeRange(v)}</Text>
+                  <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>{visitTimeRange(v)}</Text>
                   {v.walker_id ? (
                     <Text style={{ color: t.colors.inkMuted, fontSize: 12, fontWeight: '700' }}>
                       {memberName(members.data ?? [], v.walker_id)}

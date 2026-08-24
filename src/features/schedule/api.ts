@@ -209,6 +209,79 @@ export function groupVisitsByLocalDay<
     }));
 }
 
+/** Local wall-clock range in the visit's own business tz, e.g. "09:00 – 09:30". */
+export function visitTimeRange(v: {
+  scheduled_start: string;
+  scheduled_end: string;
+  business_tz: string;
+}): string {
+  const start = formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'HH:mm');
+  const end = formatInTimeZone(new Date(v.scheduled_end), v.business_tz, 'HH:mm');
+  return `${start} – ${end}`;
+}
+
+/** Short local day label in the visit's own business tz, e.g. "Tue, Sep 1". */
+export function visitDayLabel(v: { scheduled_start: string; business_tz: string }): string {
+  return formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'EEE, MMM d');
+}
+
+/** Visits whose LOCAL calendar day (own business_tz) matches nowUtc's local day. */
+export function visitsOnLocalDay<T extends { scheduled_start: string; business_tz: string }>(
+  visits: T[],
+  nowUtc: Date,
+): T[] {
+  return visits.filter(
+    (v) =>
+      formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'yyyy-MM-dd') ===
+      formatInTimeZone(nowUtc, v.business_tz, 'yyyy-MM-dd'),
+  );
+}
+
+/**
+ * Walker Today split: offers are status 'offered' on ANY date (soonest first);
+ * today is status 'accepted' on the current local day (business tz), ascending.
+ */
+export function partitionWalkerDay<
+  T extends { status: string; scheduled_start: string; business_tz: string },
+>(visits: T[], nowUtc: Date): { offers: T[]; today: T[] } {
+  const byStart = (a: T, b: T) => a.scheduled_start.localeCompare(b.scheduled_start);
+  return {
+    offers: visits.filter((v) => v.status === 'offered').sort(byStart),
+    today: visitsOnLocalDay(visits.filter((v) => v.status === 'accepted'), nowUtc).sort(byStart),
+  };
+}
+
+export type WalkerGroup<T> = { key: string; name: string; visits: T[] };
+
+/**
+ * Owner Today grouping: owner's own visits first, then walkers alphabetically
+ * by display name, then an "Unassigned" bucket last. Cancelled visits and empty
+ * groups are dropped; visits within a group sort by start time.
+ */
+export function groupTodayByWalker<T extends { walker_id: string | null; status: string; scheduled_start: string }>(
+  visits: T[],
+  members: ScheduleMember[],
+): WalkerGroup<T>[] {
+  const byKey = new Map<string, T[]>();
+  for (const v of visits) {
+    if (v.status === 'cancelled') continue;
+    const key = v.walker_id ?? 'unassigned';
+    const list = byKey.get(key) ?? [];
+    list.push(v);
+    byKey.set(key, list);
+  }
+  const ownerId = members.find((m) => m.role === 'owner')?.user_id;
+  const groups = [...byKey.entries()].map(([key, list]) => ({
+    key,
+    name: key === 'unassigned' ? 'Unassigned' : memberName(members, key),
+    visits: list.sort((a, b) => a.scheduled_start.localeCompare(b.scheduled_start)),
+  }));
+  return groups.sort((a, b) => {
+    const rank = (g: WalkerGroup<T>) => (g.key === 'unassigned' ? 2 : g.key === ownerId ? 0 : 1);
+    return rank(a) - rank(b) || a.name.localeCompare(b.name);
+  });
+}
+
 /** Owner triage: unassigned, or declined (decline resets to unassigned + reason). */
 export function needsAttention(v: { status: string; decline_reason: string | null }): boolean {
   return v.status === 'unassigned' || v.decline_reason != null;
@@ -289,6 +362,57 @@ export async function listVisits(businessId: string, window: ListVisitsWindow): 
   const { data, error } = await query.order('scheduled_start');
   if (error) throw error;
   return (data ?? []) as unknown as Visit[];
+}
+
+/**
+ * Walker-readable visit columns. Unlike VISIT_COLUMNS there is NO
+ * `service:services(...)` embed: the services select policy is owner-only
+ * (core migration: "owner reads services"), so under walker RLS the embed
+ * resolves to null. Walkers read service names through the `services_public`
+ * definer view instead, joined client-side (joinServices). The clients embed
+ * DOES work for walkers via the Task 2 walker-visibility policy.
+ */
+export const MY_VISIT_COLUMNS =
+  'id, business_id, client_id, service_id, series_id, walker_id, pet_ids, ' +
+  'scheduled_start, scheduled_end, business_tz, status, owner_notes_md, ' +
+  'decline_reason, started_at, finished_at, client:clients(name)';
+
+export type PublicService = { id: string; name: string; duration_min: number };
+
+/** Client-side stand-in for the services embed walkers cannot use. */
+export function joinServices<T extends { service_id: string }>(
+  visits: T[],
+  services: PublicService[],
+): (T & { service: { name: string; duration_min: number } | null })[] {
+  const byId = new Map(services.map((s) => [s.id, s]));
+  return visits.map((v) => {
+    const s = byId.get(v.service_id);
+    return { ...v, service: s ? { name: s.name, duration_min: s.duration_min } : null };
+  });
+}
+
+/**
+ * The session walker's visits in [fromUtc, toUtc), ascending, cancelled
+ * excluded. No walker_id filter — the walker RLS select policy already pins
+ * rows to walker_id = auth.uid(). Named columns only (price column grant).
+ */
+export async function listMyVisits(businessId: string, fromUtc: Date, toUtc: Date): Promise<Visit[]> {
+  const { data, error } = await supabase
+    .from('visits')
+    .select(MY_VISIT_COLUMNS)
+    .eq('business_id', businessId)
+    .neq('status', 'cancelled')
+    .gte('scheduled_start', fromUtc.toISOString())
+    .lt('scheduled_start', toUtc.toISOString())
+    .order('scheduled_start');
+  if (error) throw error;
+  const { data: services, error: svcError } = await supabase
+    .from('services_public')
+    .select('id, name, duration_min')
+    .eq('business_id', businessId);
+  if (svcError) throw svcError;
+  type Row = Omit<Visit, 'service'>;
+  return joinServices((data ?? []) as unknown as Row[], (services ?? []) as PublicService[]) as Visit[];
 }
 
 export async function getVisit(businessId: string, id: string): Promise<Visit> {
@@ -379,6 +503,21 @@ export async function offerVisit(visitId: string, walkerId: string): Promise<voi
 
 export async function cancelVisit(visitId: string): Promise<void> {
   const { error } = await supabase.rpc('cancel_visit', { p_visit: visitId });
+  if (error) throw error;
+}
+
+/** Walker accepts an offered visit (offered -> accepted, guard-checked in DB). */
+export async function acceptVisit(visitId: string): Promise<void> {
+  const { error } = await supabase.rpc('accept_visit', { p_visit: visitId });
+  if (error) throw error;
+}
+
+/**
+ * Walker declines an offer. DB semantics: offered -> unassigned with
+ * decline_reason set and walker_id cleared (reason is required by the guard).
+ */
+export async function declineVisit(visitId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc('decline_visit', { p_visit: visitId, p_reason: reason });
   if (error) throw error;
 }
 
