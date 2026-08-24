@@ -27,3 +27,18 @@ export function useTheme(): Theme {
   if (!t) throw new Error('useTheme must be used inside ThemeProvider');
   return t;
 }
+
+/**
+ * Field-mode theme scope (Plan 4 Task 5, spec §9): wraps ONE screen (the
+ * active visit) in the dark sub-palette while everything else keeps the light
+ * theme. Only the surface/ink/line tokens flip; primary stays the business
+ * accent inherited from the parent ThemeProvider.
+ */
+export function FieldTheme({ children }: PropsWithChildren) {
+  const parent = useTheme();
+  const value = useMemo<Theme>(
+    () => ({ ...parent, colors: { ...parent.colors, ...tokens.dark } }),
+    [parent],
+  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}

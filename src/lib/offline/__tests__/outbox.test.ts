@@ -31,6 +31,19 @@ test('markError parks an item outside the pending queue and counts it', async ()
   expect(await box.countErrors()).toBe(1);
 });
 
+test('countPending with a visit id counts only that visit (sync badge)', async () => {
+  const box = new MemoryOutbox(() => 1);
+  await box.enqueue('visit.event', { visitId: 'v1', type: 'pee' });
+  await box.enqueue('visit.track', { visitId: 'v1', segmentNo: 1, points: [] });
+  await box.enqueue('visit.event', { visitId: 'v2', type: 'poop' });
+  const done = await box.enqueue('visit.finish', { visitId: 'v1' });
+  await box.markSent(done.id);
+  expect(await box.countPending('v1')).toBe(2);
+  expect(await box.countPending('v2')).toBe(1);
+  expect(await box.countPending('v3')).toBe(0);
+  expect(await box.countPending()).toBe(3);
+});
+
 test('enqueue accepts a caller-supplied id for idempotency', async () => {
   const box = new MemoryOutbox(() => 1);
   const a = await box.enqueue('visit.event', {}, 'fixed-id');

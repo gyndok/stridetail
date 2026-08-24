@@ -1,13 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter, type Href } from 'expo-router';
-import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Platform, Text, View } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
 import { acceptVisit, declineVisit, listMyVisits, partitionWalkerDay } from '@/src/features/schedule/api';
 import { VisitCard } from '@/src/features/schedule/VisitCard';
+import { recoverActiveVisit } from '@/src/lib/gps/controller';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { Button } from '@/src/ui/Button';
+import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
@@ -31,6 +33,20 @@ export default function Today() {
   // Inline decline form (works on Android too — Alert.prompt is iOS-only).
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
+
+  // Recovery (Plan 4 Task 5): a locally in_progress visit (active_visit row)
+  // re-registers its GPS task and surfaces a resume banner here — never an
+  // auto-navigation from the root layout (recorded in DEVIATIONS). Re-checked
+  // on every focus so the banner clears once the visit finishes.
+  const [activeVisitId, setActiveVisitId] = useState<string | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'web') return;
+      recoverActiveVisit()
+        .then((r) => setActiveVisitId(r?.visitId ?? null))
+        .catch(() => setActiveVisitId(null));
+    }, []),
+  );
 
   const visits = useQuery({
     queryKey: ['myVisits', businessId],
@@ -69,6 +85,18 @@ export default function Today() {
   return (
     <Screen title="Today">
       {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
+
+      {activeVisitId ? (
+        <Card style={{ gap: t.space.sm }}>
+          <Text style={{ color: t.colors.ink, fontWeight: '700' }}>
+            A visit is still in progress.
+          </Text>
+          <Button
+            title="Resume active visit"
+            onPress={() => router.push(`/visit/${activeVisitId}/active` as Href)}
+          />
+        </Card>
+      ) : null}
 
       <Text style={[t.type.title, { color: t.colors.ink }]}>Offers</Text>
       {visits.isLoading ? (

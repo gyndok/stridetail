@@ -25,7 +25,8 @@ export interface OutboxStore {
   markSent(id: string): Promise<void>;
   markFailed(id: string): Promise<void>;
   markError(id: string): Promise<void>;
-  countPending(): Promise<number>;
+  /** With visitId: only items whose payload targets that visit (sync badge). */
+  countPending(visitId?: string): Promise<number>;
   countErrors(): Promise<number>;
 }
 
@@ -58,8 +59,11 @@ export class MemoryOutbox implements OutboxStore {
     const i = this.items.get(id);
     if (i) i.state = 'error';
   }
-  async countPending() {
-    return (await this.nextPending(Number.MAX_SAFE_INTEGER)).length;
+  async countPending(visitId?: string) {
+    const pending = await this.nextPending(Number.MAX_SAFE_INTEGER);
+    if (visitId === undefined) return pending.length;
+    return pending.filter((i) => (i.payload as { visitId?: string } | null)?.visitId === visitId)
+      .length;
   }
   async countErrors() {
     return [...this.items.values()].filter((i) => i.state === 'error').length;
@@ -116,9 +120,19 @@ export class SqliteOutbox implements OutboxStore {
   async markError(id: string) {
     await this.db.runAsync("UPDATE outbox SET state = 'error' WHERE id = $id", { $id: id });
   }
-  async countPending() {
+  async countPending(visitId?: string) {
+    if (visitId === undefined) {
+      const r = await this.db.getFirstAsync<{ n: number }>(
+        "SELECT COUNT(*) AS n FROM outbox WHERE state = 'pending'",
+      );
+      return r?.n ?? 0;
+    }
+    // Payloads are JSON.stringify output, so the visit id appears exactly as
+    // "visitId":"<uuid>" — a LIKE match is cheap and index-free but the outbox
+    // is tiny (it drains continuously).
     const r = await this.db.getFirstAsync<{ n: number }>(
-      "SELECT COUNT(*) AS n FROM outbox WHERE state = 'pending'",
+      "SELECT COUNT(*) AS n FROM outbox WHERE state = 'pending' AND payload LIKE $p",
+      { $p: `%"visitId":"${visitId}"%` },
     );
     return r?.n ?? 0;
   }

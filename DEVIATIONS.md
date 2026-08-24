@@ -974,3 +974,66 @@ scoped to the session user by design.
   OSes; display-only, no geocoding.
 - Walker Today: only the accepted ("Today") cards navigate to the detail;
   offer cards keep their inline Accept/Decline actions, per the plan.
+
+## Plan 4, Task 5 — active visit screen: field mode, events, reveal, finish (2026-08-24)
+
+- **Distance display is US units (recorded per the task):** `formatDistanceUS` renders
+  feet below a tenth of a mile (rounded to the nearest 10 ft — single feet are false
+  precision at GPS accuracy) and miles with two decimals from 0.10 mi up. Metric/locale
+  units are a later setting.
+- **Field mode:** `tokens.dark` sub-palette (surface/surfaceRaised/ink/inkMuted/line)
+  added to `src/ui/tokens.ts` and applied by a scoped `<FieldTheme>` in `theme.tsx`
+  that overrides ONLY those color tokens for the active screen; `primary`/`onPrimary`
+  (the business accent) pass through from the parent provider. The unused
+  `fieldBg`/`fieldSheet`/`fieldInk` tokens (Plan-1 spike leftovers, zero usages —
+  grepped) were removed in favour of `tokens.dark`. `walkTheme` setting deferred
+  (Round 0 pending), per the plan.
+- **Multi-pet chips default-select the first pet** so every event carries an
+  attribution without an extra tap; there is no "no pet" chip. The pure builder
+  (`buildEventInput`) still tolerates a missing/stale selection (event becomes
+  visit-level) so a refetch that drops a pet can never stamp a foreign pet id.
+- **Photo capture:** camera first (`requestCameraPermissionsAsync` +
+  `launchCameraAsync`); in `__DEV__` a camera failure (simulators have none) or a
+  permission denial falls back to `launchImageLibraryAsync` — recorded per the task.
+  Production surfaces the error instead of silently opening the library.
+- **Sync badge:** `OutboxStore.countPending` gained an optional `visitId` argument
+  (both stores) rather than a new method: SQLite counts pending rows whose JSON
+  payload contains `"visitId":"<id>"` via LIKE (payloads are `JSON.stringify` output,
+  so the needle is exact; the outbox is tiny and drains continuously). Polled every
+  5 s alongside the `getLocalTrack` distance (GPS visits only).
+- **Elapsed timer** uses `visits.started_at` when the server row carries it, else the
+  Plan-1 `active_visit.started_at` local fallback (new `getLocalVisitStart` export on
+  the GPS controller). A non-GPS visit started offline has neither until the outbox
+  syncs — the timer shows `--:--:--` rather than inventing a start instant.
+- **Reveal fallback classification:** the new `revealAccessForVisit` wrapper throws
+  `RevealAccessError` carrying the HTTP status (postgrest's status-0 network marker
+  normalized to undefined, as in the sync worker). Only a no-status failure (offline)
+  consults the secure-store grace cache (`loadRevealedCodes`, which enforces expiry
+  itself); every server-answered denial (wrong status, wrong walker, no codes) is
+  surfaced as an error and NEVER answered from the cache. Cached codes render with a
+  "Retrieved HH:MM — codes may have changed since." note (device wall clock — the
+  reveal happened on this device); no cache → "No signal — call owner" (tel: link to
+  the client's first phone). Wipe-on-blur via `useFocusEffect` cleanup, exactly like
+  the owner access screen.
+- `listMyMemberships` now selects `businesses.access_grace_hours` (added to the
+  `Membership` type): the grace window must come from the CACHED membership row when
+  offline (spec §8), and the memberships query is already on the persister whitelist.
+  When the membership is not loaded at all the screen falls back to 12 h — the DB
+  column default, conservative and never wider than an owner could have set it… (an
+  owner who set it LOWER than 12 is respected as soon as the row loads, which in
+  practice is before any reveal can happen: the membership query gates routing).
+- **Finish flow:** the Finish button reveals the inline "Note for owner (private)"
+  field + Confirm; Confirm raises the Alert; on OK the GPS controller stops FIRST
+  (rolling the final segment into the outbox ahead of `visit.finish` — strict drain
+  order means the report's distance includes it), then `appendVisitFinish`,
+  optimistic `completed` on the detail query, `kickSync`, and `router.replace` to
+  Today.
+- **Recovery (recorded per the task):** the resume surface is a banner on walker
+  Today (`useFocusEffect` → `recoverActiveVisit()`), never an auto-navigation from
+  the root layout — a walker relaunching to check an offer is not hijacked into the
+  active screen, and Today is the walker's landing route so the banner is seen
+  immediately. Re-checked on every focus, so it clears once the visit finishes.
+  `recoverActiveVisit` itself is unchanged (it already re-registers the GPS task and
+  returns the visit id); it only knows about GPS visits (`active_visit` is written by
+  `startVisitTracking`), so a non-GPS in_progress visit has no banner — its Today
+  card → detail → "Open active visit" (Task 4) covers that path.

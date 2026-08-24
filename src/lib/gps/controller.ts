@@ -159,6 +159,22 @@ export async function stopVisitTracking() {
   await db.runAsync('DELETE FROM active_visit WHERE id = 1');
 }
 
+/**
+ * Local start instant of the active visit (Plan-1 active_visit row), used by
+ * the active screen's elapsed timer as a fallback while the server's
+ * visits.started_at has not synced back yet. Null when no visit is active
+ * locally (e.g. a non-GPS visit — those never write active_visit).
+ */
+export async function getLocalVisitStart(
+  visitId: string,
+): Promise<{ startedAt: number } | null> {
+  const row = await getDb().getFirstAsync<{ visit_id: string; started_at: number }>(
+    'SELECT visit_id, started_at FROM active_visit WHERE id = 1',
+  );
+  if (!row || row.visit_id !== visitId) return null;
+  return { startedAt: row.started_at };
+}
+
 export async function recoverActiveVisit(): Promise<{ visitId: string } | null> {
   const active = await getDb().getFirstAsync<{ visit_id: string }>(
     'SELECT visit_id FROM active_visit WHERE id = 1',

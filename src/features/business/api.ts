@@ -14,6 +14,8 @@ export type Membership = {
     brand_color: string;
     time_zone: string;
     logo_path: string | null;
+    /** Grace window (hours) for the offline reveal cache (spec §8). */
+    access_grace_hours: number;
   };
 };
 
@@ -26,7 +28,10 @@ export async function listMyMemberships(): Promise<Membership[]> {
   if (!session) return [];
   const { data, error } = await supabase
     .from('memberships')
-    .select('id, business_id, role, status, business:businesses(id, name, brand_color, time_zone, logo_path)')
+    .select(
+      'id, business_id, role, status, ' +
+        'business:businesses(id, name, brand_color, time_zone, logo_path, access_grace_hours)',
+    )
     .eq('user_id', session.user.id)
     .eq('status', 'active');
   if (error) throw error;

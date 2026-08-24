@@ -52,6 +52,31 @@ export async function revealAccessOwner(clientId: string): Promise<ClientAccessC
   return rows[0] ?? null;
 }
 
+/** Reveal failure that keeps the HTTP status so callers can tell offline from denied. */
+export class RevealAccessError extends Error {
+  constructor(
+    message: string,
+    /** undefined = the server never answered (network); postgrest's 0 is normalized away. */
+    public status?: number,
+  ) {
+    super(message);
+    this.name = 'RevealAccessError';
+  }
+}
+
+/**
+ * Walker-side gated reveal (Plan 3 Task 2 RPC): only the assigned walker of an
+ * in_progress visit; audited server-side (`access.reveal`). Same never-cache
+ * rules as revealAccessOwner — values go to component state (+ the secure-store
+ * grace copy via accessCache, the single spec-§8 exception).
+ */
+export async function revealAccessForVisit(visitId: string): Promise<ClientAccessCodes | null> {
+  const { data, error, status } = await supabase.rpc('reveal_access', { p_visit: visitId });
+  if (error) throw new RevealAccessError(error.message, status === 0 ? undefined : status);
+  const rows = (data ?? []) as ClientAccessCodes[];
+  return rows[0] ?? null;
+}
+
 /** Encrypt and upsert the full set of codes; audited server-side (`access.set`). */
 export async function setClientAccess(clientId: string, input: ClientAccessInput): Promise<void> {
   const { error } = await supabase.rpc('set_client_access', {
