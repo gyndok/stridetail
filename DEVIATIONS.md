@@ -762,3 +762,21 @@ in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
 - Advisors post-Plan 3: no anon-executable definer functions (all revoked from public at
   creation); authenticated-executable RPC WARNs are intentional (guarded RPCs are the API);
   pg_net moved public → extensions (migration 0008).
+
+## Post-Plan 3 — native date/time pickers on the new-visit form (2026-08-23)
+
+- Added `@react-native-community/datetimepicker` 9.1.0 (SDK 57 recommended version) via
+  `bunx expo install`; the CLI auto-appended its config plugin to `app.json`. New native
+  module → the dev client must be rebuilt and a new EAS build is required before the pickers
+  work on device (Expo Go includes the module already).
+- The v57-installed 9.1.0 deprecates the README's classic `onChange` in favour of
+  `onValueChange`/`onDismiss`; components use the non-deprecated API. Android uses the
+  documented recommended imperative `DateTimePickerAndroid.open()`; iOS uses inline
+  `display="inline"` (date) / `display="spinner"` (time) below the tapped field.
+- `DateField`/`TimeField` keep the form contract unchanged: values in/out remain plain
+  'YYYY-MM-DD' / 'HH:MM' strings; Date objects exist only inside the picker widgets as
+  local wall-clock constructions (`src/ui/datetime.ts`), so the business-tz conversion in
+  `visitInstants`/`createSeries` stays the single source of truth. Downstream string guards
+  in `new.tsx` kept intact.
+- Pet birthdate, walker document expiry, and time-off date fields are still plain text —
+  candidates to adopt `DateField` later.

@@ -21,11 +21,19 @@ import { centsToDollarsString } from '@/src/features/services/form';
 import { listServices } from '@/src/features/services/api';
 import { WEEKDAY_LABELS } from '@/src/features/availability/api';
 import { Button } from '@/src/ui/Button';
+import { DateField } from '@/src/ui/DateField';
+import { dateToYmd, roundToNextHour } from '@/src/ui/datetime';
 import { Screen } from '@/src/ui/Screen';
-import { TextField } from '@/src/ui/TextField';
+import { TimeField } from '@/src/ui/TimeField';
 import { useTheme } from '@/src/ui/theme';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Today at local midnight — the pickers' minimum selectable date. */
+const startOfToday = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+};
 
 export default function NewVisit() {
   const t = useTheme();
@@ -37,8 +45,8 @@ export default function NewVisit() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [serviceId, setServiceId] = useState<string | null>(null);
   const [petIds, setPetIds] = useState<string[]>([]);
-  const [dateText, setDateText] = useState('');
-  const [timeText, setTimeText] = useState('');
+  const [dateText, setDateText] = useState(() => dateToYmd(new Date()));
+  const [timeText, setTimeText] = useState(() => roundToNextHour(new Date()));
   const [repeat, setRepeat] = useState<'off' | 'weekly'>('off');
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [untilText, setUntilText] = useState('');
@@ -100,7 +108,7 @@ export default function NewVisit() {
     if (!clientId) return setError('Pick a client');
     if (!service) return setError('Pick a service');
     if (petIds.length === 0) return setError('Pick at least one pet');
-    if (!window) return setError('Enter the date as YYYY-MM-DD and time as HH:MM');
+    if (!window) return setError('Pick a date and time');
     if (repeat === 'weekly') {
       if (weekdays.length === 0) return setError('Pick at least one weekday to repeat on');
       if (untilText.trim() && !ISO_DATE.test(untilText.trim()))
@@ -206,30 +214,8 @@ export default function NewVisit() {
       <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
         Times are in the business time zone{tz ? ` (${tz})` : ''}.
       </Text>
-      <View style={{ flexDirection: 'row', gap: t.space.sm }}>
-        <View style={{ flex: 1 }}>
-          <TextField
-            label="Date"
-            value={dateText}
-            onChangeText={setDateText}
-            placeholder="2026-08-31"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="numbers-and-punctuation"
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <TextField
-            label="Time"
-            value={timeText}
-            onChangeText={setTimeText}
-            placeholder="09:00"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="numbers-and-punctuation"
-          />
-        </View>
-      </View>
+      <DateField label="Date" value={dateText} onChange={setDateText} minimumDate={startOfToday()} />
+      <TimeField label="Time" value={timeText} onChange={setTimeText} />
 
       <Text style={[t.type.title, { color: t.colors.ink }]}>Repeat</Text>
       <View style={chipRow}>
@@ -250,14 +236,13 @@ export default function NewVisit() {
               />
             ))}
           </View>
-          <TextField
+          <DateField
             label="Until (optional)"
             value={untilText}
-            onChangeText={setUntilText}
-            placeholder="2026-12-31"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="numbers-and-punctuation"
+            onChange={setUntilText}
+            placeholder="No end date"
+            minimumDate={startOfToday()}
+            onClear={() => setUntilText('')}
           />
         </>
       ) : null}
