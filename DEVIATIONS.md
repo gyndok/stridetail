@@ -1037,3 +1037,73 @@ scoped to the session user by design.
   returns the visit id); it only knows about GPS visits (`active_visit` is written by
   `startVisitTracking`), so a non-GPS in_progress visit has no banner — its Today
   card → detail → "Open active visit" (Task 4) covers that path.
+
+## Plan 4, Task 6 — send-sms function, notification queue, owner surfacing (2026-08-24)
+
+- **Retry policy lives in the FUNCTION, not SQL (chosen per the plan's "pick one"):**
+  the per-minute pg_cron job is a dumb metronome; `send-sms` claims due rows and owns
+  the 1/5/15/60/60/60-minute backoff and 6-attempt cap itself. Claim is race-safe:
+  due ids are read first (oldest `next_attempt_at` first, tiebreak `created_at`,
+  limit 25), then `UPDATE ... SET status='sending' WHERE id IN (...) AND
+  status='queued' RETURNING` — a row a concurrent invocation already flipped is no
+  longer `queued`, so it can never be claimed (and sent) twice. pgTAP 009 pins the
+  claim semantics (due vs future row, re-claim finds zero).
+- **Backoff indexing:** `backoffMinutes(attempts)` takes the 1-based count of the
+  attempt that just FAILED: 1st failure → +1 min, 2nd → +5, 3rd → +15, then hourly;
+  the 6th failure marks the row `failed` (terminal) without another schedule. Out-of
+  -range inputs clamp. Pinned in `templates.test.ts` (deno).
+- **Cron secret is its own Vault secret** (`sms_cron_secret`, random-seeded, guarded)
+  compared constant-time against the function's `SMS_CRON_SECRET` env — deliberately
+  separate from expand-series' secret so leaking one never unlocks the other.
+  `expand_project_url`/`expand_anon_key` are REUSED from migration 0007 (same project,
+  same anon key), not duplicated; they already hold real hosted values from the Plan 3
+  Task 9 deploy, so hosted setup for this migration is only
+  `supabase secrets set SMS_CRON_SECRET=<vault value>`. Local cron is the same
+  deliberate no-op as 0007 (pg_cron cannot reach `functions serve` on the host).
+- **`send-sms` is cron-path only** — no user path at all (unlike expand-series):
+  verify_jwt stays on (anon bearer satisfies the platform), and every request must
+  carry the secret; wrong/missing secret is 403, missing env is 500.
+- **Template placeholders are fetched at send time, not carried in the payload:** the
+  Task-1 queue payloads hold only ids (`visitId`, `reportToken`, invite `token`/`link`),
+  so the sender resolves business name, pet names (joined " & "), and service name via
+  the admin client per row (≤25 rows/run). Missing context degrades to neutral
+  fallbacks ("Your pet care team", "your pet", "scheduled") rather than failing the
+  send. Bodies live in one exported map (`templates.ts`) with a deno test pinning the
+  exact strings; "Stridetail" appears literally in the invite body (edge functions
+  cannot import `src/lib/brand.ts`; the plan's template names it literally).
+- **Report link base:** env `REPORT_BASE_URL`, falling back to
+  `https://stridetail.app/report` (the domain isn't wired yet — Task 7's deploy can
+  point the env at the Expo Web URL without code changes, per the plan's placeholder
+  note).
+- **`visit_reports` mirror (sent_at semantics from Task 1):** a `visit_finished`
+  notification's outcome is mirrored onto its report — `sms_status` set to
+  `sent`/`failed`/`skipped_no_provider` on terminal outcomes, and `sent_at` stamped
+  ONLY on a real provider send (skip leaves it null, asserted in E2E). Intermediate
+  retries do not touch the report.
+- **Owner invite-SMS insert policy (recorded per the task):** notifications were
+  owner-SELECT only (Task 1), so migration 0011 grants `insert` to `authenticated`
+  gated by a narrow policy — sms channel + invite template + own business +
+  born `queued` only; forged statuses, foreign businesses, other templates, walker
+  callers, and owner UPDATEs are all 42501 (pgTAP). 0011 also defaults
+  `notifications.next_attempt_at` to `now()` so no queued row can be born invisible
+  to the due-row picker (`next_attempt_at <= now()`); the Task-1 RPC helper already
+  stamped it explicitly.
+- **Needs-attention SMS line counts ALL problem notifications** (status
+  `failed`/`skipped_no_provider`), invites included — the plan's "simplest robust"
+  query — so the label says "N SMS message(s) not sent" rather than the plan sketch's
+  "N reports not sent", with "— SMS pending setup" appended when every row is
+  `skipped_no_provider`. Per-visit "Report not sent" badges on the schedule list come
+  from the problem rows' `payload.visitId`.
+- **Team screen queues the SMS as a second explicit step** ("Queue SMS invite" button
+  after the share sheet, shown only when the invite contact was a phone number) rather
+  than auto-queueing on invite creation: the share sheet remains the working delivery
+  path until Twilio lands, and an owner who delivered via share shouldn't silently
+  double-notify later when SMS goes live.
+- E2E against `supabase functions serve` (node fetch script, no Twilio env): no JWT
+  401, wrong secret 403, missing secret 403, GET 405; correct secret → 200, exactly
+  the 3 due rows processed (future-dated row untouched), all `skipped_no_provider`
+  with the exact template bodies in the response summary; re-invoke processes 0 rows;
+  DB after: rows terminal with `last_error 'no sms provider configured'`, report
+  `sms_status = skipped_no_provider`, `sent_at` null. 13/13 checks passed. Twilio
+  send path is code-complete but exercised only at the type level (no credentials —
+  by design until A2P 10DLC registration).

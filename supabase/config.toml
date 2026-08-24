@@ -399,6 +399,14 @@ verify_jwt = true
 enabled = true
 verify_jwt = true
 
+# Cron-only queue drain: verify_jwt kept on; the per-minute pg_cron/pg_net job
+# authenticates with the anon key as Bearer plus the x-cron-secret header the
+# function checks itself against SMS_CRON_SECRET — its own secret, separate
+# from expand-series' (see supabase/migrations/20260824000011_sms_cron.sql).
+[functions.send-sms]
+enabled = true
+verify_jwt = true
+
 [analytics]
 enabled = false
 port = 54327

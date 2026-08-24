@@ -1,3 +1,4 @@
+import { buildInviteLink } from '@/src/features/business/inviteLink';
 import { supabase } from '@/src/lib/supabase';
 
 export type MemberRole = 'owner' | 'walker';
@@ -65,4 +66,22 @@ export async function createInvite(
   });
   if (error) throw error;
   return data as string;
+}
+
+/**
+ * Queue an invite SMS through the Plan-4 notifications queue (spec §2 item 2).
+ * The 0011 owner insert policy allows exactly this row shape: sms channel,
+ * invite template, own business, born 'queued'. The per-minute send-sms cron
+ * drains it (skipped_no_provider until Twilio credentials land).
+ */
+export async function queueInviteSms(businessId: string, phone: string, token: string): Promise<void> {
+  const { error } = await supabase.from('notifications').insert({
+    business_id: businessId,
+    channel: 'sms',
+    to: phone,
+    template: 'invite',
+    payload: { token, link: buildInviteLink(token) },
+    next_attempt_at: new Date().toISOString(),
+  });
+  if (error) throw error;
 }

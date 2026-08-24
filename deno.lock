@@ -19,7 +19,10 @@
     "packageJson": {
       "dependencies": [
         "npm:@expo/ui@~57.0.12",
+        "npm:@react-native-community/datetimepicker@9.1.0",
         "npm:@supabase/supabase-js@2.112.3",
+        "npm:@tanstack/query-async-storage-persister@5.102.2",
+        "npm:@tanstack/react-query-persist-client@5.102.2",
         "npm:@tanstack/react-query@^5.102.2",
         "npm:@testing-library/react-native@^14.0.1",
         "npm:@types/aes-js@^3.1.4",

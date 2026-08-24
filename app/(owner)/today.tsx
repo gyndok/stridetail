@@ -6,7 +6,9 @@ import { useActiveBusiness } from '@/src/features/business/active';
 import {
   groupTodayByWalker,
   listActiveMembers,
+  listProblemNotifications,
   listVisits,
+  smsIssueLabel,
   visitDayLabel,
   visitTimeRange,
   visitsOnLocalDay,
@@ -53,11 +55,19 @@ export default function Today() {
     enabled: !!businessId,
     queryFn: () => listActiveMembers(businessId!),
   });
+  // Undelivered SMS (failed / skipped_no_provider) — owner-select RLS, so this
+  // query exists only on the owner Today (walkers would read zero rows anyway).
+  const notifications = useQuery({
+    queryKey: ['notifications', businessId, 'problems'],
+    enabled: !!businessId,
+    queryFn: () => listProblemNotifications(businessId!),
+  });
   useRefetchOnFocus(visits.refetch);
 
   const all = visits.data ?? [];
   const unassignedCount = all.filter((v) => v.status === 'unassigned').length;
   const declined = all.filter((v) => v.decline_reason != null && v.status === 'unassigned');
+  const smsLabel = smsIssueLabel(notifications.data ?? []);
   const groups = groupTodayByWalker(visitsOnLocalDay(all, new Date()), members.data ?? []);
 
   const openVisit = (v: Visit) => router.push(`/schedule/${v.id}` as Href);
@@ -67,13 +77,16 @@ export default function Today() {
       <Text style={[t.type.title, { color: t.colors.ink }]}>Needs attention</Text>
       {visits.isLoading ? (
         <Text style={{ color: t.colors.inkMuted }}>Loading…</Text>
-      ) : unassignedCount === 0 && declined.length === 0 ? (
+      ) : unassignedCount === 0 && declined.length === 0 && !smsLabel ? (
         <Text style={{ color: t.colors.inkMuted }}>All visits are covered.</Text>
       ) : (
         <Card style={{ gap: t.space.sm }}>
-          <Text style={{ color: t.colors.ink, fontWeight: '700' }}>
-            {unassignedCount} unassigned visit{unassignedCount === 1 ? '' : 's'} in the next 14 days
-          </Text>
+          {unassignedCount > 0 || declined.length > 0 ? (
+            <Text style={{ color: t.colors.ink, fontWeight: '700' }}>
+              {unassignedCount} unassigned visit{unassignedCount === 1 ? '' : 's'} in the next 14 days
+            </Text>
+          ) : null}
+          {smsLabel ? <Text style={{ color: t.colors.warning, fontWeight: '700' }}>{smsLabel}</Text> : null}
           {declined.map((v) => (
             <Pressable
               key={v.id}

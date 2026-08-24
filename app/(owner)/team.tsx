@@ -3,7 +3,12 @@ import { useState } from 'react';
 import { Share, Text } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
-import { createInvite, type MemberRole, type MembershipStatus } from '@/src/features/business/api';
+import {
+  createInvite,
+  queueInviteSms,
+  type MemberRole,
+  type MembershipStatus,
+} from '@/src/features/business/api';
 import { buildInviteLink } from '@/src/features/business/inviteLink';
 import { APP_NAME } from '@/src/lib/brand';
 import { supabase } from '@/src/lib/supabase';
@@ -30,6 +35,11 @@ export default function Team() {
   const [contact, setContact] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set when the last created invite had a phone number: offers queueing the
+  // invite link as an SMS through the Plan-4 notifications queue.
+  const [pendingSms, setPendingSms] = useState<{ phone: string; token: string } | null>(null);
+  const [smsBusy, setSmsBusy] = useState(false);
+  const [smsQueued, setSmsQueued] = useState(false);
   const members = useQuery({
     queryKey: ['members', businessId],
     enabled: !!businessId,
@@ -50,9 +60,12 @@ export default function Team() {
     if (!businessId || !trimmed) return;
     setBusy(true);
     setError(null);
+    setPendingSms(null);
+    setSmsQueued(false);
     try {
       const isEmail = trimmed.includes('@');
       const token = await createInvite(businessId, 'walker', isEmail ? { email: trimmed } : { phone: trimmed });
+      if (!isEmail) setPendingSms({ phone: trimmed, token });
       await Share.share({ message: `Join my team on ${APP_NAME}: ${buildInviteLink(token)}` });
       setContact('');
       await members.refetch();
@@ -60,6 +73,20 @@ export default function Team() {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function queueSms() {
+    if (!businessId || !pendingSms) return;
+    setSmsBusy(true);
+    setError(null);
+    try {
+      await queueInviteSms(businessId, pendingSms.phone, pendingSms.token);
+      setSmsQueued(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSmsBusy(false);
     }
   }
 
@@ -84,6 +111,18 @@ export default function Team() {
       />
       {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
       <Button title="Create invite link" onPress={() => void invite()} loading={busy} />
+      {pendingSms ? (
+        <Card style={{ gap: t.space.sm }}>
+          <Text style={{ color: t.colors.ink }}>Invite created for {pendingSms.phone}</Text>
+          {smsQueued ? (
+            <Text style={{ color: t.colors.inkMuted }}>
+              SMS queued — it sends automatically once SMS delivery is set up.
+            </Text>
+          ) : (
+            <Button title="Queue SMS invite" variant="ghost" onPress={() => void queueSms()} loading={smsBusy} />
+          )}
+        </Card>
+      ) : null}
     </Screen>
   );
 }

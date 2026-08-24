@@ -8,9 +8,11 @@ import { useActiveBusiness } from '@/src/features/business/active';
 import {
   groupVisitsByLocalDay,
   listActiveMembers,
+  listProblemNotifications,
   listVisits,
   memberName,
   needsAttention,
+  problemVisitIds,
   visitTimeRange,
   type Visit,
 } from '@/src/features/schedule/api';
@@ -57,10 +59,18 @@ export default function ScheduleIndex() {
     enabled: !!businessId,
     queryFn: () => listActiveMembers(businessId!),
   });
+  // "Report not sent" badges: visits referenced by failed / skipped_no_provider
+  // notification rows (owner-select RLS — owner screen only).
+  const notifications = useQuery({
+    queryKey: ['notifications', businessId, 'problems'],
+    enabled: !!businessId,
+    queryFn: () => listProblemNotifications(businessId!),
+  });
   useRefetchOnFocus(visits.refetch);
 
   const filtered = applyFilter(visits.data ?? [], filter);
   const groups = groupVisitsByLocalDay(filtered);
+  const smsProblemVisits = problemVisitIds(notifications.data ?? []);
 
   return (
     <Screen title="Schedule">
@@ -111,6 +121,14 @@ export default function ScheduleIndex() {
                   <Text style={{ color: t.colors.danger, fontSize: 12 }}>
                     Declined: {v.decline_reason}
                   </Text>
+                ) : null}
+                {smsProblemVisits.has(v.id) ? (
+                  <View
+                    style={{ alignSelf: 'flex-start', borderWidth: 1, borderColor: t.colors.warning,
+                      borderRadius: t.radius.pill, paddingHorizontal: t.space.sm, paddingVertical: t.space.xs / 2 }}
+                  >
+                    <Text style={{ color: t.colors.warning, fontSize: 12, fontWeight: '700' }}>Report not sent</Text>
+                  </View>
                 ) : null}
               </Card>
             </Pressable>

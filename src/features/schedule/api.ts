@@ -287,6 +287,40 @@ export function needsAttention(v: { status: string; decline_reason: string | nul
   return v.status === 'unassigned' || v.decline_reason != null;
 }
 
+// ---- SMS delivery surfacing (Plan 4 Task 6) ----
+
+export type ProblemNotification = {
+  id: string;
+  template: string;
+  status: 'failed' | 'skipped_no_provider';
+  payload: Record<string, unknown>;
+};
+
+/**
+ * Owner-only strip line for undelivered SMS. All problem rows count (invites
+ * included — the query is by terminal status, the simplest robust signal);
+ * when every one is skipped_no_provider the label says why (Twilio not yet
+ * configured) instead of implying a transient failure.
+ */
+export function smsIssueLabel(notifs: { status: string }[]): string | null {
+  const n = notifs.length;
+  if (n === 0) return null;
+  const noun = n === 1 ? 'SMS message' : 'SMS messages';
+  return notifs.every((x) => x.status === 'skipped_no_provider')
+    ? `${n} ${noun} not sent — SMS pending setup`
+    : `${n} ${noun} not sent`;
+}
+
+/** Visit ids referenced by problem notifications ("Report not sent" badges). */
+export function problemVisitIds(notifs: ProblemNotification[]): Set<string> {
+  const ids = new Set<string>();
+  for (const nf of notifs) {
+    const v = nf.payload['visitId'];
+    if (typeof v === 'string') ids.add(v);
+  }
+  return ids;
+}
+
 export type ScheduleMember = {
   user_id: string;
   role: 'owner' | 'walker';
@@ -424,6 +458,23 @@ export async function getVisit(businessId: string, id: string): Promise<Visit> {
     .single();
   if (error) throw error;
   return data as unknown as Visit;
+}
+
+/**
+ * Undelivered SMS rows for the business. Owner-select RLS makes this
+ * owner-only by construction (walkers read zero rows); 'failed' means the
+ * sender gave up after its retry schedule, 'skipped_no_provider' means Twilio
+ * credentials are not configured yet.
+ */
+export async function listProblemNotifications(businessId: string): Promise<ProblemNotification[]> {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, template, status, payload')
+    .eq('business_id', businessId)
+    .in('status', ['failed', 'skipped_no_provider'])
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as ProblemNotification[];
 }
 
 /** Active members of the business (owner included) for picker rows and names. */
