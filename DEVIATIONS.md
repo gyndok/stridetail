@@ -511,3 +511,43 @@ in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
   walkers incl. the cancelled-visit case and zero-rows walker, walker write denials,
   all four reveal denial actors + no-audit accounting, decrypt round trip + audit meta,
   owner-side spot checks, cross-business counts, anon execute denial).
+
+## Plan 3, Task 3 — recurrence + conflict lib, status-machine mirror (2026-08-23)
+
+- **Versions (recorded per the plan):** `date-fns 4.4.0`, `date-fns-tz 3.2.0`, pinned exact
+  in `package.json` (no caret, matching the supabase-js/aes-js style). Installed with
+  `bun add --exact` rather than `bunx expo install` — both are pure JS with no native
+  module, so Expo version alignment does not apply.
+- **Nonexistent-hour resolution (documented per the plan):** date-fns-tz 3.2.0
+  `fromZonedTime` resolves a wall time inside the spring-forward gap using the
+  POST-transition offset. 02:30 on 2026-03-08 in America/Chicago (the 02:00–03:00 hour
+  does not exist) becomes `2026-03-08T07:30:00Z`, an instant that renders locally as
+  01:30 CST — one hour before the gap closes. The exact instant is pinned in
+  `recur.test.ts` so a library upgrade that changes the rule fails loudly. Ambiguous
+  fall-back times take the FIRST (pre-transition, CDT) occurrence — also pinned.
+- **Weekday convention:** 0 = Sunday … 6 = Saturday (JS `getDay()`), always evaluated on
+  the LOCAL calendar date in the business tz. The DB's `availability_rules.weekday`
+  check (0–6) does not pin a mapping; this app-level convention is now the contract for
+  Tasks 6–7 and the Task 4 Deno expansion.
+- **`expandWeekly` bounds:** half-open — `from <= start < until` — pinned by tests down
+  to 1 ms either side. `end` is `durationMin` absolute minutes after `start` (a walk
+  crossing the spring-forward jump is still its real length; wall clock is not
+  preserved for `end`).
+- **Midnight-crossing availability (decided per the plan, simplest option):** not
+  supported. Rules are same-local-day ranges (the DB already enforces
+  `end_local > start_local`); an inverted range reaching the client matches nothing
+  rather than wrapping, and a visit spanning two local calendar dates is never
+  `withinAvailability` — even when back-to-back rules cover both sides of midnight.
+  Both behaviors are unit-tested.
+- **`canTransition` actor shape:** `(from, to, {role, isAssignee})` rather than the plan
+  sketch's positional `(from, to, role, isAssignee)` — same information, harder to
+  transpose at call sites. The trigger's `walker_ok` checks only
+  `walker_id = auth.uid()`, so the mirror keys the walker-side transitions on
+  `isAssignee` alone: an owner who self-assigned passes accept/start/complete too,
+  exactly like the DB. Same-status "transitions" return `false` (the trigger no-ops
+  them; they are not transitions the UI should offer). Data-shape requirements
+  (offer/accept need a walker, decline needs a reason + clears the walker) stay with
+  the trigger/RPCs — `canTransition` answers only who-may-move-where. The full
+  6×6×4 matrix (144 cases) is looped in `machine.test.ts` against an independently
+  written restatement of the trigger, and the allow-list lives in one literal table in
+  `machine.ts` so a future change is one edit.
