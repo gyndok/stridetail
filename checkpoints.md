@@ -119,3 +119,31 @@ Screenshots → `docs/evidence/cp2-owner-tabs.png`, `cp2-walker-tabs.png`, `cp2-
 | Result (PASS / FAIL + notes) | Steps 1–5 PASS. 1–2: sign-up + business on Device A (tz America/Chicago auto). 3: invite created + share sheet. 4: deep link on B routed signed-out user to sign-up → "You're invited" → Accept → **walker tabs** (evidence `docs/evidence/cp2-walker-tabs.png`); DB shows both memberships active, token cleared. 5 PASS: after force-quit + relaunch on Device A, Team lists "Simulated · walker · active". 8 PASS: relaunch kept the owner signed in (SecureStore session). 6–7 PASS (after shared-SettingsScreen fix): walker signed out from new Settings tab → sign-in screen → signed back in → walker tabs restored. Overall: **PASS, all steps.** |
 
 **Follow-up resolved 2026-08-23:** walker tab shell now has a Settings tab (shared `SettingsScreen`); sign-out/sign-in verified on the simulator.
+
+## Checkpoint 3 — two-device scheduling + reveal denied before start (Plan 3)
+
+**Status: PENDING.** Scheduling flows are unit/pgTAP-verified; this proves them on real
+devices and covers judging step 2 plus the first half of step 3.
+
+### Procedure
+1. Device A (owner, preview build `c76a4186` or later): Schedule → Add — pick client
+   (Karla Klein), service (Walk), pets, tomorrow 09:00, walker = Simulated (or Alexandra
+   once onboarded) → Create. Expect status "offered" and the walker's flags visible in
+   the picker.
+2. Device B (walker; simulator dev build works): Today shows the offer → Accept.
+3. Device A: Today/Schedule shows the visit as accepted with the walker's name;
+   needs-attention stays clear.
+4. Device B: open the visit's client → 🔒 Access codes → Reveal → **expect DENIAL**
+   ("only available while the visit is in progress"). Owner's audit log gains NO
+   access.reveal row.
+5. Bonus: Device B declines a second offered visit with a reason → Device A sees it in
+   the needs-attention strip with the reason.
+
+### Evidence
+Screenshots → docs/evidence/cp3-*.png; fill the table.
+
+| Field | Value |
+| --- | --- |
+| Date / devices / builds | |
+| Steps passed | |
+| Result | |
