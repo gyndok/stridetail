@@ -44,7 +44,7 @@ Last updated: 2026-08-23
   | 6 | pets crud + photo + profile | [x] | e2a36ef |
   | 7 | vaccine documents + access codes UI | [x] | d017049 |
   | 8 | hosted deploy, checklist, build | [x] | migrations 1–4 on hosted, advisor hardening, smoke-tested |
-- [~] Plan 3 — written 2026-08-23 (`docs/superpowers/plans/2026-08-24-stridetail-plan3-scheduling.md`); executing
+- [x] Plan 3 — COMPLETE 2026-08-23 (all 10 tasks; Checkpoint 3 passed)
 
   | # | Plan 3 task | Status | Commit |
   |---|-------------|--------|--------|
@@ -123,7 +123,7 @@ Last updated: 2026-08-23
 
 1. [ ] Create business; invite contractor; contractor accepts on second phone
 2. [ ] Client w/ codes + pet w/ vaccine PDF; schedule walk; contractor accepts; owner sees it
-3. [ ] Reveal codes denied before Start, shown after; owner sees audit entry
+3. [~] Reveal codes denied before Start — PROVEN (Checkpoint 3); shown-after + audit entry lands with Plan 4's start flow
 4. [~] **Checkpoint 1** — airplane mode, force-kill, relaunch, finish: PASS (GPS only); events/photos/sync pending Plan 4
 5. [ ] Client phone gets "started"/"finished" SMS; report shows branding/map/photos, no address/codes/price
 6. [ ] Owner reschedules on laptop week grid; walker sees change

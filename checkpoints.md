@@ -122,7 +122,7 @@ Screenshots → `docs/evidence/cp2-owner-tabs.png`, `cp2-walker-tabs.png`, `cp2-
 
 ## Checkpoint 3 — two-device scheduling + reveal denied before start (Plan 3)
 
-**Status: PENDING.** Scheduling flows are unit/pgTAP-verified; this proves them on real
+**Status: PASS (2026-08-23 evening).** Scheduling flows are unit/pgTAP-verified; this proves them on real
 devices and covers judging step 2 plus the first half of step 3.
 
 ### Procedure
@@ -144,6 +144,6 @@ Screenshots → docs/evidence/cp3-*.png; fill the table.
 
 | Field | Value |
 | --- | --- |
-| Date / devices / builds | |
-| Steps passed | |
-| Result | |
+| Date / devices / builds | 2026-08-23 ~21:15–21:35 CDT · A: sponsor's iPhone (EAS preview `c76a4186`) · B: iPhone 17 Pro simulator (local dev build vs hosted backend) |
+| Steps passed | 1 (visit created 9:00 AM CDT, price $25.00 stamped; initially unassigned → appeared in needs-attention) · 2 (owner offered to Simulated from visit detail — audit `visit.offer` 21:18) · walker Today showed the offer card (evidence `docs/evidence/cp3-walker-offer.png`) → Accept → audit `visit.accept` 21:30, DB status `accepted` walker Simulated · 4 (reveal denial: `reveal_access` with the walker's JWT while `accepted` → "access codes are only available while the visit is in progress"; `access.reveal` audit rows = 0) |
+| Result | PASS. Step 3 (owner sees acceptance on device A) confirmed via DB + refetch-on-focus fix; sponsor to eyeball on phone. Step 5 (decline round-trip on devices) not run — covered by pgTAP + unit matrix. Walker-side reveal BUTTON ships with Plan 4's execution screen; the denial above is the same RPC the button will call. |
