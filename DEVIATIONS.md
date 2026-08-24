@@ -665,3 +665,50 @@ in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
   validation and mutation errors render inline under the fields per the plan.
 - Manual simulator run not performed this session; `bun run test` (321),
   `typecheck`, and `lint` are green. Device coverage arrives with Checkpoint 3.
+
+## Plan 3, Task 7 — owner scheduling: visits api, create form, walker picker (2026-08-23)
+
+- **Walker names are joined client-side:** `visits.walker_id` references `auth.users`
+  with NO second FK to `public.profiles` (unlike `memberships`, which got one in
+  migration 20260823000002), so a PostgREST `walker:profiles(display_name)` embed on
+  visits is impossible. Screens fetch the roster once via `listActiveMembers`
+  (memberships → profiles embed, the team.tsx pattern) and resolve names with
+  `memberName()`. No new migration; adding a profiles FK to visits is left for
+  whenever a server-side join is actually needed.
+- **Every visits read names columns** (`VISIT_COLUMNS`, embeds included) — never
+  `select('*')`, never a bare returning `.select()` — because the
+  `price_cents_snapshot` column grant rejects both for all client roles, owner
+  included (Plan 3 Task 1 deviation). Inserts return `.select('id')` only. A test
+  pins that `VISIT_COLUMNS` contains no `*` and no price column.
+- **Force-assign routing lives in `createVisit`:** it compares the picked walker to
+  the local session user — self picks insert directly as `accepted` with `walker_id`
+  (legal: the transition trigger fires only on UPDATE of status, and the owner may
+  force-assign anyway), other walkers insert unassigned then route through the
+  `offer_visit` RPC so the audit trail and offered flow apply. No walker picked =
+  plain unassigned insert.
+- **A weekly repeat requires a walker:** `visit_series.walker_id` is NOT NULL (Task 1),
+  so the form blocks creating a series with no walker selected instead of silently
+  downgrading to one-offs.
+- **Reassign/offer UI is machine-gated to `unassigned` visits only:** the mirror has
+  no `offered→offered` edge, so re-offering an already-offered visit or moving an
+  accepted one is not offered in the UI (decline resets to unassigned, which is the
+  reassignment entry point). Cancel is gated by `canTransition(status, 'cancelled',
+  owner)` behind an Alert confirm.
+- `pickerContext` counts overlaps from assigned (`walker_id not null`), non-cancelled
+  visits overlapping the window (half-open, touching edges don't overlap — Task 3
+  semantics), and `walkerFlags` takes an `excludeVisitId` so a visit being reassigned
+  never counts itself. Availability rules and time off are fetched business-wide
+  (owner RLS select paths from Task 1), deliberately NOT via the user_id-pinned
+  `features/availability` list functions.
+- `listVisits` windows on `scheduled_start ∈ [fromUtc, toUtc)`; the index screen shows
+  the next 14 days grouped by LOCAL day in each visit's own stamped `business_tz`
+  (`groupVisitsByLocalDay`), with All / Unassigned / Needs-attention chips
+  (needs attention = unassigned OR carries a `decline_reason`).
+- `rescheduleVisit` exists in the api (plan list) but has no UI yet — the plan's
+  `[id].tsx` scope is reassign/offer + cancel + decline-reason display.
+- The plan's `declined-reasons` and `needs-attention` chips collapse into one
+  "Needs attention" chip: decline resets status to unassigned, so "declined with
+  reason" is a subset of needs-attention rows and a separate chip would only ever
+  show a subset of the same list.
+- Manual simulator run not performed this session; `bun run test` (341), `typecheck`,
+  and `lint` are green. Device coverage arrives with Checkpoint 3.
