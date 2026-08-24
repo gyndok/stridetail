@@ -106,7 +106,19 @@ kickoff, a numbered on-device **judging script** in the spec, `DEVIATIONS.md` an
   "Dog Walker" / PawPath learning project** (sponsor-approved wipe of its schema and users on
   2026-08-23; the existing $10/mo project was reused instead of paying for a new one). All
   Stridetail migrations are tracked there via the Supabase MCP.
-- Start Twilio A2P 10DLC registration early (days to approve); Google Maps API key for Android.
+- **Client notifications: no Twilio 10DLC** (decided 2026-08-24). The sponsor has been rejected
+  before for missing business credentials, and 10DLC is a *per-tenant* burden — carriers tie the
+  sending identity to a verified business, so every future Stridetail customer would face the
+  same paperwork. Plan instead: **email first** (Resend/Postmark on the owned `stridetail.app`
+  domain — `notifications.channel` is plain text and `clients.email` exists, so it's a new
+  send-email function, not a migration) **plus device-composed SMS** (a "Text the client" button
+  that opens Messages pre-filled with the report link from the walker's own phone: no approval,
+  and it matches how Alexandra texts clients today). **Parked for later: toll-free verification**
+  (Twilio/Telnyx/Bandwidth) — a much lower bar than 10DLC; clearing it re-enables automated SMS
+  by flipping a channel value, no app changes. Rejected: WhatsApp Business API (Meta verification
+  is at least as hard), iMessage (no send API). Client app + push is slice 3 — slice-1 clients
+  install nothing. The `send-sms` function stays as built and idle.
+- Google Maps API key for Android.
 
 ## Open items
 

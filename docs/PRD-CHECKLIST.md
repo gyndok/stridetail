@@ -144,7 +144,13 @@ Last updated: 2026-08-24
 ## Spec §13 / handoff — Open items (sponsor)
 
 - [x] USPTO + App Store / Play knockout searches clean; **stridetail.com and stridetail.app registered** (Squarespace, auto-renew to 2029-08-23, WHOIS privacy + lock on) — 2026-08-23
-- [ ] Twilio A2P 10DLC registration (start early — takes days)
+- [x] ~~Twilio A2P 10DLC~~ — **dropped 2026-08-24** (prior rejections + per-tenant burden); see
+  `docs/HANDOFF.md`. Replaced by: email channel + device-composed SMS
+- [ ] Email channel: `send-email` edge function + `channel='email'` rows (Resend/Postmark on
+  `stridetail.app`) — unblocks real delivery for Checkpoint 4
+- [ ] Device-composed SMS: "Text the client" button (pre-filled `sms:` link) on the owner visit
+  detail and the walker finish flow
+- [ ] Parked: toll-free SMS verification — revisit when automated texting is wanted
 - [ ] Google Maps API key for Android
 - [~] Apple Developer, Google Play, Expo/EAS accounts — Apple (individual, team NJ4JGW72MW) + EAS (`geffreykleins-team`) done; **App Store Connect app record "Stridetail" created (1.0 Prepare for Submission)**; Google Play pending; platform entity TBD
 - [x] Docker on the Mac mini (colima) — `bun run db:test` runs
