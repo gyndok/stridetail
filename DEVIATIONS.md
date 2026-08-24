@@ -640,3 +640,28 @@ in Vault), with a migration that re-encrypts existing rows tenant-by-tenant.
 - Screens stay untested markup over tested helpers (`form.test.ts` 12 tests,
   `api.test.ts` 4 query-shape tests with the chain-recorder mock), matching the
   established approach.
+
+## Plan 3, Task 6 — walker availability + time off UI (2026-08-23)
+
+- **No tz conversion for availability (recorded per the plan):** `availability_rules`
+  stores plain `time` columns, so rules are local wall-clock ranges saved exactly as
+  typed — the weekday grouping is merely read in the business-tz context. Weekday
+  convention is JS getDay() (0 = Sunday … 6 = Saturday), matching the Task 3 lib
+  contract. Midnight-crossing ranges stay unsupported (Task 3 decision; the form's
+  same-day `start < end` validation mirrors the DB's `end_local > start_local`).
+- **Time off is instant-based:** the form takes 'YYYY-MM-DD HH:MM' wall times in the
+  BUSINESS tz (`businesses.time_zone` via the active membership — never a hardcoded
+  zone) and converts with date-fns-tz `fromZonedTime`, inheriting the Task 3 DST
+  semantics: a spring-forward gap wall time resolves with the post-transition offset
+  (pinned in `api.test.ts` with the same 2026-03-08 Chicago vector as `recur.test.ts`).
+  List rows render back in the business tz via `formatInTimeZone`.
+- `parseLocalTime` is leniently zero-padded ('9:30' → '09:30') but rejects seconds and
+  out-of-range values; `parseLocalDateTime` additionally rejects impossible calendar
+  dates (2026-02-30) via a UTC round-trip probe.
+- Both tables' RLS is "member manages own rows" (Task 1), so every API call pins
+  `user_id` from `supabase.auth.getSession()` (local, no network — the
+  `listMyMemberships` pattern). Signed-out reads resolve `[]`; signed-out writes throw.
+- One per-day add form is open at a time (opening another day resets the fields);
+  validation and mutation errors render inline under the fields per the plan.
+- Manual simulator run not performed this session; `bun run test` (321),
+  `typecheck`, and `lint` are green. Device coverage arrives with Checkpoint 3.
