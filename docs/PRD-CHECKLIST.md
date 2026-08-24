@@ -44,7 +44,20 @@ Last updated: 2026-08-23
   | 6 | pets crud + photo + profile | [x] | e2a36ef |
   | 7 | vaccine documents + access codes UI | [x] | d017049 |
   | 8 | hosted deploy, checklist, build | [x] | migrations 1–4 on hosted, advisor hardening, smoke-tested |
-- [ ] Plan 3 — services, availability, time off, visits, series, assignment, accept/decline (stage 5)
+- [~] Plan 3 — written 2026-08-23 (`docs/superpowers/plans/2026-08-24-stridetail-plan3-scheduling.md`); executing
+
+  | # | Plan 3 task | Status | Commit |
+  |---|-------------|--------|--------|
+  | 1 | scheduling schema + status machine + assignment RPCs | [ ] | |
+  | 2 | walker visibility via visits + `reveal_access(visit_id)` | [ ] | |
+  | 3 | recurrence + conflict lib (DST-proof) | [ ] | |
+  | 4 | expand-series edge function + nightly cron | [ ] | |
+  | 5 | services management UI | [ ] | |
+  | 6 | walker availability + time off UI | [ ] | |
+  | 7 | owner scheduling + walker picker | [ ] | |
+  | 8 | walker accept/decline + owner needs-attention | [ ] | |
+  | 9 | hosted deploy, advisors, build | [ ] | |
+  | 10 | **Checkpoint 3** — two-device scheduling + reveal denied before start | [ ] | |
 - [ ] Plan 4 — visit execution UI, reports, `report-public`, SMS retries, Expo Web layout (stages 6–8)
 
 ---
