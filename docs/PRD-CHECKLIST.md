@@ -64,7 +64,7 @@ Last updated: 2026-08-24
   |---|-------------|--------|--------|
   | 1 | events/tracks/reports/notifications schema + start/finish RPCs | [x] | `b1bd3b5` |
   | 2 | ingest-track function + walker media policy | [x] | `6cad8c7` |
-  | 3 | offline day cache + outbox sync worker | [ ] | |
+  | 3 | offline day cache + outbox sync worker | [x] | `42ec5a3` |
   | 4 | walker visit detail + gated start | [ ] | |
   | 5 | active visit: field mode, events, photos, reveal, finish | [ ] | |
   | 6 | send-sms + notification queue + owner surfacing | [ ] | |
@@ -84,7 +84,7 @@ Last updated: 2026-08-24
 5. [~] Scheduling: one-off + weekly series (8-week expansion), assignment offer/accept/decline, availability, time off, conflict-aware picker, needs-attention *(Plan 3; device verification = Checkpoint 3)*
 6. [~] Visit execution: Today, start/finish, background GPS, per-pet timestamped events, multi-pet, private notes — *GPS + outbox foundation done (Tasks 3–5); UI in Plan 4*
 7. [ ] Reports: tokenised public page, SMS on start/finish, retry, owner resend/revoke *(Plan 4)*
-8. [~] Offline: day cache + ordered outbox sync — *outbox + GPS buffer done; cache + sync worker in Plan 4*
+8. [~] Offline: day cache + ordered outbox sync — *sync worker + persisted query cache + grace-window reveal helpers done (Plan 4 Task 3); field screens consuming them in Tasks 4–5*
 9. [ ] Expo Web owner layout ≥ 900 px: rail nav, week grid *(Plan 4)*
 10. [~] White-label: name/logo/accent everywhere — *theme provider accent override done (Task 2); surfaces pending*
 
@@ -109,8 +109,8 @@ Last updated: 2026-08-24
 
 ## Spec §8 — Offline and GPS
 
-- [ ] Day cache (today ±2 d) via persisted TanStack cache; codes never cached, grace-window reveal
-- [~] Outbox: local-first writes, in-order sync worker, idempotent by `client_uuid` — *store done; worker pending*
+- [~] Day cache (today ±2 d) via persisted TanStack cache; codes never cached, grace-window reveal — *persister over `expo-sqlite/kv-store` with whitelisted key prefixes (never access keys), 48 h maxAge, wired in `_layout`; secure-store grace helpers built + tested (Plan 4 Task 3); active-visit UI consumes the grace path in Task 5*
+- [x] Outbox: local-first writes, in-order sync worker, idempotent by `client_uuid` — *ordered drain with stop-on-retryable + backoff, permanent 4xx parked as `error`, photo-then-event sequencing, already-done RPC conflicts = success; kicks on foreground/append/segment-roll + 30 s active-visit interval (Plan 4 Task 3)*
 - [x] GPS task: 5 s / 10 m, High accuracy, SQLite `track_points`, 60 s segment roll-up *(Task 5)*
 - [x] Recovery: re-register task + restore active visit on relaunch *(Task 5 — verified on device, Checkpoint 1)*
 - [ ] Notification retry with backoff (1/5/15/60 min, 6 attempts) + "Report not sent" badge
