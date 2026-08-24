@@ -63,7 +63,7 @@ Last updated: 2026-08-24
   | # | Plan 4 task | Status | Commit |
   |---|-------------|--------|--------|
   | 1 | events/tracks/reports/notifications schema + start/finish RPCs | [x] | `b1bd3b5` |
-  | 2 | ingest-track function + walker media policy | [ ] | |
+  | 2 | ingest-track function + walker media policy | [x] | `6cad8c7` |
   | 3 | offline day cache + outbox sync worker | [ ] | |
   | 4 | walker visit detail + gated start | [ ] | |
   | 5 | active visit: field mode, events, photos, reveal, finish | [ ] | |
