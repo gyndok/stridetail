@@ -228,7 +228,7 @@ Last updated: 2026-08-25
   |---|-------------|--------|--------|
   | 1 | auto-invoice setting + finish hook + payout RPCs | [x] | `a76ee3f` |
   | 2 | payouts UI + billing settings | [x] | `875b3c4` |
-  | 3 | combined report+invoice page + Venmo/tip link | [ ] | |
+  | 3 | combined report+invoice page + Venmo/tip link | [x] | `158e32d` |
   | 4 | polish: resend, true preview amounts, missed visits | [ ] | |
   | 5 | hosted deploy, OTA, Checkpoint 6 | [ ] | |
 - [x] Icon system v1 — 19 theme-wired SVG icons, tab bars + event buttons + lock/billing rows wired, `/dev/icons` preview route (`24924e9`) *(2026-08-25)* — **react-native-svg is a native module: do NOT publish an OTA carrying this before the next dev-client rebuild + EAS build**
