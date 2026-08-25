@@ -227,7 +227,7 @@ Last updated: 2026-08-25
   | # | Plan 6 task | Status | Commit |
   |---|-------------|--------|--------|
   | 1 | auto-invoice setting + finish hook + payout RPCs | [x] | `a76ee3f` |
-  | 2 | payouts UI + billing settings | [ ] | |
+  | 2 | payouts UI + billing settings | [x] | `875b3c4` |
   | 3 | combined report+invoice page + Venmo/tip link | [ ] | |
   | 4 | polish: resend, true preview amounts, missed visits | [ ] | |
   | 5 | hosted deploy, OTA, Checkpoint 6 | [ ] | |
