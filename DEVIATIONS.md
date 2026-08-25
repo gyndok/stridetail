@@ -1819,3 +1819,49 @@ deployed-but-dormant for a possible toll-free future.
   subject and text incl. total due and `stridetail.app/invoice/<token>` link.
 - Migrations untouched; `db:reset`/`db:test` not rerun (nothing schema-side
   changed). Checks: 626 jest (49 suites), 37 deno, typecheck, lint all green.
+
+## Plan 5, Task 6 — hosted deploy, checklist, OTA, Checkpoint 6 script (2026-08-25)
+
+- Migrations 20260825000001–2 applied to hosted `vrxoswukuiaerhwammlh` via MCP
+  `apply_migration` (verbatim file content, name = filename stem — Plan 4 Task 9
+  pattern). Functions deployed with the repo's copy pattern (`../_shared/cors.ts`
+  rewritten to a bundled `./cors.ts`, test files excluded): `invoice-public` NEW with
+  verify_jwt OFF (public by design — the 48-hex token is the credential, per its
+  config.toml and file header), `send-email` REDEPLOYED (version 6) with verify_jwt ON,
+  now carrying the `invoice_ready` template. `INVOICE_BASE_URL` secret deliberately NOT
+  set: the in-code `https://stridetail.app/invoice` fallback is the correct hosted value.
+- **Hosted smoke (SQL role-impersonated owner + unauthenticated HTTPS, SMOKE-prefixed
+  fixtures, deleted afterwards): all checks passed** —
+  - `record_deposit` 2500 → held; `create_invoice` → INV-0001 draft with `visit` item
+    4500 (fixture completed visit, snapshot 4500) + `deposit_credit` −2500, deposit
+    flipped applied; `send_invoice` → sent, 48-char token, `invoice_ready` email row
+    queued with matching `{invoiceId, invoiceToken}` payload.
+  - `invoice-public` over HTTPS with no auth headers: 16/16 (200, EXACT key sets at all
+    levels, `clientFirstName` "SMOKE" only — no full-name leak, INV-0001, business tz,
+    both items, balance 2000). `record_payment` Venmo 2000 → **paid**, `paid_at` set,
+    `invoice_totals` 2000/2000/0, `invoice.paid` audit row; re-fetch → paidAt present,
+    balance 0. Second (empty) invoice sent then `void_invoice` → status void,
+    revoked_at stamped, token → byte-exact `{"error":"not found"}` 404.
+  - Audit accounting on hosted: invoice.create ×2, invoice.send ×2, invoice.paid ×1,
+    invoice.void ×1 (plus deposit.record/apply and payment.record).
+- **Smoke `invoice_ready` notification rows were deleted INSIDE the creating
+  transaction** (after asserting channel/template/payload): Resend is LIVE on hosted
+  with a per-minute cron, so a committed queued row would have been really delivered
+  to the throwaway `smoke-billing@example.com` within a minute. The queue mechanics
+  themselves were proven in the Plan 4 smoke and locally in Task 5's E2E drain.
+- Cleanup verified back to exact pre-smoke counts (invoices/items/deposits/payments
+  0/0/0/0, clients 1, visits 8, notifications 6) and `invoice_next_number` reset to 1 —
+  beyond row counts — so the sponsor's first real invoice is INV-0001, not INV-0003.
+- **Advisor sweep (security): zero new findings.** Everything reported is a
+  pre-recorded acceptance: `client_access` deny-all INFO + `services_public`
+  definer-view ERROR (Plan 2 Task 8), and the authenticated-executable definer-RPC
+  WARNs — the ten Plan-5 billing RPCs are new instances of that same accepted pattern
+  (guarded RPCs are the API; public/anon revoked, `is not true` owner gates,
+  search_path pinned). No follow-up migration needed.
+- Local checks all green post-deploy: 626 jest (49 suites), 439 pgTAP (12 files),
+  typecheck, lint.
+- Checkpoint 6 script appended to `checkpoints.md` as PENDING: the walker half asserts
+  billing **blindness only** — payout-statement visibility (spec §7's "walker sees
+  their finalized payout statement") needs Plan 6's finalize RPC/UI, so it moves to
+  Plan 6's checkpoint run, per the plan's "Plan 6 picks up payouts UI + Checkpoint 6
+  device run".

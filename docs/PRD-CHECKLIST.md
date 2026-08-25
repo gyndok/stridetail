@@ -204,7 +204,8 @@ Last updated: 2026-08-25
 
 ## Slice 2 — Bill (spec 2026-08-25; Plans 5–6)
 
-- [~] Plan 5 — invoices, deposits, payments (`docs/superpowers/plans/2026-08-25-stridetail-plan5-invoices.md`); executing
+- [x] Plan 5 — COMPLETE 2026-08-25 (all 6 tasks; Checkpoint 6 device run rides Plan 6)
+  (`docs/superpowers/plans/2026-08-25-stridetail-plan5-invoices.md`)
 
   | # | Plan 5 task | Status | Commit |
   |---|-------------|--------|--------|
@@ -213,7 +214,14 @@ Last updated: 2026-08-25
   | 3 | billing api + owner tab + invoice list | [x] | 8fa548b |
   | 4 | new-invoice flow + detail + deposit ledger | [x] | 5126160 |
   | 5 | invoice-public page + email template | [x] | 1458347 |
-  | 6 | hosted deploy, OTA, Checkpoint 6 script | [ ] | |
+  | 6 | hosted deploy, OTA, Checkpoint 6 script | [x] | billing migrations 0001–0002 hosted; `invoice-public` live (verify_jwt off, token-gated) + `send-email` redeployed (verify_jwt on, `invoice_ready`); smoke on hosted: deposit 2500 → invoice (4500 visit − 2500 credit, INV-0001) → send → queued email w/ token → public page 200 (exact keys, first name only) → Venmo 2000 → paid/balance 0 → voided 2nd invoice 404; fixtures cleaned to pre-smoke counts; advisors: no new findings; OTA published (no localhost in dist) |
+
+  Slice-2 spec §2 state after Plan 5: items 1–4 + 6 (minus payouts section) + 7 **live on
+  hosted** — invoices, public page + `invoice_ready` email, deposits ledger with
+  auto-apply, manual payments with paid flip, Billing tab/flows, full audit trail. Item 5
+  (walker payouts) is **schema-only** (tables + `payout_percent` deployed; finalize
+  RPCs/UI = Plan 6); item 6's payouts section likewise waits for Plan 6. Checkpoint 6
+  script appended to `checkpoints.md` (PENDING — device run with Plan 6).
 - [ ] Plan 6 — walker payouts UI + corrections polish + Checkpoint 6 device run
 - Open (validate with Alexandra): payout model (% assumption), packages/bundles, tax lines, invoice numbering scheme
 

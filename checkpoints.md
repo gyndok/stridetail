@@ -183,3 +183,39 @@ recovery in this checkpoint's sim half. **Checkpoint 4: PASS.**
 
 **Polish note (sponsor, 2026-08-24):** the active-walk screen needs visual polish — queued
 for the Round 1 mockup pass with Alexandra.
+
+
+## Checkpoint 6 — invoice a real walk end-to-end (Plan 5; spec §7 last bullet)
+
+**Status: PENDING.** Billing is deployed to hosted (migrations 0001–0002 of 2026-08-25,
+`invoice-public` live, `send-email` redeployed with the `invoice_ready` template) and the
+whole path was SQL/HTTPS smoke-tested on hosted; this run proves it on the sponsor's device
+with real completed walks. Walker payout visibility is **deferred to Plan 6** (payout
+tables exist; the finalize RPCs/UI that would give the sim walker something to see do not),
+so the walker half of this checkpoint only asserts blindness.
+
+### Procedure
+1. Device (owner, latest preview build + OTA): Billing tab → New invoice → pick a client
+   with completed, un-invoiced walks → confirm the eligible visits + any held-deposit
+   preview → Create. Expect a draft with one line per walk at its booked price and a
+   negative "Deposit credit" line if a deposit was held.
+2. Detail → Send (confirm). Expect status "sent"; the owner (having set his own email on
+   the client for the test) **receives the `invoice_ready` email** — subject
+   `<business> — invoice INV-XXXX`, total due, link.
+3. Open the emailed link in a browser: branded public page (business name/logo/brand
+   color), first name only, line items incl. deposit credit, total + balance,
+   payment-instructions block. Nothing about walkers, addresses, phones, or codes.
+4. Detail → Record payment → Venmo, full balance, today. Expect the invoice to flip to
+   **paid**; re-open the public page → paid stamp, balance $0.00.
+5. Walker (simulator, walker account): no Billing tab, no invoice/deposit/payment data
+   anywhere (Today/visit screens unchanged). Payout statement visibility is exercised in
+   Plan 6's checkpoint run instead.
+
+### Evidence
+Screenshots → docs/evidence/cp6-*.png; fill the table.
+
+| Field | Value |
+| --- | --- |
+| Date / devices / builds | |
+| Steps passed | |
+| Result | PENDING |
