@@ -10,9 +10,12 @@ insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-000000000023', 'walker-a2@test.dev'),
   ('00000000-0000-0000-0000-000000000024', 'owner-b@test.dev');
 
-insert into businesses (id, name, slug, time_zone) values
-  ('00000000-0000-0000-0000-00000000aaaa', 'Paw & Whisker', 'paw-whisker-007', 'America/Chicago'),
-  ('00000000-0000-0000-0000-00000000bbbb', 'Other Dogs Co', 'other-dogs-007', 'America/New_York');
+-- auto_invoice 'manual': this is the EXECUTION suite — Plan 6's finish-visit
+-- auto-invoicing (default per_visit) would add invoice_ready notification rows
+-- here; the auto-flow has its own suite (013_autoflow.sql).
+insert into businesses (id, name, slug, time_zone, auto_invoice) values
+  ('00000000-0000-0000-0000-00000000aaaa', 'Paw & Whisker', 'paw-whisker-007', 'America/Chicago', 'manual'),
+  ('00000000-0000-0000-0000-00000000bbbb', 'Other Dogs Co', 'other-dogs-007', 'America/New_York', 'manual');
 
 insert into memberships (business_id, user_id, role, status) values
   ('00000000-0000-0000-0000-00000000aaaa', '00000000-0000-0000-0000-000000000021', 'owner', 'active'),

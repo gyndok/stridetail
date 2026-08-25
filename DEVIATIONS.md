@@ -1905,3 +1905,76 @@ deployed-but-dormant for a possible toll-free future.
   list; widening Screen's API for one heading was not worth it.
 - Owner desktop web rail (`OwnerRail`) stays label-only: it is a custom `tabBar` that
   never receives `tabBarIcon`, and the brief scoped icons to the mobile tab bars.
+
+## Plan 6, Task 1 — auto-invoice on finish + payout RPCs (2026-08-25)
+
+- **The auto-flow does not call `create_invoice`/`send_invoice` (recorded per the
+  task):** their `is_owner` guards — and the invoice transition trigger's
+  who-check — would reject the calling WALKER, and this path is
+  system-on-behalf-of-business inside the definer `finish_visit`. The assembly
+  is inlined in a private helper `autoflow_invoice_for_visit` (revoked from
+  authenticated/anon/public; invoker-rights, always executed under
+  finish_visit's definer context so `auth.uid()` still reads the walker for the
+  audit actor). `create_invoice`'s number-allocation for-update lock,
+  local-date `issued_on`, `'Dy, Mon FMDD'` description, and whole-deposit
+  oldest-first auto-apply are duplicated deliberately — a shared refactor was
+  not clean (create_invoice sweeps a range; this builds exactly one visit).
+- **per_visit builds the single-visit invoice directly** (recorded per the
+  task): `create_invoice(client, from, to)` with the visit's local date as both
+  bounds could pull OTHER uninvoiced same-day visits. Pinned in pgTAP with a
+  completed un-invoiced same-local-day visit that must stay un-invoiced.
+- **The per_visit invoice is INSERTED as `sent`** (token + `sent_at` stamped at
+  insert): the transition trigger fires on UPDATE of status only, so no trigger
+  bypass is needed and a draft->sent update (which the trigger's who-check
+  would reject for the walker) never happens.
+- **Failure never breaks the finish:** the whole auto-block (both modes) is a
+  plpgsql sub-block whose exception handler writes audit
+  `invoice.autocreate_failed` (entity `visit`, meta `{mode, error: sqlerrm}`);
+  the subtransaction rollback also reverts the number allocation and any queued
+  email — asserted in pgTAP by pre-invoicing the visit on a draft (unique-index
+  trip) and checking counter + notification counts are untouched.
+- **Audit actions mirror the owner flow** (`invoice.create`, `invoice.send`,
+  `invoice.item_add`, `deposit.apply`) with meta `"auto": true`; the actor is
+  the finishing walker's `auth.uid()`.
+- **per_sitting applies NO deposits** (plan silent; conservative): deposits
+  auto-apply at owner-driven `create_invoice` time — appending to a growing
+  draft is not the moment to consume them. The append targets the client's
+  NEWEST draft (created_at desc), which may be an owner-created draft — that IS
+  the client's open sitting bill; a finish with no draft creates an empty one
+  (number allocated) and appends. Never sent from this path.
+- **`create_payout_statement(p_walker, p_from, p_to)` derives the business**
+  from the walker's active membership in a business the CALLER owns (the plan's
+  three-arg signature has no business param); if the walker is active in more
+  than one such business the RPC raises rather than guessing. Zero eligible
+  visits still draft an empty statement (invoice precedent).
+- **Payout item amounts:** `round(price_cents_snapshot × payout_percent / 100)`
+  — numeric round, half away from zero; pinned vectors 3333 × 32.5% =
+  1083.225 → 1083 and 2500 × 32.5% = 812.50 → 813. Range filtering uses the
+  visit's LOCAL calendar date (`at time zone business_tz`, create_invoice rule)
+  with a UTC-crossing trap pinned.
+- **`total_cents` is maintained on every item change AND recomputed at
+  finalize** (belt and braces — the frozen walker-visible figure must match
+  the items).
+- **Payout status transitions are enforced in the RPCs, no trigger** (recorded
+  per the task): draft → finalized → paid; `add_payout_item` and
+  `void_payout_statement` are draft-only; walkers have no write path at all
+  (0001 RLS) and owners go through the RPCs.
+- **`void_payout_statement` deletes the items AND the statement row:**
+  `payout_status` has no `void` label to park it under, and deleting the items
+  releases each visit's payout-once slot — pgTAP shows the released visit
+  landing on the next statement.
+- **007_execution fixture opts out with `auto_invoice = 'manual'`:** the new
+  default (`per_visit`) made finish_visit queue an `invoice_ready` email in the
+  execution suite, breaking its notification-count assertion. 007 tests
+  execution, not billing — the fixture opts out and the auto-flow has its own
+  suite (013). 010_email needed nothing: its assertions are template/visitId
+  scoped, which the invoice row (invoiceId payload) cannot match.
+- pgTAP 013: 86 assertions — schema default/check/venmo_handle, walker-driven
+  per_visit end-to-end (single-visit rule, sent+token, deposit whole-rule,
+  both emails, local issued_on, numbering, auto-flagged audit), forced failure
+  path, per_sitting accumulation across two finishes on ONE draft, manual
+  no-op, payout create/rounding/exclusions, signed adjustments, visit-once +
+  void release, status machine, walker-visibility flip under
+  `set local role authenticated` (own finalized + items visible, draft and
+  others' invisible, write no-op), walker/cross-owner/anon guards, grants
+  (helper not client-callable), payout audit accounting.
