@@ -120,12 +120,15 @@ async function ensurePermissions() {
 }
 
 export async function startVisitTracking(visitId: string) {
-  await ensurePermissions();
+  // Write the recovery marker BEFORE the permission gate: if "Always" is denied
+  // the visit has still started, and relaunch recovery must find it (Checkpoint 4
+  // found the marker missing after a denied prompt + force-kill).
   const db = getDb();
   await db.runAsync(
     'INSERT OR REPLACE INTO active_visit (id, visit_id, started_at, requires_gps) VALUES (1, $v, $t, 1)',
     { $v: visitId, $t: Date.now() },
   );
+  await ensurePermissions();
   if (!(await Location.hasStartedLocationUpdatesAsync(GPS_TASK))) {
     await Location.startLocationUpdatesAsync(GPS_TASK, {
       accuracy: Location.Accuracy.High,

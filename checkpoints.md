@@ -147,3 +147,30 @@ Screenshots → docs/evidence/cp3-*.png; fill the table.
 | Date / devices / builds | 2026-08-23 ~21:15–21:35 CDT · A: sponsor's iPhone (EAS preview `c76a4186`) · B: iPhone 17 Pro simulator (local dev build vs hosted backend) |
 | Steps passed | 1 (visit created 9:00 AM CDT, price $25.00 stamped; initially unassigned → appeared in needs-attention) · 2 (owner offered to Simulated from visit detail — audit `visit.offer` 21:18) · walker Today showed the offer card (evidence `docs/evidence/cp3-walker-offer.png`) → Accept → audit `visit.accept` 21:30, DB status `accepted` walker Simulated · 4 (reveal denial: `reveal_access` with the walker's JWT while `accepted` → "access codes are only available while the visit is in progress"; `access.reveal` audit rows = 0) |
 | Result | PASS. Step 3 (owner sees acceptance on device A) confirmed via DB + refetch-on-focus fix; sponsor to eyeball on phone. Step 5 (decline round-trip on devices) not run — covered by pgTAP + unit matrix. Walker-side reveal BUTTON ships with Plan 4's execution screen; the denial above is the same RPC the button will call. |
+
+
+## Checkpoint 4 — full field run (Plan 4)
+
+**Simulator half: PASS (2026-08-24 evening, hosted backend).** Walker (iPhone 17 Pro sim,
+dev build) accepted an offered walk on Today → visit detail (pet photo, reactivity warning,
+locked codes row) → Start (location prompts; the "GPS not recording — visit still started"
+fallback fired when Always was initially denied) → force-kill + relaunch → active screen
+recovered via deep link, timer running from started_at → Pee + Poop events (per-pet ticker)
+→ **Reveal codes SHOWN in the field** (door 2427 / alarm 72 / notes, "Access is logged in
+the audit trail"; exactly 1 access.reveal audit row) → private owner note → Finish confirm.
+DB after: visit completed, events arrived/started/pee/poop/finished all synced via the
+outbox, report row + token, started notifications drained to skipped_no_provider by the live
+cron, finished pair queued. **Report page rendered in a browser**: business-branded header,
+Olivia · Walk, 6 min, full timeline — no address/codes/price/walker/private-note anywhere.
+Evidence: docs/evidence/cp4-visit-detail.png, cp4-reveal-in-field.png.
+
+**Bugs found and fixed in this run:** (1) an in_progress visit vanished from walker Today
+(partition filtered to accepted only) — now included; (2) the local recovery marker was
+written only after the permission gate, so a denied "Always" prompt + force-kill lost the
+resume path — marker now written first.
+
+**Device half: PENDING (sponsor's iPhone, build 7d8cb2dd or later):** the airplane-mode
+portion — start a GPS visit, airplane mode on, events + photo offline, force-kill, relaunch
+(resume banner), finish, airplane off → watch it all sync; then open the report link from
+the owner's Share button and Revoke → link dies. GPS route recording end-to-end on a real
+device (sim route feed didn't register with the task this run; ingest itself is proven).

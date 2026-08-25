@@ -71,7 +71,7 @@ Last updated: 2026-08-24
   | 7 | report-public + web report page + resend/revoke | [x] | `1e83f2a` |
   | 8 | Expo Web rail + week grid | [x] | `136df85` |
   | 9 | hosted deploy, advisors, builds | [x] | migrations 9–12 hosted; ingest-track/send-sms/send-email (verify_jwt on) + report-public (off, token-gated) live; SMS_CRON_SECRET/EMAIL_CRON_SECRET set; smoke 23/23 (walk start→track→finish→report 200→revoke 404; live pg_cron drained queue to `skipped_no_provider`); advisors: no new findings; build `7d8cb2dd` |
-  | 10 | **Checkpoint 4** — full field run | [ ] | |
+  | 10 | **Checkpoint 4** — full field run | [~] | sim half PASS 2026-08-24 (accept→start→events→reveal-in-field→finish→branded report page; 2 bugs found+fixed); device airplane-mode half pending |
 
 ---
 

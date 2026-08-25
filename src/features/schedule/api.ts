@@ -240,7 +240,9 @@ export function visitsOnLocalDay<T extends { scheduled_start: string; business_t
 
 /**
  * Walker Today split: offers are status 'offered' on ANY date (soonest first);
- * today is status 'accepted' on the current local day (business tz), ascending.
+ * today is status 'accepted' or 'in_progress' on the current local day (business tz),
+ * ascending — an in-progress visit must stay visible (found in Checkpoint 4: it vanished
+ * from Today after a relaunch, leaving no way back to the active screen).
  */
 export function partitionWalkerDay<
   T extends { status: string; scheduled_start: string; business_tz: string },
@@ -248,7 +250,10 @@ export function partitionWalkerDay<
   const byStart = (a: T, b: T) => a.scheduled_start.localeCompare(b.scheduled_start);
   return {
     offers: visits.filter((v) => v.status === 'offered').sort(byStart),
-    today: visitsOnLocalDay(visits.filter((v) => v.status === 'accepted'), nowUtc).sort(byStart),
+    today: visitsOnLocalDay(
+      visits.filter((v) => v.status === 'accepted' || v.status === 'in_progress'),
+      nowUtc,
+    ).sort(byStart),
   };
 }
 
