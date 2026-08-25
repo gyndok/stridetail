@@ -209,7 +209,7 @@ Last updated: 2026-08-25
   | # | Plan 5 task | Status | Commit |
   |---|-------------|--------|--------|
   | 1 | billing schema + pgTAP | [x] | 58ad03d |
-  | 2 | billing RPCs (create/send/pay/void/deposits) | [ ] | |
+  | 2 | billing RPCs (create/send/pay/void/deposits) | [x] | 22b1794 |
   | 3 | billing api + owner tab + invoice list | [ ] | |
   | 4 | new-invoice flow + detail + deposit ledger | [ ] | |
   | 5 | invoice-public page + email template | [ ] | |
