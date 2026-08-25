@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
+import { useMemberships } from '@/src/features/business/useMemberships';
 import {
   acceptVisit,
   declineVisit,
@@ -35,6 +36,9 @@ function errorText(e: unknown): string {
 export default function Today() {
   const t = useTheme();
   const router = useRouter();
+  const memberships = useMemberships();
+  const isOwner =
+    memberships.data?.find((m) => m.business_id === businessId)?.role === 'owner';
   const queryClient = useQueryClient();
   const { businessId } = useActiveBusiness();
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +107,13 @@ export default function Today() {
 
   return (
     <Screen title="Today">
+      {isOwner ? (
+        <Button
+          title="Owner view"
+          variant="secondary"
+          onPress={() => router.push('/(owner)/today' as Href)}
+        />
+      ) : null}
       {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
 
       {accepted ? (

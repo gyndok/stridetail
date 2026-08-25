@@ -74,6 +74,13 @@ export default function Today() {
 
   return (
     <Screen title="Today">
+      {/* Spec §9: the owner is usually also a walker — one tap into the walker
+          Today view, where their own visits can be started. */}
+      <Button
+        title="My visits"
+        variant="secondary"
+        onPress={() => router.push('/(walker)/today' as Href)}
+      />
       <Text style={[t.type.title, { color: t.colors.ink }]}>Needs attention</Text>
       {visits.isLoading ? (
         <Text style={{ color: t.colors.inkMuted }}>Loading…</Text>
