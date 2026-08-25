@@ -1385,3 +1385,50 @@ built and idle.
   `revoke_report` are new instances of that same accepted pattern (public/anon revoked,
   internal walker/owner gates, search_path pinned). No follow-up migration needed.
 - Local checks all green post-deploy: 522 jest, 287 pgTAP (10 files), typecheck, lint.
+
+## Today/navigation redesign, part A — unified visit screen + next-action resolver (2026-08-25)
+
+- **Mount-point merge (recorded per the task):** BOTH visit routes —
+  `app/(walker)/visit/[id]/index.tsx` and `app/(owner)/schedule/[id].tsx` — are now
+  three-line wrappers re-exporting `src/features/visit/VisitScreen.tsx`. Both route paths
+  keep working; the screen decides its blocks from the session, not the group: the
+  execution block renders when `visit.walker_id === session userId` (isAssignee), the
+  management block when the active-business membership role is `owner`, and an
+  owner-assignee sees both. `PetSection` (walker detail) and `ReportSection` (owner
+  detail) moved into VisitScreen intact, not rewritten.
+- **Unified query key is `['visitDetail', id]`** (the walker detail's key — the start/
+  finish optimistic updates in `active.tsx` and the outbox mutations already write it).
+  The owner-side `['visit', businessId, id]` key is gone; `WeekGridView`'s quick-panel
+  invalidation was retargeted to `['visitDetail', visit.id]` so grid reschedules still
+  refresh the open detail screen. Neither key is on the persister whitelist — unchanged.
+- **`fetchVisitDetail` verified to work under BOTH roles' RLS by reading the policies:**
+  the visits read names columns (MY_VISIT_COLUMNS — price column grant holds for owners
+  too), `clients`/`pets` resolve via the owner policies or the Plan-3 Task-2 walker
+  visit-visibility policies, and the service comes from the `services_public` definer
+  view (any member). Owner-only queries (`listActiveMembers`, `pickerContext` — both
+  behind owner select policies on availability_rules/time_off) are gated with
+  `enabled: isOwnerRole`, so a walker session never issues them. The report card's
+  `clientPhone` now prefers the detail's full client row (walker path) and falls back to
+  the owner embed's `phones`.
+- **Cross-group active navigation:** the active screen exists only in the walker group,
+  so Start/Resume navigate to the absolute group-qualified href
+  `/(walker)/visit/[id]/active` from BOTH mount points (from the walker group this IS the
+  current group's route; from the owner group it is the prescribed cross-group hop). The
+  walker group has no role guard, so it renders fine for an owner; nothing depends on the
+  walker-view banner (deleted in part B).
+- **`nextVisitAction` (src/features/visit/nextAction.ts) follows the sponsor machine
+  literally; `isToday` currently never changes the outcome.** The approved machine
+  (offered+assignee→accept, accepted+assignee→start, in_progress+assignee→resume,
+  unassigned+ownerRole→offer, completed→report ownerRole-only, cancelled→none) conditions
+  nothing on the day, but the signature carries `isToday` per the design so the part-B
+  card call sites compile and a future today-gate is a one-line edit here. Pinned in the
+  48-case matrix test (test written failing-first). Real transitions (accept/start/offer)
+  are double-checked against `canTransition` so the resolver can never drift ahead of the
+  DB trigger; resume/report are navigation, no machine edge consulted.
+- The unified screen gained a ghost Back button for the owner mount too (the old owner
+  detail had no back affordance beyond the swipe gesture); owner_notes/decline-reason
+  render once in the shared header rather than per-block. The "Walker: <name>" line is
+  owner-only (it needs the roster query). Screens stay untested markup over tested
+  helpers (established approach); the resolver carries the unit matrix.
+- Both `today.tsx` files compile untouched (they import from `schedule/api`, not from the
+  route files). Checks: 530 jest (45 suites), typecheck, lint all green.

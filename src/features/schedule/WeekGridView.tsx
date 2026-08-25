@@ -96,7 +96,8 @@ function QuickPanel({
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['visits', businessId] });
-    void queryClient.invalidateQueries({ queryKey: ['visit', businessId, visit.id] });
+    // The unified visit screen (VisitScreen.tsx) reads ['visitDetail', id].
+    void queryClient.invalidateQueries({ queryKey: ['visitDetail', visit.id] });
   };
   const fail = (e: unknown) => setError(e instanceof Error ? e.message : String(e));
   const offerMut = useMutation({

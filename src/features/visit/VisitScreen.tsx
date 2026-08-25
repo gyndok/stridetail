@@ -1,0 +1,521 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { formatInTimeZone } from 'date-fns-tz';
+import { Image } from 'expo-image';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useState } from 'react';
+import { Alert, Linking, Pressable, Share, Text, View } from 'react-native';
+
+import { useSession } from '@/src/features/auth/session';
+import { useActiveBusiness } from '@/src/features/business/active';
+import { useMemberships } from '@/src/features/business/useMemberships';
+import { telUrl } from '@/src/features/clients/form';
+import { petPhotoUrl } from '@/src/features/pets/api';
+import { joinPetNames, reportSmsBody, smsUrl } from '@/src/features/report/deviceSms';
+import {
+  cancelVisit,
+  listActiveMembers,
+  memberName,
+  offerVisit,
+  pickerContext,
+} from '@/src/features/schedule/api';
+import {
+  getVisitReport,
+  listPetNames,
+  reportLink,
+  reportStatusLine,
+  resendReport,
+  revokeReport,
+} from '@/src/features/schedule/report';
+import { WalkerPicker } from '@/src/features/schedule/WalkerPicker';
+import { appendVisitStart } from '@/src/features/visit/api';
+import {
+  canStart,
+  fetchVisitDetail,
+  mapsUrl,
+  petInstructionRows,
+  type VisitDetail,
+  type VisitPetInfo,
+} from '@/src/features/visit/detail';
+import { startVisitTracking } from '@/src/lib/gps/controller';
+import { kickSync } from '@/src/lib/offline/sync';
+import { canTransition } from '@/src/lib/schedule/machine';
+import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
+import { Button } from '@/src/ui/Button';
+import { Card } from '@/src/ui/Card';
+import { Screen } from '@/src/ui/Screen';
+import { useTheme } from '@/src/ui/theme';
+
+/**
+ * Unified visit screen (Today/navigation redesign, part A). One screen per
+ * visit for every user: the execution block renders when the session user IS
+ * the visit's assignee, the management block when they hold the owner role in
+ * the active business, and an owner-assignee (their own visit) sees both.
+ * Mounted from BOTH route groups — app/(walker)/visit/[id]/index.tsx and
+ * app/(owner)/schedule/[id].tsx are thin wrappers around this component.
+ *
+ * Data comes from fetchVisitDetail, which works under both roles' RLS: the
+ * visits read names columns (MY_VISIT_COLUMNS — price column grant), clients/
+ * pets resolve via the owner policies or the walker visit-visibility policies,
+ * and the service comes from the price-free services_public definer view.
+ * Owner-only context (roster, picker availability, report) loads
+ * conditionally so walker sessions never issue owner-policy queries.
+ */
+
+function errorText(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  unassigned: 'Unassigned',
+  offered: 'Offered',
+  accepted: 'Accepted',
+  in_progress: 'In progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+/** The active screen exists only in the walker group; the path is absolute so
+ * it works from BOTH mount points (the owner group has no active route). */
+const activeHref = (visitId: string): Href => `/(walker)/visit/${visitId}/active` as Href;
+
+/**
+ * One pet's info, inline on the visit screen (walkers have no pet-profile
+ * route — the owner one lives behind the owner-group role guard).
+ */
+function PetSection({ pet }: { pet: VisitPetInfo }) {
+  const t = useTheme();
+  const photo = useQuery({
+    queryKey: ['pet-photo', pet.photo_path],
+    enabled: !!pet.photo_path,
+    queryFn: () => petPhotoUrl(pet.photo_path!),
+    staleTime: 55 * 60 * 1000, // signed for 1 h; never serve an expired url
+  });
+  const rows = petInstructionRows(pet);
+  const speciesLine = [pet.species, pet.breed].filter(Boolean).join(' · ');
+  return (
+    <Card style={{ gap: t.space.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
+        {photo.data ? (
+          <Image
+            source={{ uri: photo.data }}
+            style={{ width: 56, height: 56, borderRadius: 28 }}
+            contentFit="cover"
+            accessibilityLabel={`Photo of ${pet.name}`}
+          />
+        ) : null}
+        <View style={{ flexShrink: 1 }}>
+          <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>{pet.name}</Text>
+          {speciesLine ? <Text style={{ color: t.colors.inkMuted }}>{speciesLine}</Text> : null}
+        </View>
+      </View>
+      {pet.reactivity_md ? (
+        <View
+          style={{
+            borderWidth: 2,
+            borderColor: t.colors.warning,
+            borderRadius: t.radius.card,
+            padding: t.space.md,
+            gap: t.space.xs,
+          }}
+        >
+          <Text style={[t.type.label, { color: t.colors.warning }]}>Reactivity</Text>
+          <Text style={{ color: t.colors.ink }}>{pet.reactivity_md}</Text>
+        </View>
+      ) : null}
+      {rows.map((r) => (
+        <View key={r.label} style={{ gap: 2 }}>
+          <Text style={[t.type.label, { color: t.colors.inkMuted }]}>{r.label}</Text>
+          <Text style={{ color: t.colors.ink }}>{r.value}</Text>
+        </View>
+      ))}
+      {rows.length === 0 && !pet.reactivity_md ? (
+        <Text style={{ color: t.colors.inkMuted }}>No instructions on file</Text>
+      ) : null}
+    </Card>
+  );
+}
+
+/**
+ * Report card for a completed visit (moved intact from the old owner
+ * schedule/[id].tsx): SMS delivery line, Share link, device-composed Text,
+ * Resend and Revoke through the audited owner RPCs behind Alert confirms.
+ */
+function ReportSection({
+  businessId,
+  visitId,
+  tz,
+  clientPhone,
+  petIds,
+  serviceName,
+  businessName,
+}: {
+  businessId: string;
+  visitId: string;
+  tz: string;
+  clientPhone: string | null;
+  petIds: string[];
+  serviceName: string | null;
+  businessName: string;
+}) {
+  const t = useTheme();
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const report = useQuery({
+    queryKey: ['visitReport', businessId, visitId],
+    queryFn: () => getVisitReport(businessId, visitId),
+  });
+  // Pet names for the device-composed SMS body (send-sms context parity).
+  const petNames = useQuery({
+    queryKey: ['reportPetNames', businessId, visitId],
+    queryFn: () => listPetNames(petIds),
+  });
+  const refresh = () => {
+    setError(null);
+    void queryClient.invalidateQueries({ queryKey: ['visitReport', businessId, visitId] });
+  };
+  const fail = (e: unknown) => setError(errorText(e));
+  const resendMut = useMutation({ mutationFn: () => resendReport(visitId), onSuccess: refresh, onError: fail });
+  const revokeMut = useMutation({ mutationFn: () => revokeReport(visitId), onSuccess: refresh, onError: fail });
+
+  const r = report.data ?? null;
+  if (!r) {
+    return (
+      <Card style={{ gap: t.space.xs }}>
+        <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Report</Text>
+        <Text style={{ color: t.colors.inkMuted }}>
+          {report.isPending ? 'Loading…' : 'No report for this visit.'}
+        </Text>
+      </Card>
+    );
+  }
+
+  function confirmResend() {
+    Alert.alert('Resend report', 'Send the report link to the client again by SMS?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Resend', onPress: () => resendMut.mutate() },
+    ]);
+  }
+  function confirmRevoke() {
+    Alert.alert(
+      'Revoke report link',
+      'The link stops working immediately for anyone who has it. This cannot be undone.',
+      [
+        { text: 'Keep link', style: 'cancel' },
+        { text: 'Revoke', style: 'destructive', onPress: () => revokeMut.mutate() },
+      ],
+    );
+  }
+
+  return (
+    <>
+      <Card style={{ gap: t.space.xs }}>
+        <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Report</Text>
+        {r.revoked_at ? (
+          <Text style={{ color: t.colors.danger }}>
+            Report link revoked {formatInTimeZone(new Date(r.revoked_at), tz, 'MMM d, HH:mm')}
+          </Text>
+        ) : (
+          <Text style={{ color: t.colors.inkMuted }}>{reportStatusLine(r, tz)}</Text>
+        )}
+        {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
+      </Card>
+      {!r.revoked_at ? (
+        <>
+          <Button
+            title="Share link"
+            variant="secondary"
+            onPress={() => void Share.share({ message: reportLink(r.public_token) })}
+          />
+          {clientPhone ? (
+            <Button
+              title="Text the client"
+              variant="secondary"
+              onPress={() =>
+                void Linking.openURL(
+                  smsUrl(
+                    clientPhone,
+                    reportSmsBody(
+                      businessName,
+                      joinPetNames(petNames.data ?? []),
+                      serviceName ?? 'scheduled',
+                      reportLink(r.public_token),
+                    ),
+                  ),
+                )
+              }
+            />
+          ) : null}
+          <Button title="Resend SMS" variant="secondary" onPress={confirmResend} loading={resendMut.isPending} />
+          <Button title="Revoke link" variant="ghost" onPress={confirmRevoke} loading={revokeMut.isPending} />
+        </>
+      ) : null}
+    </>
+  );
+}
+
+export default function VisitScreen() {
+  const t = useTheme();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { userId } = useSession();
+  const { businessId } = useActiveBusiness();
+  const memberships = useMemberships();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [pickedWalker, setPickedWalker] = useState<string | null>(null);
+  const [manageError, setManageError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+
+  // Role in the active business decides the management block; being the
+  // visit's walker_id decides the execution block. Both may be true.
+  const isOwnerRole =
+    memberships.data?.find((m) => m.business_id === businessId)?.role === 'owner';
+
+  const detail = useQuery({
+    queryKey: ['visitDetail', id],
+    enabled: !!id,
+    queryFn: () => fetchVisitDetail(id!),
+  });
+  useRefetchOnFocus(detail.refetch);
+
+  const d = detail.data;
+  const v = d?.visit ?? null;
+  const isAssignee = !!v?.walker_id && !!userId && v.walker_id === userId;
+
+  // Owner-only context: roster + availability live behind owner select
+  // policies, so these never fire for a plain walker session.
+  const members = useQuery({
+    queryKey: ['scheduleMembers', businessId],
+    enabled: !!businessId && isOwnerRole,
+    queryFn: () => listActiveMembers(businessId!),
+  });
+  const ctx = useQuery({
+    queryKey: ['pickerCtx', businessId, v?.scheduled_start, v?.scheduled_end],
+    enabled: !!businessId && isOwnerRole && !!v,
+    queryFn: () => pickerContext(businessId!, new Date(v!.scheduled_start), new Date(v!.scheduled_end)),
+  });
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ['visitDetail', id] });
+    void queryClient.invalidateQueries({ queryKey: ['visits', businessId] });
+    void queryClient.invalidateQueries({ queryKey: ['myVisits'] });
+  };
+  const offerMut = useMutation({
+    mutationFn: (walkerId: string) => offerVisit(id!, walkerId),
+    onSuccess: () => {
+      setPickedWalker(null);
+      setManageError(null);
+      invalidate();
+    },
+    onError: (e) => setManageError(errorText(e)),
+  });
+  const cancelMut = useMutation({
+    mutationFn: () => cancelVisit(id!),
+    onSuccess: () => {
+      invalidate();
+      router.back();
+    },
+    onError: (e) => setManageError(errorText(e)),
+  });
+
+  const gate = v ? canStart(v.status) : null;
+
+  const onStart = async () => {
+    if (!d || !v) return;
+    setStarting(true);
+    setStartError(null);
+    try {
+      // Outbox first (spec §8): the start lands locally and syncs in order.
+      await appendVisitStart(v.id);
+      // Optimistic local status; the server catches up via the sync worker.
+      queryClient.setQueryData<VisitDetail>(['visitDetail', id], (old) =>
+        old ? { ...old, visit: { ...old.visit, status: 'in_progress' } } : old,
+      );
+      void queryClient.invalidateQueries({ queryKey: ['myVisits'] });
+      if (d.service?.requires_gps) {
+        try {
+          await startVisitTracking(v.id);
+        } catch (e) {
+          // Permission denied: the visit is still started — only the route is lost.
+          Alert.alert(
+            'GPS not recording',
+            `${errorText(e)}\n\nThe visit has still started; the route will not be recorded.`,
+          );
+        }
+      }
+      kickSync();
+      router.replace(activeHref(v.id));
+    } catch (e) {
+      setStartError(errorText(e));
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  function confirmCancel() {
+    Alert.alert('Cancel visit', 'Cancel this visit? The walker will no longer see it.', [
+      { text: 'Keep visit', style: 'cancel' },
+      { text: 'Cancel visit', style: 'destructive', onPress: () => cancelMut.mutate() },
+    ]);
+  }
+
+  if (!v) {
+    return (
+      <Screen title="Visit">
+        <Button title="Back" variant="ghost" onPress={() => router.back()} />
+        {detail.error ? (
+          <Text style={{ color: t.colors.danger }}>{errorText(detail.error)}</Text>
+        ) : (
+          <Text style={{ color: t.colors.inkMuted }}>Loading…</Text>
+        )}
+      </Screen>
+    );
+  }
+
+  // Owner-side gates from the shared machine mirror (isAssignee is irrelevant
+  // to the owner-guarded edges used here).
+  const owner = { role: 'owner' as const, isAssignee: false };
+  const canOffer = isOwnerRole && canTransition(v.status, 'offered', owner);
+  const canCancel = isOwnerRole && canTransition(v.status, 'cancelled', owner);
+
+  const day = formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'EEEE, MMM d, yyyy');
+  const start = formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'HH:mm');
+  const end = formatInTimeZone(new Date(v.scheduled_end), v.business_tz, 'HH:mm');
+  const businessName =
+    memberships.data?.find((m) => m.business_id === businessId)?.business.name ??
+    'Your pet care team';
+
+  return (
+    <Screen title={d?.client?.name ?? v.client?.name ?? 'Visit'}>
+      <Button title="Back" variant="ghost" onPress={() => router.back()} />
+
+      {/* ---- Header: client, day/time in business_tz, service, status ---- */}
+      <Card style={{ gap: t.space.xs }}>
+        <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>{day}</Text>
+        <Text style={{ color: t.colors.ink }}>
+          {start} – {end} ({v.business_tz})
+        </Text>
+        <Text style={{ color: t.colors.inkMuted }}>
+          {d?.service?.name ?? v.service?.name ?? 'Service'}
+          {d?.service ? ` · ${d.service.duration_min} min` : ''}
+        </Text>
+        <Text style={{ color: t.colors.inkMuted }}>Status: {STATUS_LABEL[v.status] ?? v.status}</Text>
+        {isOwnerRole ? (
+          <Text style={{ color: t.colors.inkMuted }}>
+            Walker: {v.walker_id ? memberName(members.data ?? [], v.walker_id) : 'Unassigned'}
+          </Text>
+        ) : null}
+        {v.decline_reason ? (
+          <Text style={{ color: t.colors.danger }}>Declined: {v.decline_reason}</Text>
+        ) : null}
+        {v.owner_notes_md ? <Text style={{ color: t.colors.ink }}>{v.owner_notes_md}</Text> : null}
+      </Card>
+
+      {/* ---- Execution block: the session user is this visit's walker ---- */}
+      {isAssignee ? (
+        <>
+          {startError ? <Text style={{ color: t.colors.danger }}>{startError}</Text> : null}
+          {v.status === 'in_progress' ? (
+            <Button title="Resume visit" onPress={() => router.replace(activeHref(v.id))} />
+          ) : (
+            <Button
+              title="Start visit"
+              onPress={() => void onStart()}
+              loading={starting}
+              disabled={!gate?.ok || starting}
+            />
+          )}
+          {gate && !gate.ok && v.status !== 'in_progress' ? (
+            <Text style={{ color: t.colors.inkMuted }}>{gate.reason}</Text>
+          ) : null}
+
+          <Text style={[t.type.title, { color: t.colors.ink }]}>Pets</Text>
+          {d!.pets.length === 0 ? (
+            <Text style={{ color: t.colors.inkMuted }}>No pets listed on this visit.</Text>
+          ) : (
+            d!.pets.map((p) => <PetSection key={p.id} pet={p} />)
+          )}
+
+          <Text style={[t.type.title, { color: t.colors.ink }]}>Client</Text>
+          <Card style={{ gap: t.space.sm }}>
+            {d!.client?.notes_md ? (
+              <View style={{ gap: 2 }}>
+                <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Notes</Text>
+                <Text style={{ color: t.colors.ink }}>{d!.client.notes_md}</Text>
+              </View>
+            ) : null}
+            {d!.client?.address ? (
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => void Linking.openURL(mapsUrl(d!.client!.address!))}
+              >
+                <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Address</Text>
+                <Text style={[t.type.body, { color: t.colors.primary }]}>{d!.client.address}</Text>
+              </Pressable>
+            ) : null}
+            {(d!.client?.phones ?? []).map((phone) => (
+              <Pressable
+                key={phone}
+                accessibilityRole="link"
+                onPress={() => void Linking.openURL(telUrl(phone))}
+              >
+                <Text style={[t.type.body, { color: t.colors.primary }]}>{phone}</Text>
+              </Pressable>
+            ))}
+            {!d!.client ? (
+              <Text style={{ color: t.colors.inkMuted }}>Client details unavailable.</Text>
+            ) : null}
+          </Card>
+
+          <Card style={{ opacity: 0.5 }}>
+            <Text style={{ color: t.colors.ink }}>
+              🔒 Access codes — available after you start
+            </Text>
+          </Card>
+        </>
+      ) : null}
+
+      {/* ---- Management block: the session user owns the business ---- */}
+      {canOffer ? (
+        <>
+          <Text style={[t.type.title, { color: t.colors.ink }]}>
+            {v.decline_reason ? 'Reassign' : 'Offer to a walker'}
+          </Text>
+          <WalkerPicker
+            members={members.data ?? []}
+            ctx={ctx.data ?? null}
+            window={{ startUtc: new Date(v.scheduled_start), endUtc: new Date(v.scheduled_end) }}
+            tz={v.business_tz}
+            selectedId={pickedWalker}
+            onSelect={setPickedWalker}
+            excludeVisitId={v.id}
+          />
+          {pickedWalker ? (
+            <Button
+              title="Send offer"
+              onPress={() => offerMut.mutate(pickedWalker)}
+              loading={offerMut.isPending}
+            />
+          ) : null}
+        </>
+      ) : null}
+
+      {isOwnerRole && v.status === 'completed' && businessId ? (
+        <ReportSection
+          businessId={businessId}
+          visitId={v.id}
+          tz={v.business_tz}
+          clientPhone={d?.client?.phones?.[0] ?? v.client?.phones?.[0] ?? null}
+          petIds={v.pet_ids}
+          serviceName={d?.service?.name ?? v.service?.name ?? null}
+          businessName={businessName}
+        />
+      ) : null}
+
+      {manageError ? <Text style={{ color: t.colors.danger }}>{manageError}</Text> : null}
+      {canCancel ? (
+        <Button title="Cancel visit" variant="ghost" onPress={confirmCancel} loading={cancelMut.isPending} />
+      ) : null}
+    </Screen>
+  );
+}
