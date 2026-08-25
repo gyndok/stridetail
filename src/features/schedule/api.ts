@@ -399,6 +399,9 @@ export type ScheduleMember = {
   user_id: string;
   role: 'owner' | 'walker';
   display_name: string | null;
+  /** % of visit price paid out to this member; optional so fixtures/tests that
+      predate Plan 6 need not carry it. listActiveMembers always sets it. */
+  payout_percent?: number;
 };
 
 /**
@@ -565,19 +568,29 @@ export async function listProblemNotifications(businessId: string): Promise<Prob
   return (data ?? []) as unknown as ProblemNotification[];
 }
 
-/** Active members of the business (owner included) for picker rows and names. */
+/**
+ * Active members of the business (owner included) for picker rows and names.
+ * payout_percent rides along for the payout-statement picker (Plan 6 Task 2);
+ * the whole-table memberships grant already covers the column.
+ */
 export async function listActiveMembers(businessId: string): Promise<ScheduleMember[]> {
   const { data, error } = await supabase
     .from('memberships')
-    .select('user_id, role, profile:profiles(display_name)')
+    .select('user_id, role, payout_percent, profile:profiles(display_name)')
     .eq('business_id', businessId)
     .eq('status', 'active')
     .order('created_at');
   if (error) throw error;
-  type Row = { user_id: string; role: 'owner' | 'walker'; profile: { display_name: string | null } | null };
+  type Row = {
+    user_id: string;
+    role: 'owner' | 'walker';
+    payout_percent: number;
+    profile: { display_name: string | null } | null;
+  };
   return ((data ?? []) as unknown as Row[]).map((r) => ({
     user_id: r.user_id,
     role: r.role,
+    payout_percent: r.payout_percent,
     display_name: r.profile?.display_name ?? null,
   }));
 }

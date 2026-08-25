@@ -1978,3 +1978,47 @@ deployed-but-dormant for a possible toll-free future.
   `set local role authenticated` (own finalized + items visible, draft and
   others' invisible, write no-op), walker/cross-owner/anon guards, grants
   (helper not client-callable), payout audit accounting.
+
+## Plan 6, Task 2 — payouts UI + billing settings (2026-08-25)
+
+- **Billing settings landed on the Billing tab** (`BillingSettingsCard` at the
+  bottom of `app/(owner)/billing/index.tsx`), not global settings — closest to
+  use, recorded per the plan. Reads use a dedicated named-column query
+  `getBusinessBilling(businessId)` (`auto_invoice, venmo_handle,
+  payment_instructions_md`) in `src/features/billing/settings.ts`; the
+  memberships business embed (useMemberships) does NOT carry these columns, so
+  saving invalidates only `['businessBilling', businessId]` — nothing else
+  reads them yet (Task 3 reads them server-side via invoice-public).
+- **Settings save is a direct `businesses` UPDATE, no RPC:** the core
+  migration's `"owner updates business"` RLS policy (for update using/with
+  check `is_owner(id)`) was verified and covers it; no amounts move here.
+  `normalizeVenmoHandle` strips leading `@`s (and whitespace) at save time —
+  the Task 3 deep link needs the bare handle; blank normalizes to null, which
+  hides the public Venmo button.
+- **Statement detail is inline** (deposits-screen precedent): one route
+  `app/(owner)/billing/payouts.tsx`, list <-> detail via local state — no
+  `[statementId].tsx` (the plan allowed either). Void returns to the list
+  (the row no longer exists — Task 1's void deletes).
+- **Walker names join client-side via `memberName`** (visits precedent:
+  `walker_id` references auth.users with no profiles FK, so a
+  `walker:profiles(...)` embed on payout_statements is impossible).
+  `listActiveMembers` gained `payout_percent` in its named columns (whole-table
+  memberships grant covers it); `ScheduleMember.payout_percent` is optional so
+  pre-Plan-6 test fixtures need no churn. The new-statement form shows the
+  picked walker's percent as a note.
+- **"Earnings" row shows for everyone** on the shared SettingsScreen, both
+  role groups, navigating to `/(walker)/earnings` (hidden tab screen,
+  `href: null`, visit-detail precedent; the walker group has no owner-style
+  role guard, so cross-group navigation works). Owners land on their OWN
+  finalized statements — an owner walks their own visits too — or an empty
+  list; team drafts stay invisible because `listMyPayoutStatements` filters
+  `walker_id = session user` and `status <> draft` client-side on top of RLS.
+- **`listMyPayoutStatements(businessId)` takes the active business** (house
+  business-scoping rule) even though the walker RLS path alone would already
+  fence rows; items ride the same query as an embed (read-only inline expand).
+- **Signed adjustment amounts** parse via a new `signedDollarsToCents` (leading
+  `-` wrapped around the strict positive `dollarsStringToCents`, which itself
+  rejects negatives); zero parses but the screen (and the RPC) reject it.
+- Jest: `payouts.test.ts` (20 tests) query shapes/RPC args/chip/periodLabel/
+  signed parsing; `settings.test.ts` (8 tests) modes list, query/update
+  shapes, venmo normalization — 28 new tests, suite at 695.

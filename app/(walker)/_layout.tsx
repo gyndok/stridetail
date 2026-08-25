@@ -52,6 +52,8 @@ export default function WalkerTabs() {
           the tabs stay usable while a visit is open. */}
       <Tabs.Screen name="visit/[id]/index" options={{ href: null }} />
       <Tabs.Screen name="visit/[id]/active" options={{ href: null }} />
+      {/* Earnings is reached from Settings (both role groups), not the bar. */}
+      <Tabs.Screen name="earnings" options={{ href: null }} />
     </Tabs>
   );
 }

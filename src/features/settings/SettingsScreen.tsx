@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouter, type Href } from 'expo-router';
 import { ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { signOut } from '@/src/features/auth/session';
 import { useActiveBusiness } from '@/src/features/business/active';
@@ -23,6 +24,7 @@ const WALK_THEMES: { key: WalkTheme; label: string }[] = [
  */
 export function SettingsScreen({ extra }: { extra?: ReactNode }) {
   const t = useTheme();
+  const router = useRouter();
   const qc = useQueryClient();
   const { businessId, setBusinessId } = useActiveBusiness();
   const { data } = useMemberships();
@@ -60,6 +62,18 @@ export function SettingsScreen({ extra }: { extra?: ReactNode }) {
           ))}
         </View>
       </Card>
+      {/* Earnings (Plan 6): the walker-group route works from both role groups
+          — owners walk their own visits too and see their own finalized
+          statements (walker-side RLS), or an empty list. */}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/(walker)/earnings' as Href)}
+      >
+        <Card>
+          <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>Earnings</Text>
+          <Text style={{ color: t.colors.inkMuted }}>Your finalized payout statements</Text>
+        </Card>
+      </Pressable>
       {extra}
       <Button
         title="Sign out"
