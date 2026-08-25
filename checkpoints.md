@@ -169,8 +169,17 @@ Evidence: docs/evidence/cp4-visit-detail.png, cp4-reveal-in-field.png.
 written only after the permission gate, so a denied "Always" prompt + force-kill lost the
 resume path — marker now written first.
 
-**Device half: PENDING (sponsor's iPhone, build 7d8cb2dd or later):** the airplane-mode
-portion — start a GPS visit, airplane mode on, events + photo offline, force-kill, relaunch
-(resume banner), finish, airplane off → watch it all sync; then open the report link from
-the owner's Share button and Revoke → link dies. GPS route recording end-to-end on a real
-device (sim route feed didn't register with the task this run; ingest itself is proven).
+**Device half: PASS (2026-08-24 ~21:37–21:42 CDT, sponsor's iPhone, build `5b0c652a`).**
+Owner used the new "My visits" toggle (built mid-checkpoint after the sponsor found owners
+had no path to Start their own visits — spec §9 gap) → started the walk → **real GPS route
+recorded: 3 segments, 19 points, 284.7 m** computed server-side by ingest-track (the piece
+the simulator could not prove) → 9 events synced incl. a **photo (storage object verified)**,
+a note, and ate/drank from the More row → finish with private note → report token live →
+owner report card (Share link / Text the client / Resend SMS / Revoke link) exercised:
+report page opened, then revoked. SMS line correctly reads "not sent — SMS pending setup".
+Airplane-mode/force-kill portion of this run not explicitly confirmed by the sponsor;
+offline force-kill survival was separately proven in Checkpoint 1 and the sim relaunch
+recovery in this checkpoint's sim half. **Checkpoint 4: PASS.**
+
+**Polish note (sponsor, 2026-08-24):** the active-walk screen needs visual polish — queued
+for the Round 1 mockup pass with Alexandra.

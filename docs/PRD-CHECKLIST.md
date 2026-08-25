@@ -58,7 +58,7 @@ Last updated: 2026-08-24
   | 8 | walker accept/decline + owner needs-attention | [x] | 7ce1221 |
   | 9 | hosted deploy, advisors, build | [x] | migrations 5–8 + expand-series live; cron secret set + verified (200 good / 403 bad); advisors clean; build `c76a4186` |
   | 10 | **Checkpoint 3** — two-device scheduling + reveal denied before start | [x] | PASS 2026-08-23 (iPhone + simulator); see `checkpoints.md` |
-- [~] Plan 4 — written 2026-08-24 (`docs/superpowers/plans/2026-08-24-stridetail-plan4-execution-reports.md`); executing
+- [x] Plan 4 — COMPLETE 2026-08-24 (all 10 tasks; Checkpoint 4 passed on device)
 
   | # | Plan 4 task | Status | Commit |
   |---|-------------|--------|--------|
@@ -71,7 +71,7 @@ Last updated: 2026-08-24
   | 7 | report-public + web report page + resend/revoke | [x] | `1e83f2a` |
   | 8 | Expo Web rail + week grid | [x] | `136df85` |
   | 9 | hosted deploy, advisors, builds | [x] | migrations 9–12 hosted; ingest-track/send-sms/send-email (verify_jwt on) + report-public (off, token-gated) live; SMS_CRON_SECRET/EMAIL_CRON_SECRET set; smoke 23/23 (walk start→track→finish→report 200→revoke 404; live pg_cron drained queue to `skipped_no_provider`); advisors: no new findings; build `7d8cb2dd` |
-  | 10 | **Checkpoint 4** — full field run | [~] | sim half PASS 2026-08-24 (accept→start→events→reveal-in-field→finish→branded report page; 2 bugs found+fixed); device airplane-mode half pending |
+  | 10 | **Checkpoint 4** — full field run | [x] | PASS 2026-08-24: sim half + device half (real GPS route 284.7 m/19 pts, photo upload, report share + revoke on sponsor's iPhone) |
 
 ---
 
@@ -188,6 +188,13 @@ Last updated: 2026-08-24
 - [ ] Orphaned-object cleanup: `deleteDocument` removes the DB row before the storage object
   (correct order for authorization), so a failed second step orphans the object. Add a periodic
   cleanup job (list `media` objects without matching rows) before launch
+
+## Polish backlog
+
+- [ ] Active-walk screen visual polish (sponsor, 2026-08-24) — fold into Round 1 with Alexandra
+- [ ] Walker-view banner build not yet shipped (committed `6cc2d28`; EAS free-tier builds exhausted until Sep 1 or Starter upgrade)
+- [ ] EAS Update (OTA) setup — first item after build quota returns; JS-only changes should not cost native builds
+- [ ] Drag-and-drop reassign on the web week grid (click-reassign shipped)
 
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 
