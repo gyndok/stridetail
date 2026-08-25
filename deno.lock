@@ -53,6 +53,7 @@
         "npm:expo-symbols@~57.0.2",
         "npm:expo-system-ui@~57.0.2",
         "npm:expo-task-manager@~57.0.12",
+        "npm:expo-updates@~57.0.17",
         "npm:expo-web-browser@~57.0.2",
         "npm:expo@^57.0.15",
         "npm:jest-expo@~57.0.4",

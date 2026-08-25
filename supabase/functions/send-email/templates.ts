@@ -18,6 +18,10 @@ export type EmailContext = {
   reportUrl?: string;
   /** invite only: the stridetail://invite/<token> link. */
   inviteLink?: string;
+  /** invoice_ready only: 'INV-0007' label, items total, full public invoice URL. */
+  invoiceNumberLabel?: string;
+  invoiceTotalCents?: number;
+  invoiceUrl?: string;
 };
 
 export type EmailMessage = {
@@ -44,6 +48,21 @@ function wrapHtml(paragraphs: string[]): string {
   return paragraphs.map((p) => `<p>${p}</p>`).join('');
 }
 
+/**
+ * Cents -> '$45.00' / '-$5.00'. Local copy of the app's formatCents rendering
+ * (src/features/billing/money.ts) — the expand.ts/polyline.ts copy pattern:
+ * each function dir stays self-contained for deploy.
+ */
+export function centsToDollars(cents: number): string {
+  const sign = cents < 0 ? '-' : '';
+  return `${sign}$${(Math.abs(cents) / 100).toFixed(2)}`;
+}
+
+/** 7 -> 'INV-0007' — copy of invoiceNumberLabel in src/features/billing/money.ts. */
+export function invoiceNumberLabel(n: number): string {
+  return `INV-${String(n).padStart(4, '0')}`;
+}
+
 export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> = {
   visit_started: (c) => ({
     subject: `${c.businessName}: ${possessive(c.petNames)} ${c.serviceName} visit has started`,
@@ -64,6 +83,30 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
         : 'The visit report link will follow separately.',
     ]),
   }),
+  // First sentence stays ALIGNED with invoiceSmsBody in
+  // src/features/report/deviceSms.ts ("Text the client" composes the same
+  // message); email adds the total-due sentence and an HTML link. The total
+  // sentence is omitted when the context has no total (invoice row gone) —
+  // the visit_finished honest-degrade precedent, never a lying $0.00.
+  invoice_ready: (c) => {
+    const label = c.invoiceNumberLabel ? ` ${c.invoiceNumberLabel}` : '';
+    const totalSentence =
+      c.invoiceTotalCents != null ? ` Total due: ${centsToDollars(c.invoiceTotalCents)}.` : '';
+    return {
+      subject: c.invoiceNumberLabel
+        ? `${c.businessName} — invoice ${c.invoiceNumberLabel}`
+        : `${c.businessName} — your invoice is ready`,
+      text:
+        `${c.businessName}: Your invoice${label} is ready.${totalSentence} ` +
+        `View and pay: ${c.invoiceUrl ?? ''}`,
+      html: wrapHtml([
+        `${escapeHtml(c.businessName)}: Your invoice${escapeHtml(label)} is ready.${escapeHtml(totalSentence)}`,
+        c.invoiceUrl
+          ? `<a href="${escapeHtml(c.invoiceUrl)}">View and pay your invoice</a>`
+          : 'The invoice link will follow separately.',
+      ]),
+    };
+  },
   invite: (c) => ({
     subject: `${c.businessName} invited you to join their team on Stridetail`,
     text: `${c.businessName} invited you to join their team on Stridetail: ${c.inviteLink ?? ''}`,

@@ -5,7 +5,14 @@
 // channel) and the copied retry backoff schedule.
 import { assertEquals, assertStringIncludes } from 'jsr:@std/assert@1';
 
-import { backoffMinutes, escapeHtml, MAX_ATTEMPTS, renderEmail } from './templates.ts';
+import {
+  backoffMinutes,
+  centsToDollars,
+  escapeHtml,
+  invoiceNumberLabel,
+  MAX_ATTEMPTS,
+  renderEmail,
+} from './templates.ts';
 
 const ctx = {
   businessName: 'Paw & Whisker',
@@ -13,6 +20,9 @@ const ctx = {
   serviceName: 'Walk',
   reportUrl: 'https://stridetail.app/report/abc123',
   inviteLink: 'stridetail://invite/tok456',
+  invoiceNumberLabel: 'INV-0007',
+  invoiceTotalCents: 4500,
+  invoiceUrl: 'https://stridetail.app/invoice/tok789',
 };
 
 Deno.test('visit_started subject and text', () => {
@@ -35,6 +45,48 @@ Deno.test('visit_finished text matches the SMS wording and carries the report li
 Deno.test('visit_finished without a report url degrades honestly', () => {
   const m = renderEmail('visit_finished', { ...ctx, reportUrl: undefined })!;
   assertStringIncludes(m.html, 'will follow separately');
+});
+
+Deno.test('invoice_ready subject, text (aligned with invoiceSmsBody), and link', () => {
+  const m = renderEmail('invoice_ready', ctx)!;
+  assertEquals(m.subject, 'Paw & Whisker — invoice INV-0007');
+  assertEquals(
+    m.text,
+    'Paw & Whisker: Your invoice INV-0007 is ready. Total due: $45.00. ' +
+      'View and pay: https://stridetail.app/invoice/tok789',
+  );
+  assertStringIncludes(m.html, '<a href="https://stridetail.app/invoice/tok789">');
+  assertStringIncludes(m.html, 'Total due: $45.00.');
+});
+
+Deno.test('invoice_ready without a number/total degrades honestly', () => {
+  const m = renderEmail('invoice_ready', {
+    ...ctx,
+    invoiceNumberLabel: undefined,
+    invoiceTotalCents: undefined,
+  })!;
+  assertEquals(m.subject, 'Paw & Whisker — your invoice is ready');
+  assertEquals(
+    m.text,
+    'Paw & Whisker: Your invoice is ready. View and pay: https://stridetail.app/invoice/tok789',
+  );
+});
+
+Deno.test('invoice_ready without a url defers the link', () => {
+  const m = renderEmail('invoice_ready', { ...ctx, invoiceUrl: undefined })!;
+  assertStringIncludes(m.html, 'will follow separately');
+});
+
+Deno.test('centsToDollars renders sign outside the $, two decimals always', () => {
+  assertEquals(centsToDollars(4500), '$45.00');
+  assertEquals(centsToDollars(-500), '-$5.00');
+  assertEquals(centsToDollars(0), '$0.00');
+  assertEquals(centsToDollars(5), '$0.05');
+});
+
+Deno.test('invoiceNumberLabel pads to four digits and outgrows the pad', () => {
+  assertEquals(invoiceNumberLabel(7), 'INV-0007');
+  assertEquals(invoiceNumberLabel(12345), 'INV-12345');
 });
 
 Deno.test('invite subject and link', () => {

@@ -28,10 +28,19 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 import { corsHeaders } from '../_shared/cors.ts';
-import { backoffMinutes, MAX_ATTEMPTS, renderEmail, type EmailContext, type EmailMessage } from './templates.ts';
+import {
+  backoffMinutes,
+  invoiceNumberLabel,
+  MAX_ATTEMPTS,
+  renderEmail,
+  type EmailContext,
+  type EmailMessage,
+} from './templates.ts';
 
 const CLAIM_LIMIT = 25;
 const DEFAULT_REPORT_BASE = 'https://stridetail.app/report';
+// Mirrors INVOICE_BASE_URL in src/lib/brand.ts — change both together.
+const DEFAULT_INVOICE_BASE = 'https://stridetail.app/invoice';
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: corsHeaders });
@@ -87,6 +96,31 @@ async function buildContext(admin: SupabaseClient, row: NotificationRow): Promis
         : typeof token === 'string'
           ? `stridetail://invite/${token}`
           : '';
+    return ctx;
+  }
+
+  if (row.template === 'invoice_ready') {
+    // Payload from send_invoice: {invoiceId, invoiceToken}. Number and total
+    // are read fresh at send time (admin), like the visit templates' context.
+    const invoiceId = row.payload['invoiceId'];
+    if (typeof invoiceId === 'string') {
+      const { data: inv } = await admin.from('invoices').select('number').eq('id', invoiceId).maybeSingle();
+      const n = (inv as { number: number } | null)?.number;
+      if (typeof n === 'number') ctx.invoiceNumberLabel = invoiceNumberLabel(n);
+      const { data: items } = await admin
+        .from('invoice_items')
+        .select('amount_cents')
+        .eq('invoice_id', invoiceId);
+      if (inv) {
+        ctx.invoiceTotalCents = ((items ?? []) as { amount_cents: number }[]).reduce(
+          (sum, r) => sum + r.amount_cents,
+          0,
+        );
+      }
+    }
+    const base = Deno.env.get('INVOICE_BASE_URL') ?? DEFAULT_INVOICE_BASE;
+    const token = row.payload['invoiceToken'];
+    ctx.invoiceUrl = typeof token === 'string' ? `${base.replace(/\/$/, '')}/${token}` : base;
     return ctx;
   }
 

@@ -422,6 +422,16 @@ verify_jwt = true
 enabled = true
 verify_jwt = false
 
+# PUBLIC BY DESIGN — report-public's exact posture for invoices. Invoice links
+# go to pet-owner clients by email; they have no account or JWT. The credential
+# is the 48-hex public_token itself (24 random bytes from send_invoice, unique,
+# revocable); unknown, revoked, and voided tokens are the same 404. The
+# function carries its own light per-IP rate limiter. Full rationale in
+# supabase/functions/invoice-public/index.ts.
+[functions.invoice-public]
+enabled = true
+verify_jwt = false
+
 [analytics]
 enabled = false
 port = 54327

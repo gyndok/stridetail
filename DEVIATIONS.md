@@ -1759,3 +1759,63 @@ deployed-but-dormant for a possible toll-free future.
 - Screens stay untested markup over the tested pure/api layer (house
   approach): `newInvoice.test.ts` (24), api/money/deviceSms additions ride
   the existing suites.
+
+## Plan 5, Task 5 — invoice-public function, public page, invoice_ready email (2026-08-25)
+
+- **invoice-public mirrors report-public mechanism-for-mechanism:** same 48-hex
+  token regex, same in-memory per-IP fixed-window rate limiter (30/min, per
+  isolate — the accepted trade-off is restated in the file header), same
+  byte-identical `{error:'not found'}` for unknown, malformed, missing,
+  revoked, AND voided tokens. The void check (`status not in sent|paid`) is
+  belt and braces beyond `revoked_at`: `void_invoice` stamps `revoked_at`
+  whenever a token exists (Task 2), but a voided invoice must never render as
+  payable even if that invariant ever slipped.
+- **Payload allow-list (spec §4):** top level exactly `business{name,
+  brandColor, logoUrl(signed 24 h)}, businessTz, clientFirstName, invoice{
+  numberLabel, issuedOn, dueOn, status, paidAt}, items[{description,
+  amountCents, kind}], paymentsTotalCents, balanceCents,
+  paymentInstructionsMd`. `clientFirstName` is `clients.name` split on
+  whitespace, FIRST token only, server-side — the full name never leaves the
+  function. `businessTz` comes from `businesses.time_zone` (invoices carry no
+  tz snapshot; reports read the visit's). Items total is derived on the page
+  (`invoiceViewModel`); the function ships payments total + true balance.
+- **`invoice_ready` template:** subject `BUSINESS — invoice INV-0042` (the
+  task's dash style; other templates use `BUSINESS: ...` — recorded), text
+  first sentence byte-aligned with `invoiceSmsBody` ("Text the client"
+  parity), plus a `Total due: $X.` sentence and the link. Missing number/
+  total/url degrade honestly (no `INV-????`, no lying `$0.00` — the
+  visit_finished precedent). `centsToDollars`/`invoiceNumberLabel` are local
+  copies in templates.ts (expand.ts/polyline.ts copy pattern). buildContext
+  gains an `invoice_ready` branch reading invoice number + items sum via
+  admin and building the link from `INVOICE_BASE_URL` env with the
+  `https://stridetail.app/invoice` default (mirrors `src/lib/brand.ts`;
+  pinned by a jest test). No other send-email behavior touched; redeploy is
+  Task 6.
+- **The public page has NO Platform split** (deviation-by-omission from the
+  report page's web-only `<svg>`): every invoice section is plain RN markup,
+  so native and web render identically — the report's native fallback exists
+  only for its DOM svg sketch, which invoices don't have.
+- **`invoiceViewModel(payload)` is the page's pure layer**
+  (`src/features/billing/publicInvoice.ts`, jest 7 cases): title/dates/paid
+  stamp/items/totals as render-ready strings, money via the shared
+  `formatCents`, date columns via `formatIsoDate` (calendar-only), and
+  `paidAt` — an instant — via `formatInTimeZone` in the BUSINESS tz (pinned
+  with a 03:00 UTC = previous-day-Chicago vector). Payments row hides at 0;
+  an over-paid balance renders negative, never floored. The screen stays
+  untested markup over the tested helpers (house approach).
+- **E2E (local `supabase functions serve`, bun fetch scripts, fixtures
+  cleaned): 41/41 + 6/6 checks.** invoice-public: valid token with no auth
+  headers → 200 (verify_jwt off proven); GET/POST parity; exact key sets at
+  every level; first-name-only; logo signed URL fetches the uploaded bytes
+  (host rewritten from the edge runtime's internal `http://kong:8000` — local
+  serve quirk); leak-check with the signed URL scrubbed finds none of: client
+  last name, address, phone digits, email, `walker`/`phone`/`address`/
+  `private`/`notes`/`access`/`code` markers, or the token itself (price/amount
+  strings are the page's CONTENT here, so price markers are deliberately not
+  in the grep list — recorded per the task); paid invoice carries paidAt and
+  zero balance; unknown/malformed/missing/voided/revoked → five byte-identical
+  404s; rate limiter 429s on exactly request 31. send-email drain:
+  invoice_ready row → skipped_no_provider (no Resend env) with the exact
+  subject and text incl. total due and `stridetail.app/invoice/<token>` link.
+- Migrations untouched; `db:reset`/`db:test` not rerun (nothing schema-side
+  changed). Checks: 626 jest (49 suites), 37 deno, typecheck, lint all green.
