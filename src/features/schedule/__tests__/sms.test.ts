@@ -20,7 +20,7 @@ jest.mock('@/src/lib/supabase', () => ({
       const entry = { table, steps: [] as Step[] };
       mockLog.push(entry);
       const builder: Record<string, unknown> = {};
-      for (const m of ['select', 'eq', 'in', 'or', 'order']) {
+      for (const m of ['select', 'eq', 'in', 'or', 'gte', 'order']) {
         builder[m] = (...args: unknown[]) => {
           entry.steps.push([m, args]);
           return builder;
@@ -93,6 +93,9 @@ test('listProblemNotifications scopes to the business, terminal statuses, and ex
     // for lack of a provider is the dormant channel's expected state, not a
     // problem; failed sms and every email problem still match.
     ['or', ['channel.neq.sms,status.neq.skipped_no_provider']],
+    // 7-day age bound: terminal failures older than a week age out of the
+    // needs-attention strip instead of haunting it forever.
+    ['gte', ['created_at', expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/)]],
     ['order', ['created_at', { ascending: false }]],
   ]);
 });

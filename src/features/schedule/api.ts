@@ -546,13 +546,20 @@ export async function getVisit(businessId: string, id: string): Promise<Visit> {
  * surface. A real failed sms (if the channel ever returns) and every email
  * problem still surface.
  */
+const PROBLEM_MAX_AGE_MS = 7 * 24 * 3_600_000;
+
 export async function listProblemNotifications(businessId: string): Promise<ProblemNotification[]> {
+  // Terminal failures older than a week are history, not action items — without
+  // the age bound, one config gap leaves a permanent needs-attention card
+  // (found live 2026-08-25 with pre-provider skipped rows).
+  const since = new Date(Date.now() - PROBLEM_MAX_AGE_MS).toISOString();
   const { data, error } = await supabase
     .from('notifications')
     .select('id, channel, template, status, payload')
     .eq('business_id', businessId)
     .in('status', ['failed', 'skipped_no_provider'])
     .or('channel.neq.sms,status.neq.skipped_no_provider')
+    .gte('created_at', since)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as unknown as ProblemNotification[];
