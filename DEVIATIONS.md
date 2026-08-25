@@ -1588,3 +1588,64 @@ deployed-but-dormant for a possible toll-free future.
   invoice transition matrix (005-style temp-function loop), and aggregated
   grant assertions for authenticated/anon/service_role plus the trigger
   function's execute revoke.
+
+## Plan 5, Task 2 — billing RPCs (2026-08-25)
+
+- **Date-range reading (recorded per the task):** `create_invoice(p_from, p_to)`
+  filters on the visit's LOCAL calendar date —
+  `(scheduled_start at time zone business_tz)::date` — not a bare
+  `scheduled_start::date`, which would encode the server zone (UTC on hosted)
+  against the no-hardcoded-tz rule. Pinned in pgTAP with a 2026-08-21 03:00 UTC
+  visit (Aug 20, 22:00 in America/Chicago) that a [Aug 20, Aug 20] range must
+  catch. Bounds are one-sided when only one date is given. `issued_on` is
+  likewise stamped as today in the business tz.
+- **Empty drafts allowed (recorded per the task):** zero eligible visits still
+  creates an empty draft invoice — the owner adds manual lines (covers
+  deposit-only or ad-hoc bills); no deposit ever applies against a zero
+  subtotal.
+- **Deposit auto-apply (plan's whole-deposit rule, recorded):** held deposits
+  are taken oldest first (`received_on asc nulls last, created_at, id`,
+  row-locked), WHOLE deposits only, and the loop **stops at the first deposit
+  that no longer fits** the remaining subtotal — skipping ahead to a newer,
+  smaller deposit would violate oldest-first. Each application writes a
+  `deposit.apply` audit row; releases on void write `deposit.release`
+  (spec §2.7 "deposit transitions" audited).
+- **Numbering-lock test approach (recorded per the task):** a true concurrent
+  probe is impractical — dblink connections could not see the test
+  transaction's uncommitted fixtures. Instead pgTAP asserts (a) two sequential
+  creates take consecutive numbers with the counter advancing, and (b) the
+  function body contains the `for update` lock via `pg_get_functiondef`
+  (pgTAP has no `like()` function — asserted as `ok(... like ...)`).
+- **`remove_invoice_item` is manual-only** (task direction): visit lines and
+  deposit credits leave via `void_invoice`. Line edits are allowed while
+  draft OR sent; a paid invoice's lines are frozen.
+- **`send_invoice` prechecks `status = 'draft'` explicitly:** a sent→sent
+  update does not change status, so the Task-1 transition trigger would no-op
+  and a re-send would silently rotate the live public token. The precheck
+  raises `invoice is not a draft (status: sent)` instead.
+- **`record_payment` on a paid invoice is allowed** (extra payments recorded
+  as history) and the audit meta carries `overpaid: true` whenever
+  payments exceed the items total; the sent→paid flip writes its own
+  `invoice.paid` audit row (spec §2.7 names "paid" as an audited event).
+  A payment needs an explicit received date (clear raise, not a 23502).
+- **`void_invoice` also revokes the public link** (`revoked_at` stamped when
+  a `public_token` exists): a voided invoice must not stay payable on the
+  public page. Payments rows stay attached (history); the RPC prechecks
+  draft|sent so a paid invoice gets `invoice cannot be voided (status: paid)`
+  rather than the trigger's transition message.
+- **`record_deposit` lands in `held`** (recorded per the task): v1 records
+  deposits already received; the `requested` state is reserved for a future
+  request-first UI. `forfeit_deposit`/`refund_deposit` are held-only.
+- **Grants: `authenticated` only, not `service_role`** (Plan 3 Task 1
+  precedent — the `is not true` guards need a JWT sub). `invoice_totals` is a
+  definer read helper (stable, owner-guarded) for the app's derived totals.
+- pgTAP (012) runs as superuser with `request.jwt.claims` driving the actor
+  (011-matrix pattern — definer RPCs bypass RLS, so the is_owner guards are
+  what is under test); grants get `has_function_privilege` assertions plus a
+  live anon 42501 probe. 90 assertions: range/local-date picking,
+  descriptions, numbering, whole-deposit auto-apply, totals with negative
+  manual lines, send token + `invoice_ready` queue payload + no-email skip,
+  partial/completing/over payment, void releasing visit + deposit with
+  re-invoice pickup, held-only deposit exits, 10 RPCs × walker/cross-owner
+  guard matrix, and an aggregated per-action audit count with money-amount
+  meta spot checks.
