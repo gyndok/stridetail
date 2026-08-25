@@ -44,6 +44,7 @@ import { canTransition } from '@/src/lib/schedule/machine';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
+import { BillingIcon, LockIcon } from '@/src/ui/icons';
 import { Screen } from '@/src/ui/Screen';
 import { useTheme } from '@/src/ui/theme';
 
@@ -485,9 +486,10 @@ export default function VisitScreen() {
             ) : null}
           </Card>
 
-          <Card style={{ opacity: 0.5 }}>
-            <Text style={{ color: t.colors.ink }}>
-              🔒 Access codes — available after you start
+          <Card style={{ opacity: 0.5, flexDirection: 'row', alignItems: 'center', gap: t.space.sm }}>
+            <LockIcon size={18} color={t.colors.ink} />
+            <Text style={{ color: t.colors.ink, flex: 1 }}>
+              Access codes — available after you start
             </Text>
           </Card>
         </>
@@ -535,8 +537,11 @@ export default function VisitScreen() {
           accessibilityRole="button"
           onPress={() => router.push(`/billing/new?client=${v.client_id}` as Href)}
         >
-          <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>Billing</Text>
+          <Card style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.sm }}>
+            <BillingIcon size={20} color={t.colors.ink} />
+            <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700', flex: 1 }]}>
+              Billing
+            </Text>
             <Text style={{ color: t.colors.inkMuted }}>Add to an invoice →</Text>
           </Card>
         </Pressable>

@@ -4,6 +4,14 @@ import { Platform, useWindowDimensions } from 'react-native';
 import { useSession } from '@/src/features/auth/session';
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
+import {
+  BillingIcon,
+  ClientsIcon,
+  ScheduleIcon,
+  SettingsIcon,
+  TeamIcon,
+  TodayIcon,
+} from '@/src/ui/icons';
 import { DESKTOP_MIN_WIDTH, OwnerRail } from '@/src/ui/web/OwnerRail';
 import { useTheme } from '@/src/ui/theme';
 
@@ -62,12 +70,50 @@ export default function OwnerTabs() {
           }
         : null)}
     >
-      <Tabs.Screen name="today" options={{ title: 'Today' }} />
-      <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
-      <Tabs.Screen name="clients" options={{ title: 'Clients' }} />
-      <Tabs.Screen name="team" options={{ title: 'Team' }} />
-      <Tabs.Screen name="billing" options={{ title: 'Billing' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      {/* Icons take the navigator's tint through the passed `color` prop —
+          the theme default inside each icon never overrides it. */}
+      <Tabs.Screen
+        name="today"
+        options={{
+          title: 'Today',
+          tabBarIcon: ({ color, size }) => <TodayIcon color={color} size={size ?? 22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="schedule"
+        options={{
+          title: 'Schedule',
+          tabBarIcon: ({ color, size }) => <ScheduleIcon color={color} size={size ?? 22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="clients"
+        options={{
+          title: 'Clients',
+          tabBarIcon: ({ color, size }) => <ClientsIcon color={color} size={size ?? 22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="team"
+        options={{
+          title: 'Team',
+          tabBarIcon: ({ color, size }) => <TeamIcon color={color} size={size ?? 22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="billing"
+        options={{
+          title: 'Billing',
+          tabBarIcon: ({ color, size }) => <BillingIcon color={color} size={size ?? 22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size }) => <SettingsIcon color={color} size={size ?? 22} />,
+        }}
+      />
     </Tabs>
   );
 }

@@ -1,5 +1,27 @@
 import '@testing-library/react-native';
 
+// react-native-svg is a native module and ships NO jest mock entry point in
+// 15.15.4 (no `react-native-svg/jest-mock`; checked the package). Standard
+// community fallback: stub the primitives as pass-through Views so icon tests
+// can render without native code and assert svg props (stroke/fill) directly.
+jest.mock('react-native-svg', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+  const stub = (name: string) => {
+    const C = (props: object) => React.createElement(View, props);
+    C.displayName = name;
+    return C;
+  };
+  return {
+    __esModule: true,
+    default: stub('Svg'),
+    Svg: stub('Svg'),
+    Path: stub('Path'),
+    Circle: stub('Circle'),
+    Rect: stub('Rect'),
+  };
+});
+
 jest.mock('expo-crypto', () => ({ randomUUID: () => Math.random().toString(36).slice(2) }));
 jest.mock('expo-sqlite', () => ({
   openDatabaseSync: () => ({

@@ -12,6 +12,7 @@ import { petAge } from '@/src/features/pets/helpers';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
+import { LockIcon } from '@/src/ui/icons';
 import { Screen } from '@/src/ui/Screen';
 import { useTheme } from '@/src/ui/theme';
 
@@ -154,7 +155,10 @@ export default function ClientDetail() {
             onPress={() => router.push(`/clients/${id}/access` as Href)}
           >
             <Card>
-              <Text style={[t.type.label, { color: t.colors.inkMuted }]}>🔒 Access codes</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.sm }}>
+                <LockIcon size={16} color={t.colors.inkMuted} />
+                <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Access codes</Text>
+              </View>
               <Text style={{ color: t.colors.ink }}>Door, lockbox, gate, and alarm codes</Text>
             </Card>
           </Pressable>

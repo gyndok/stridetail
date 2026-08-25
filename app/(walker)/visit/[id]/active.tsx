@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Alert, Linking, Platform, Pressable, Text, View } from 'react-native';
 
 import { telUrl } from '@/src/features/clients/form';
@@ -39,6 +39,16 @@ import { kickSync, type VisitEventType } from '@/src/lib/offline/sync';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
+import {
+  AteIcon,
+  DrankIcon,
+  LockIcon,
+  MedsIcon,
+  NoteIcon,
+  PeeIcon,
+  PhotoIcon,
+  PoopIcon,
+} from '@/src/ui/icons';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { FieldTheme, useTheme } from '@/src/ui/theme';
@@ -53,12 +63,44 @@ const DEFAULT_GRACE_HOURS = 12; // businesses.access_grace_hours DB default
 type RecentEvent = { type: VisitEventType; occurredAt: string; petName?: string };
 type Revealed = { codes: ClientAccessCodes; note: string | null };
 
-/** One primary-tap event button (flex row cell). */
-function EventButton({ title, onPress, disabled }: { title: string; onPress: () => void; disabled?: boolean }) {
+/**
+ * One primary-tap event button (flex row cell): icon above the label, styled
+ * like the secondary Button (surfaceRaised pill, primary foreground). The
+ * label always renders — icons augment, never replace text.
+ */
+function EventButton({
+  title,
+  icon,
+  onPress,
+  disabled,
+}: {
+  title: string;
+  icon: (color: string) => ReactNode;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  const t = useTheme();
   return (
-    <View style={{ flex: 1 }}>
-      <Button title={title} variant="secondary" onPress={onPress} disabled={disabled} />
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: 1,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        gap: t.space.xs,
+        paddingVertical: t.space.md,
+        paddingHorizontal: t.space.sm,
+        borderRadius: t.radius.pill,
+        backgroundColor: t.colors.surfaceRaised,
+        opacity: disabled ? 0.6 : pressed ? 0.85 : 1,
+      })}
+    >
+      {icon(t.colors.primary)}
+      <Text style={{ color: t.colors.primary, fontSize: 14, fontWeight: '800' }}>{title}</Text>
+    </Pressable>
   );
 }
 
@@ -398,10 +440,26 @@ function ActiveVisitBody() {
               things I would like to mark"; Ate/Drank/Meds sit behind More
               ("any additional pet needs can be added to the notes"). */}
           <View style={{ flexDirection: 'row', gap: t.space.sm }}>
-            <EventButton title="Pee" onPress={() => void appendEvent('pee')} />
-            <EventButton title="Poop" onPress={() => void appendEvent('poop')} />
-            <EventButton title="Photo" onPress={() => void onPhoto()} />
-            <EventButton title="Note" onPress={() => setNoteOpen((v) => !v)} />
+            <EventButton
+              title="Pee"
+              icon={(c) => <PeeIcon size={20} color={c} />}
+              onPress={() => void appendEvent('pee')}
+            />
+            <EventButton
+              title="Poop"
+              icon={(c) => <PoopIcon size={20} color={c} />}
+              onPress={() => void appendEvent('poop')}
+            />
+            <EventButton
+              title="Photo"
+              icon={(c) => <PhotoIcon size={20} color={c} accent={c} />}
+              onPress={() => void onPhoto()}
+            />
+            <EventButton
+              title="Note"
+              icon={(c) => <NoteIcon size={20} color={c} />}
+              onPress={() => setNoteOpen((v) => !v)}
+            />
           </View>
           <Pressable
             accessibilityRole="button"
@@ -419,9 +477,21 @@ function ActiveVisitBody() {
           </Pressable>
           {moreOpen ? (
             <View style={{ flexDirection: 'row', gap: t.space.sm }}>
-              <EventButton title="Ate" onPress={() => void appendEvent('ate')} />
-              <EventButton title="Drank" onPress={() => void appendEvent('drank')} />
-              <EventButton title="Meds" onPress={() => void appendEvent('meds')} />
+              <EventButton
+                title="Ate"
+                icon={(c) => <AteIcon size={20} color={c} />}
+                onPress={() => void appendEvent('ate')}
+              />
+              <EventButton
+                title="Drank"
+                icon={(c) => <DrankIcon size={20} color={c} />}
+                onPress={() => void appendEvent('drank')}
+              />
+              <EventButton
+                title="Meds"
+                icon={(c) => <MedsIcon size={20} color={c} accent={c} />}
+                onPress={() => void appendEvent('meds')}
+              />
             </View>
           ) : null}
 
@@ -469,7 +539,13 @@ function ActiveVisitBody() {
               </Text>
             )
           ) : (
-            <Button title="🔒 Reveal codes" variant="secondary" loading={revealBusy} onPress={() => void onReveal()} />
+            <Button
+              title="Reveal codes"
+              icon={(c) => <LockIcon size={18} color={c} />}
+              variant="secondary"
+              loading={revealBusy}
+              onPress={() => void onReveal()}
+            />
           )}
 
           {/* Finish */}

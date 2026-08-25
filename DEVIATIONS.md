@@ -1865,3 +1865,43 @@ deployed-but-dormant for a possible toll-free future.
   their finalized payout statement") needs Plan 6's finalize RPC/UI, so it moves to
   Plan 6's checkpoint run, per the plan's "Plan 6 picks up payouts UI + Checkpoint 6
   device run".
+
+## Icon system v1 — 18 theme-wired svg icons (2026-08-25)
+
+- **NATIVE MODULE — DO NOT OTA THIS ALONE:** `react-native-svg@15.15.4` (via
+  `bunx expo install`) is a native module. Installed dev clients / preview builds do
+  NOT contain it: publishing an OTA update with this commit before the next dev-client
+  rebuild + EAS build would crash every icon render on the missing native module.
+  This work merges now, but the next update ships only WITH (or after) a new build.
+  Web export is unaffected (`CI=1 bunx expo export --platform web` passes and emits
+  `dist/dev/icons.html`; react-native-svg resolves its `.web` entry — no metro stub
+  needed).
+- The source docs' path data was treated as reference only (per the icon brief): every
+  path was redrawn by hand in a 24×24 viewBox, strokeWidth 1.75, round caps/joins,
+  no baked backgrounds; the gear polygon was generated (8 teeth, r 9.4/7.1). Colors
+  come from `src/ui/tokens.ts` via `useTheme()` — the docs' `constants/colors.ts`
+  near-miss values (`#E96532` etc.) were rejected as specified.
+- `IconProps.color`/`accent` are typed `ColorValue`, not `string`: react-navigation's
+  `tabBarIcon` hands its tint as `ColorValue`, and react-native-svg accepts it
+  directly. An explicitly passed `color` always wins over the theme default.
+- Paw motif restraint: the brief allows the paw only on location pin / camera /
+  completed check. Of those, only the camera exists in this set — PhotoIcon carries an
+  accent paw shutter dot (legible from ~24px). CheckCircleIcon stays a plain check: a
+  paw inside a 16px circle is illegible, so it was left off (allowed, not required).
+  PoopIcon is the set's single filled silhouette (a stroked swirl reads as ice cream).
+- `react-native-svg` ships NO jest mock entry (`react-native-svg/jest-mock` does not
+  exist in 15.15.4 — checked the package contents), so `jest.setup.ts` stubs
+  Svg/Path/Circle/Rect as pass-through `View`s (standard community fallback); the
+  icon smoke test asserts stroke/fill props straight off the JSON tree, including
+  that an explicit `color` prop suppresses the theme ink entirely.
+- `Button` gained an optional `icon?: (color) => ReactNode` render-prop (receives the
+  variant foreground so icons always match the label); the active-visit `EventButton`
+  was rebuilt as its own secondary-styled Pressable with the icon ABOVE the label
+  (plain `Button` cannot stack). All text labels kept — icons augment, never replace.
+- 🔒 emoji swapped for `LockIcon` in the three briefed homes (active-visit reveal
+  button, owner client-detail access row, VisitScreen gated-codes row). The FOURTH
+  usage — `app/(owner)/clients/[id]/access.tsx`'s `<Screen title="🔒 Access codes">` —
+  keeps its emoji: `Screen.title` is a plain string prop and was not in the brief's
+  list; widening Screen's API for one heading was not worth it.
+- Owner desktop web rail (`OwnerRail`) stays label-only: it is a custom `tabBar` that
+  never receives `tabBarIcon`, and the brief scoped icons to the mobile tab bars.
