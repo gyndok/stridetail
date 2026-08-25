@@ -69,7 +69,7 @@ Last updated: 2026-08-24
   | 5 | active visit: field mode, events, photos, reveal, finish | [x] | `7d7a403` |
   | 6 | send-sms + notification queue + owner surfacing | [x] | `1ca1e04` |
   | 7 | report-public + web report page + resend/revoke | [x] | `1e83f2a` |
-  | 8 | Expo Web rail + week grid | [ ] | |
+  | 8 | Expo Web rail + week grid | [x] | `136df85` |
   | 9 | hosted deploy, advisors, builds | [ ] | |
   | 10 | **Checkpoint 4** — full field run | [ ] | |
 
@@ -85,7 +85,7 @@ Last updated: 2026-08-24
 6. [~] Visit execution: Today, start/finish, background GPS, per-pet timestamped events, multi-pet, private notes — *full walker UI built: detail + gated start (Plan 4 Task 4), field-mode active screen with per-pet events/photos/notes, gated reveal w/ grace fallback, finish w/ private notes, resume banner (Plan 4 Task 5); device verification = Checkpoint 4*
 7. [~] Reports: tokenised public page, SMS on start/finish, retry, owner resend/revoke — *SMS queue + per-minute `send-sms` cron with 1/5/15/60-min retry, provider-abstracted (`skipped_no_provider` until Twilio), owner "not sent" surfacing (Plan 4 Task 6); public page + resend/revoke UI in Task 7*
 8. [~] Offline: day cache + ordered outbox sync — *sync worker + persisted query cache + grace-window reveal helpers done (Plan 4 Task 3); field screens consume them (Tasks 4–5: outbox-first events/finish, per-visit sync badge, offline reveal fallback); airplane-mode device pass = Checkpoint 4*
-9. [ ] Expo Web owner layout ≥ 900 px: rail nav, week grid *(Plan 4)*
+9. [~] Expo Web owner layout ≥ 900 px: rail nav, week grid — *built (Plan 4 Task 8): left rail via the Tabs navigator's `tabBarPosition: 'left'` + custom tab bar, business-tz week grid with status-colored blocks and an inline offer/reassign + reschedule panel (first `rescheduleVisit` UI); drag-and-drop deferred (recorded follow-up); verified via `expo export --platform web` (48 routes; also fixes the pre-existing web-bundle break via expo-sqlite web stubs) — signed-in browser pass rides with Task 9/Checkpoint 4*
 10. [~] White-label: name/logo/accent everywhere — *theme provider accent override done (Task 2); surfaces pending*
 
 ## Spec §5 — Data model
