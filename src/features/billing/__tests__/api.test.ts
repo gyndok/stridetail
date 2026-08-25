@@ -1,0 +1,257 @@
+import {
+  addInvoiceItem,
+  createInvoice,
+  forfeitDeposit,
+  getInvoice,
+  groupHeldDeposits,
+  INVOICE_DETAIL_COLUMNS,
+  INVOICE_LIST_COLUMNS,
+  listHeldDeposits,
+  listInvoices,
+  recordDeposit,
+  recordPayment,
+  refundDeposit,
+  removeInvoiceItem,
+  sendInvoice,
+  voidInvoice,
+  type HeldDeposit,
+} from '../api';
+
+type Step = [string, unknown[]];
+const mockLog: { table: string; steps: Step[] }[] = [];
+const mockRpcLog: { fn: string; args: unknown }[] = [];
+let mockResult: { data: unknown; error: unknown } = { data: [], error: null };
+let mockRpcResult: { data: unknown; error: unknown } = { data: null, error: null };
+
+jest.mock('@/src/lib/supabase', () => ({
+  supabase: {
+    from: (table: string) => {
+      const entry = { table, steps: [] as Step[] };
+      mockLog.push(entry);
+      const builder: Record<string, unknown> = {};
+      for (const m of ['select', 'eq', 'order', 'single']) {
+        builder[m] = (...args: unknown[]) => {
+          entry.steps.push([m, args]);
+          return builder;
+        };
+      }
+      builder.then = (resolve: (v: unknown) => unknown) => Promise.resolve(resolve(mockResult));
+      return builder;
+    },
+    rpc: (fn: string, args: unknown) => {
+      mockRpcLog.push({ fn, args });
+      return Promise.resolve(mockRpcResult);
+    },
+  },
+}));
+
+beforeEach(() => {
+  mockLog.length = 0;
+  mockRpcLog.length = 0;
+  mockResult = { data: [], error: null };
+  mockRpcResult = { data: null, error: null };
+});
+
+function steps() {
+  return mockLog[0]!.steps;
+}
+function argsOf(name: string) {
+  return steps()
+    .filter(([n]) => n === name)
+    .map(([, a]) => a);
+}
+
+// The visits price column grant makes select('*') a 42501 on visits; billing
+// tables allow it, but the house rule is named columns everywhere.
+test('no billing column list contains a *', () => {
+  expect(INVOICE_LIST_COLUMNS).not.toContain('*');
+  expect(INVOICE_DETAIL_COLUMNS).not.toContain('*');
+});
+
+describe('listInvoices', () => {
+  test('scopes to the business, embeds named columns, newest number first', async () => {
+    await listInvoices('biz-1');
+    expect(mockLog[0]!.table).toBe('invoices');
+    const select = argsOf('select')[0]![0] as string;
+    expect(select).toContain('client:clients(name)');
+    expect(select).toContain('items:invoice_items(amount_cents)');
+    expect(select).toContain('payments:payments(amount_cents)');
+    expect(select).not.toContain('*');
+    expect(argsOf('eq')).toEqual([['business_id', 'biz-1']]);
+    expect(argsOf('order')).toEqual([['number', { ascending: false }]]);
+  });
+
+  test('throws on error', async () => {
+    mockResult = { data: null, error: new Error('boom') };
+    await expect(listInvoices('biz-1')).rejects.toThrow('boom');
+  });
+});
+
+describe('getInvoice', () => {
+  test('scopes to business and id, single row, named item/payment columns', async () => {
+    mockResult = { data: { id: 'inv-1' }, error: null };
+    await getInvoice('biz-1', 'inv-1');
+    expect(mockLog[0]!.table).toBe('invoices');
+    const select = argsOf('select')[0]![0] as string;
+    expect(select).toContain('client:clients(name)');
+    expect(select).toContain('items:invoice_items(');
+    expect(select).toContain('payments:payments(');
+    expect(select).not.toContain('*');
+    expect(argsOf('eq')).toEqual([
+      ['business_id', 'biz-1'],
+      ['id', 'inv-1'],
+    ]);
+    expect(steps().map(([n]) => n)).toContain('single');
+  });
+});
+
+describe('listHeldDeposits', () => {
+  test('held only, business-scoped, oldest received first (nulls last)', async () => {
+    await listHeldDeposits('biz-1');
+    expect(mockLog[0]!.table).toBe('deposits');
+    const select = argsOf('select')[0]![0] as string;
+    expect(select).toContain('client:clients(name)');
+    expect(select).not.toContain('*');
+    expect(argsOf('eq')).toEqual([
+      ['business_id', 'biz-1'],
+      ['status', 'held'],
+    ]);
+    expect(argsOf('order')).toEqual([
+      ['received_on', { ascending: true, nullsFirst: false }],
+      ['created_at', {}],
+    ]);
+  });
+});
+
+describe('groupHeldDeposits', () => {
+  const dep = (id: string, client_id: string, name: string | null, amount: number): HeldDeposit => ({
+    id,
+    client_id,
+    amount_cents: amount,
+    status: 'held',
+    method: null,
+    received_on: null,
+    memo: null,
+    created_at: '2026-08-01T00:00:00Z',
+    client: name === null ? null : { name },
+  });
+
+  test('groups per client with totals, sorted by client name', () => {
+    const groups = groupHeldDeposits([
+      dep('d1', 'c-zoe', 'Zoe', 1000),
+      dep('d2', 'c-amy', 'Amy', 2500),
+      dep('d3', 'c-zoe', 'Zoe', 500),
+    ]);
+    expect(groups.map((g) => g.clientName)).toEqual(['Amy', 'Zoe']);
+    expect(groups[0]).toMatchObject({ clientId: 'c-amy', totalCents: 2500 });
+    expect(groups[1]).toMatchObject({ clientId: 'c-zoe', totalCents: 1500 });
+    expect(groups[1]!.deposits.map((d) => d.id)).toEqual(['d1', 'd3']);
+  });
+
+  test('empty ledger groups to nothing; missing client name gets a fallback', () => {
+    expect(groupHeldDeposits([])).toEqual([]);
+    expect(groupHeldDeposits([dep('d1', 'c1', null, 100)])[0]!.clientName).toBe('Client');
+  });
+});
+
+describe('rpc wrappers', () => {
+  test('createInvoice defaults the date range to null', async () => {
+    mockRpcResult = { data: 'inv-1', error: null };
+    const id = await createInvoice('client-1');
+    expect(mockRpcLog).toEqual([
+      { fn: 'create_invoice', args: { p_client: 'client-1', p_from: null, p_to: null } },
+    ]);
+    expect(id).toBe('inv-1');
+  });
+
+  test('createInvoice passes the given range', async () => {
+    mockRpcResult = { data: 'inv-1', error: null };
+    await createInvoice('client-1', '2026-08-01', '2026-08-24');
+    expect(mockRpcLog[0]!.args).toEqual({
+      p_client: 'client-1',
+      p_from: '2026-08-01',
+      p_to: '2026-08-24',
+    });
+  });
+
+  test('addInvoiceItem / removeInvoiceItem', async () => {
+    mockRpcResult = { data: 'item-1', error: null };
+    await addInvoiceItem('inv-1', 'Tip', -500);
+    await removeInvoiceItem('item-1');
+    expect(mockRpcLog).toEqual([
+      {
+        fn: 'add_invoice_item',
+        args: { p_invoice: 'inv-1', p_description: 'Tip', p_amount_cents: -500 },
+      },
+      { fn: 'remove_invoice_item', args: { p_item: 'item-1' } },
+    ]);
+  });
+
+  test('sendInvoice / voidInvoice', async () => {
+    await sendInvoice('inv-1');
+    await voidInvoice('inv-1');
+    expect(mockRpcLog).toEqual([
+      { fn: 'send_invoice', args: { p_invoice: 'inv-1' } },
+      { fn: 'void_invoice', args: { p_invoice: 'inv-1' } },
+    ]);
+  });
+
+  test('recordPayment defaults the memo to null', async () => {
+    mockRpcResult = { data: 'pay-1', error: null };
+    await recordPayment('inv-1', 'venmo', 2500, '2026-08-25');
+    expect(mockRpcLog).toEqual([
+      {
+        fn: 'record_payment',
+        args: {
+          p_invoice: 'inv-1',
+          p_method: 'venmo',
+          p_amount_cents: 2500,
+          p_received_on: '2026-08-25',
+          p_memo: null,
+        },
+      },
+    ]);
+  });
+
+  test('recordDeposit passes optional fields as null', async () => {
+    mockRpcResult = { data: 'dep-1', error: null };
+    await recordDeposit('client-1', 5000);
+    await recordDeposit('client-1', 5000, { method: 'zelle', receivedOn: '2026-08-20', memo: 'hold' });
+    expect(mockRpcLog).toEqual([
+      {
+        fn: 'record_deposit',
+        args: {
+          p_client: 'client-1',
+          p_amount_cents: 5000,
+          p_method: null,
+          p_received_on: null,
+          p_memo: null,
+        },
+      },
+      {
+        fn: 'record_deposit',
+        args: {
+          p_client: 'client-1',
+          p_amount_cents: 5000,
+          p_method: 'zelle',
+          p_received_on: '2026-08-20',
+          p_memo: 'hold',
+        },
+      },
+    ]);
+  });
+
+  test('forfeitDeposit / refundDeposit', async () => {
+    await forfeitDeposit('dep-1');
+    await refundDeposit('dep-1');
+    expect(mockRpcLog).toEqual([
+      { fn: 'forfeit_deposit', args: { p_deposit: 'dep-1' } },
+      { fn: 'refund_deposit', args: { p_deposit: 'dep-1' } },
+    ]);
+  });
+
+  test('rpc errors throw', async () => {
+    mockRpcResult = { data: null, error: new Error('nope') };
+    await expect(sendInvoice('inv-1')).rejects.toThrow('nope');
+  });
+});

@@ -66,6 +66,7 @@ export default function OwnerTabs() {
       <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
       <Tabs.Screen name="clients" options={{ title: 'Clients' }} />
       <Tabs.Screen name="team" options={{ title: 'Team' }} />
+      <Tabs.Screen name="billing" options={{ title: 'Billing' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );

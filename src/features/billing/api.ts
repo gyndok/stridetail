@@ -1,0 +1,203 @@
+import { supabase } from '@/src/lib/supabase';
+
+import type {
+  Deposit,
+  Invoice,
+  InvoiceItem,
+  Payment,
+  PaymentMethod,
+} from './types';
+
+// Billing queries and RPC wrappers (Plan 5 Task 3). House rules: named columns
+// only (never '*'), named embeds, business_id scoping on every query even
+// though RLS is owner-only — a stale/foreign id must not cross tenants.
+// Amount-bearing mutations go through the Task 2 definer RPCs exclusively;
+// this module never writes billing tables directly.
+
+/** List row: header columns + amounts only — totals are client-side math. */
+export const INVOICE_LIST_COLUMNS =
+  'id, business_id, client_id, number, status, issued_on, due_on, sent_at, paid_at, ' +
+  'client:clients(name), items:invoice_items(amount_cents), payments:payments(amount_cents)';
+
+export type InvoiceListItem = Pick<
+  Invoice,
+  'id' | 'business_id' | 'client_id' | 'number' | 'status' | 'issued_on' | 'due_on' | 'sent_at' | 'paid_at'
+> & {
+  client: { name: string } | null;
+  items: { amount_cents: number }[];
+  payments: { amount_cents: number }[];
+};
+
+/** Newest invoice first (the per-business number is strictly increasing). */
+export async function listInvoices(businessId: string): Promise<InvoiceListItem[]> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select(INVOICE_LIST_COLUMNS)
+    .eq('business_id', businessId)
+    .order('number', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as InvoiceListItem[];
+}
+
+export const INVOICE_DETAIL_COLUMNS =
+  'id, business_id, client_id, number, status, issued_on, due_on, public_token, ' +
+  'sent_at, paid_at, revoked_at, notes_md, created_at, updated_at, ' +
+  'client:clients(name), ' +
+  'items:invoice_items(id, visit_id, description, amount_cents, kind, created_at), ' +
+  'payments:payments(id, method, amount_cents, received_on, memo, created_at)';
+
+export type InvoiceDetail = Invoice & {
+  client: { name: string } | null;
+  items: Pick<InvoiceItem, 'id' | 'visit_id' | 'description' | 'amount_cents' | 'kind' | 'created_at'>[];
+  payments: Pick<Payment, 'id' | 'method' | 'amount_cents' | 'received_on' | 'memo' | 'created_at'>[];
+};
+
+export async function getInvoice(businessId: string, id: string): Promise<InvoiceDetail> {
+  const { data, error } = await supabase
+    .from('invoices')
+    .select(INVOICE_DETAIL_COLUMNS)
+    .eq('business_id', businessId)
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data as unknown as InvoiceDetail;
+}
+
+export type HeldDeposit = Pick<
+  Deposit,
+  'id' | 'client_id' | 'amount_cents' | 'status' | 'method' | 'received_on' | 'memo' | 'created_at'
+> & { client: { name: string } | null };
+
+/**
+ * The held ledger, oldest received first (nulls last) then created — the same
+ * order create_invoice consumes them in, so the list reads as the queue.
+ */
+export async function listHeldDeposits(businessId: string): Promise<HeldDeposit[]> {
+  const { data, error } = await supabase
+    .from('deposits')
+    .select(
+      'id, client_id, amount_cents, status, method, received_on, memo, created_at, client:clients(name)',
+    )
+    .eq('business_id', businessId)
+    .eq('status', 'held')
+    .order('received_on', { ascending: true, nullsFirst: false })
+    .order('created_at', {});
+  if (error) throw error;
+  return (data ?? []) as unknown as HeldDeposit[];
+}
+
+export type DepositGroup = {
+  clientId: string;
+  clientName: string;
+  totalCents: number;
+  deposits: HeldDeposit[];
+};
+
+/** Group a held ledger per client (name-sorted), preserving the queue order. */
+export function groupHeldDeposits(deposits: HeldDeposit[]): DepositGroup[] {
+  const byClient = new Map<string, DepositGroup>();
+  for (const d of deposits) {
+    const group = byClient.get(d.client_id) ?? {
+      clientId: d.client_id,
+      clientName: d.client?.name ?? 'Client',
+      totalCents: 0,
+      deposits: [],
+    };
+    group.totalCents += d.amount_cents;
+    group.deposits.push(d);
+    byClient.set(d.client_id, group);
+  }
+  return [...byClient.values()].sort((a, b) => a.clientName.localeCompare(b.clientName));
+}
+
+// ---- RPC wrappers (Task 2 definer functions; every one audited server-side) ----
+
+async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.rpc(fn, args);
+  if (error) throw error;
+  return data as T;
+}
+
+/**
+ * Draft invoice for a client: completed un-invoiced visits in the LOCAL-date
+ * range (all when the range is null) plus auto-applied held deposits. Returns
+ * the new invoice id.
+ */
+export async function createInvoice(
+  clientId: string,
+  from?: string | null,
+  to?: string | null,
+): Promise<string> {
+  return rpc<string>('create_invoice', {
+    p_client: clientId,
+    p_from: from ?? null,
+    p_to: to ?? null,
+  });
+}
+
+/** Manual line (signed cents — negatives are discounts/tips given). */
+export async function addInvoiceItem(
+  invoiceId: string,
+  description: string,
+  amountCents: number,
+): Promise<string> {
+  return rpc<string>('add_invoice_item', {
+    p_invoice: invoiceId,
+    p_description: description,
+    p_amount_cents: amountCents,
+  });
+}
+
+/** Manual lines only — visit/deposit lines leave via voidInvoice (Task 2 rule). */
+export async function removeInvoiceItem(itemId: string): Promise<void> {
+  await rpc('remove_invoice_item', { p_item: itemId });
+}
+
+/** draft -> sent: mints the public token and queues the invoice_ready email. */
+export async function sendInvoice(invoiceId: string): Promise<void> {
+  await rpc('send_invoice', { p_invoice: invoiceId });
+}
+
+export async function recordPayment(
+  invoiceId: string,
+  method: PaymentMethod,
+  amountCents: number,
+  receivedOn: string,
+  memo?: string | null,
+): Promise<string> {
+  return rpc<string>('record_payment', {
+    p_invoice: invoiceId,
+    p_method: method,
+    p_amount_cents: amountCents,
+    p_received_on: receivedOn,
+    p_memo: memo ?? null,
+  });
+}
+
+/** Releases visit lines for re-invoicing, returns deposits to held, revokes the link. */
+export async function voidInvoice(invoiceId: string): Promise<void> {
+  await rpc('void_invoice', { p_invoice: invoiceId });
+}
+
+/** Records an already-received deposit straight into `held` (Task 2 rule). */
+export async function recordDeposit(
+  clientId: string,
+  amountCents: number,
+  opts?: { method?: PaymentMethod | null; receivedOn?: string | null; memo?: string | null },
+): Promise<string> {
+  return rpc<string>('record_deposit', {
+    p_client: clientId,
+    p_amount_cents: amountCents,
+    p_method: opts?.method ?? null,
+    p_received_on: opts?.receivedOn ?? null,
+    p_memo: opts?.memo ?? null,
+  });
+}
+
+export async function forfeitDeposit(depositId: string): Promise<void> {
+  await rpc('forfeit_deposit', { p_deposit: depositId });
+}
+
+export async function refundDeposit(depositId: string): Promise<void> {
+  await rpc('refund_deposit', { p_deposit: depositId });
+}

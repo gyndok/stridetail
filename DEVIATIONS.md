@@ -1649,3 +1649,38 @@ deployed-but-dormant for a possible toll-free future.
   re-invoice pickup, held-only deposit exits, 10 RPCs × walker/cross-owner
   guard matrix, and an aggregated per-action audit count with money-amount
   meta spot checks.
+
+## Plan 5, Task 3 — billing api, owner tab, invoice list (2026-08-25)
+
+- **`statusChip(invoice, totals, now)` — not the sketched `(invoice, balance)`:**
+  "partially paid" needs 0 < payments < total, which a lone balance number
+  cannot distinguish from no payment; `now` is injected for the overdue check
+  (testable, no clock reads in pure code). Precedence pinned in tests:
+  paid (green) > void (muted) > overdue (danger) > partially paid (warning) >
+  stored status (neutral).
+- **Balance is never floored (recorded per the task):** a negative balance is
+  a real credit from over-payment and renders as `-$X.XX`; the summary strip's
+  unpaid total sums TRUE balances, so an over-paid sent invoice reduces it.
+- **`isOverdue` uses the DEVICE-local calendar day** (Plan 2 Task 7 document-
+  expiry precedent): day-granular display-only logic on `due_on` (a date
+  column with no zone). Due today is not overdue; paid/void never are; a
+  draft past its due date IS (needs attention, not silence).
+- **"Unpaid" = status `sent` only**, in both the summary strip and the filter
+  chip: drafts are not billed yet and have their own chip/filter, matching
+  the plan's All / Unpaid / Draft split.
+- `listHeldDeposits` orders `received_on asc nulls last, created_at` — the
+  same order `create_invoice` consumes deposits, so the ledger reads as the
+  queue. `groupHeldDeposits` groups per client (name-sorted) for Task 4's
+  deposits screen.
+- No `invoice_totals` RPC wrapper: the plan computes list totals client-side
+  from the `items`/`payments` amount embeds; the definer helper stays in the
+  DB for whenever a server-side figure is actually needed.
+- The billing screen reuses `Chip` from `src/features/schedule/Chip` (generic
+  pill, already used by two schedule screens) rather than duplicating it.
+- Tab registration: `<Tabs.Screen name="billing" />` added between Team and
+  Settings. **Web rail confirmed by reading `app/(owner)/_layout.tsx` +
+  `OwnerRail`:** the desktop `tabBar` maps `state.routes` into rail items
+  labeled from `options.title`, so the sixth tab appears on the rail with no
+  OwnerRail change.
+- `/billing/new`, `/billing/[id]`, `/billing/deposits` pushes use `as Href`
+  casts — the routes land in Task 4 (Plan 2 Task 4 precedent; 404 until then).
