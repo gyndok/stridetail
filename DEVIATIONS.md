@@ -1281,3 +1281,65 @@ built and idle.
   processes 0; fixtures cleaned. 15/15 checks passed. Resend send path is code-complete but
   exercised only at the type level (no API key — by design until the sponsor creates the
   Resend account on stridetail.app).
+
+## Plan 4, Task 8 — Expo Web owner rail + week grid (2026-08-24)
+
+- **Rail mechanism (recorded per the task):** the SDK 57 bottom-tabs implementation vendored
+  inside expo-router (`expo-router/build/react-navigation/bottom-tabs`) supports
+  `tabBarPosition?: 'bottom' | 'left' | 'right' | 'top'` — verified against the installed
+  typings and BottomTabView source — so the layout keeps the SAME `<Tabs>` navigator and, on
+  web ≥ 900 px (`Platform.OS === 'web'` + `useWindowDimensions`), sets
+  `tabBarPosition: 'left'` with a custom `tabBar` rendering `OwnerRail` (business-name header
+  + the 5 nav items, active item highlighted). No hand-rolled parallel layout: routes, tab
+  state, and the role guard are exactly the mobile ones. Nav items press through the
+  react-navigation custom-tab-bar contract (emit `tabPress` with canPreventDefault, then
+  `navigation.navigate(route.name, route.params)`) rather than expo-router `Link` — the
+  contract preserves the navigator's preventDefault semantics and needs no `as Href` casts.
+  Below 900 px and on native, the original bottom Tabs render untouched.
+- **Pre-existing web-bundle break fixed (needed for this task's verify gate):**
+  `CI=1 bunx expo export --platform web` failed on clean HEAD — expo-sqlite's web build
+  imports `wa-sqlite.wasm`, unresolvable without a dedicated wasm Metro setup, and the import
+  chain has reached the web bundle since Plan 4 Task 3 (Metro resolves imports statically,
+  runtime `Platform.OS` guards notwithstanding). Fix: new `metro.config.js` redirects
+  `expo-sqlite` and `expo-sqlite/kv-store` to stubs (`src/lib/web/`) for platform 'web' ONLY.
+  The kv stub is localStorage-backed (in-memory under static rendering), so active business /
+  walk theme / pending invite now genuinely persist on web; the sqlite stub throws if ever
+  called — every runtime caller is already web-guarded (the `kickSync` effect in
+  `app/_layout.tsx`, lazy `getDb()`). Consistent with the Task 3 decision that web has no
+  sqlite persistence and desktop owners are online by design.
+- **Block click opens the inline quick panel, not the detail route directly:** the task asks
+  for the detail route AND an inline offer/reschedule surface on block click; one click cannot
+  do both, so a click selects the block and opens the footer panel (the task's "simple
+  expanding footer panel" option), whose "Open details" button pushes the existing
+  `/schedule/[id]`. Clicking the block again (or Close) collapses it.
+- **Reschedule fields are TextFields, not the DateField/TimeField pair:** the
+  `@react-native-community/datetimepicker` components are inert on web (the Android path is
+  imperative-only and the inline picker renders only on iOS), so the panel takes
+  'YYYY-MM-DD' / 'HH:MM' text validated through `visitInstants` in the business tz — the
+  first UI over the Plan-3 `rescheduleVisit` api. The moved visit keeps its real scheduled
+  length (end − start in minutes). Reschedule is offered only for
+  `unassigned`/`offered`/`accepted` (moving an in-progress/completed/cancelled visit is
+  meaningless); offer/reassign is machine-gated by `canTransition(status, 'offered')` exactly
+  like the detail screen. Mutations invalidate `['visits', businessId]` (which covers the
+  14-day list key and every week key) plus the visit-detail key.
+- **Week grid math is business-tz framed** (`weekGrid.ts` pure helpers, jest-pinned): the
+  grid needs one day/column frame, so bucketing/positioning use the business tz from the
+  membership row rather than each visit's stamped `business_tz` (identical in practice).
+  DST pins: the spring-forward week is 167 h, a gap-crossing visit spans its wall time
+  (120 wall min for 60 real), a fall-back visit whose wall diff collapses to ≤ 0 falls back
+  to real minutes, midnight-crossers clamp to their start day. Week query key
+  `['visits', businessId, weekStartYmd]` sits inside the persisted-query whitelist's
+  existing 'visits' prefix (web persister is memory-mapped anyway — Task 3).
+- Status colors: unassigned = warning outline, offered = muted, accepted/completed = greenSoft
+  fill with green border (Round 0 covered-states green) — `in_progress` is grouped with them
+  ("walking" is a covered state; the task named only the other four), cancelled hidden.
+  Blocks clamp into the 06:00–21:00 gutter with a minimum height so early/late visits stay
+  clickable.
+- Component file is `WeekGridView.tsx`, not `WeekGrid.tsx`: the filesystem is
+  case-insensitive and `weekGrid.ts` already holds the pure helpers — tsc's consistent-casing
+  check and `import/no-unresolved` both reject the casing twin.
+- **Drag-and-drop reschedule NOT built — recorded as the follow-up the plan allows**; judging
+  step 6 ("reschedule tomorrow's visits") is covered by block click → reassign + time edit.
+- `expo start --web` screenshot not taken: the rail and grid live behind sign-in and this
+  environment holds no web session. The export build (48 static route HTML files emitted)
+  stands as the verify; a signed-in desktop pass rides with Task 9 / Checkpoint 4.

@@ -2,9 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
+import { useMemberships } from '@/src/features/business/useMemberships';
 import {
   groupVisitsByLocalDay,
   listActiveMembers,
@@ -17,11 +18,13 @@ import {
   type Visit,
 } from '@/src/features/schedule/api';
 import { Chip } from '@/src/features/schedule/Chip';
+import { WeekGrid } from '@/src/features/schedule/WeekGridView';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
 import { useTheme } from '@/src/ui/theme';
+import { DESKTOP_MIN_WIDTH } from '@/src/ui/web/OwnerRail';
 
 const UPCOMING_DAYS = 14;
 
@@ -53,7 +56,16 @@ export default function ScheduleIndex() {
   const t = useTheme();
   const router = useRouter();
   const { businessId } = useActiveBusiness();
+  const memberships = useMemberships();
+  const { width } = useWindowDimensions();
   const [filter, setFilter] = useState<FilterKey>('all');
+  // Desktop web (Plan 4 Task 8): a List | Week toggle; Week renders the grid
+  // in the business tz. Below 900 px and on native the list is all there is.
+  const desktop = Platform.OS === 'web' && width >= DESKTOP_MIN_WIDTH;
+  const [view, setView] = useState<'list' | 'week'>('list');
+  const businessTz =
+    memberships.data?.find((m) => m.business_id === businessId)?.business.time_zone ?? null;
+  const weekMode = desktop && view === 'week';
 
   const visits = useQuery({
     queryKey: ['visits', businessId, 'upcoming'],
@@ -82,9 +94,32 @@ export default function ScheduleIndex() {
   const groups = groupVisitsByLocalDay(filtered);
   const smsProblemVisits = problemVisitIds(notifications.data ?? []);
 
+  if (weekMode) {
+    return (
+      <Screen title="Schedule">
+        <Button title="New visit" onPress={() => router.push('/schedule/new' as Href)} />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
+          <Chip label="List" selected={false} onPress={() => setView('list')} />
+          <Chip label="Week" selected onPress={() => setView('week')} />
+        </View>
+        {businessId && businessTz ? (
+          <WeekGrid businessId={businessId} tz={businessTz} />
+        ) : (
+          <Text style={{ color: t.colors.inkMuted }}>Loading…</Text>
+        )}
+      </Screen>
+    );
+  }
+
   return (
     <Screen title="Schedule">
       <Button title="New visit" onPress={() => router.push('/schedule/new' as Href)} />
+      {desktop ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
+          <Chip label="List" selected onPress={() => setView('list')} />
+          <Chip label="Week" selected={false} onPress={() => setView('week')} />
+        </View>
+      ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
         {FILTERS.map((f) => (
           <Chip key={f.key} label={f.label} selected={filter === f.key} onPress={() => setFilter(f.key)} />
