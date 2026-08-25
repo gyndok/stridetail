@@ -1,8 +1,6 @@
 # Runbook: verify stridetail.app in Resend (Squarespace DNS)
 
-Sponsor-provided walkthrough, 2026-08-25. Do this in a **dedicated Resend account for
-Stridetail** (platform-entity separation; the interim sender is the sponsor's personal
-account/domain geffreyklein.com).
+Sponsor-provided walkthrough, 2026-08-25. **COMPLETED same day**: stridetail.app verified in the sponsor's Resend Pro account (Pro supports many domains — the dedicated-account idea is satisfied by a domain-scoped key instead). DKIM TXT + 2 CNAMEs via Squarespace; receiving toggle OFF (no root MX). Production sender: "Paw & Whisker via Stridetail <reports@stridetail.app>" with a new stridetail.app-scoped API key; first send delivered attempt-0. Old geffreyklein.com-era key retired.
 
 ## 1 — Records from Resend
 Resend → Domains → Add Domain → `stridetail.app` (accept the recommended `send.` Return-Path

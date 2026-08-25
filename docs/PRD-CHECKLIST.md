@@ -149,7 +149,7 @@ Last updated: 2026-08-25
 - [x] Email channel: `send-email` edge function + `channel='email'` rows (Resend provider on
   `stridetail.app`) — built 2026-08-24, `244acb4` (migration 0012 queues email from
   start/finish, per-minute cron, `skipped_no_provider` until the sponsor sets
-  `RESEND_API_KEY`/`EMAIL_FROM` — see the migration's hosted-setup comment). **LIVE 2026-08-25**: secrets set (Resend, from geffreyklein.com — sponsor's existing verified domain); first delivery confirmed in Gmail after the retry queue absorbed two misconfigured attempts. Follow-up: verify stridetail.app in a dedicated Resend account before real clients
+  `RESEND_API_KEY`/`EMAIL_FROM` — see the migration's hosted-setup comment). **LIVE 2026-08-25**: secrets set (Resend, from geffreyklein.com — sponsor's existing verified domain); first delivery confirmed in Gmail after the retry queue absorbed two misconfigured attempts. Follow-up DONE 2026-08-25: stridetail.app verified; sender is now "Paw & Whisker via Stridetail <reports@stridetail.app>" with a domain-scoped key
 - [x] Device-composed SMS: "Text the client" button (pre-filled `sms:` link) on the owner visit
   detail and the walker finish flow — `244acb4` (walker offline path sends an honest
   no-link body; the owner card sends the linked one)
