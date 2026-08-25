@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 
 import {
   finishedNoLinkSmsBody,
+  invoiceSmsBody,
   joinPetNames,
   reportSmsBody,
   sanitizeSmsPhone,
@@ -74,4 +75,12 @@ test('joinPetNames joins with & and falls back to "your pet"', () => {
   expect(joinPetNames(['Biscuit'])).toBe('Biscuit');
   expect(joinPetNames(['Biscuit', 'Max'])).toBe('Biscuit & Max');
   expect(joinPetNames([])).toBe('your pet');
+});
+
+// ---- invoiceSmsBody: invoice detail "Text the client" (Plan 5 Task 4) ----
+
+test('invoiceSmsBody names the invoice and carries the pay link', () => {
+  expect(
+    invoiceSmsBody('Paw & Whisker', 'INV-0007', 'https://stridetail.app/invoice/abc'),
+  ).toBe('Paw & Whisker: Your invoice INV-0007 is ready. View and pay: https://stridetail.app/invoice/abc');
 });

@@ -1,10 +1,12 @@
 import {
+  depositStatusChip,
   formatCents,
   formatIsoDate,
   invoiceBalance,
   invoiceNumberLabel,
   invoiceTotal,
   isOverdue,
+  methodLabel,
   overdueCount,
   paymentsTotal,
   statusChip,
@@ -191,5 +193,19 @@ describe('labels and formatting', () => {
     expect(formatIsoDate('2026-08-25')).toBe('Aug 25, 2026');
     expect(formatIsoDate('2026-01-01')).toBe('Jan 1, 2026');
     expect(formatIsoDate('nope')).toBe('nope');
+  });
+
+  test('methodLabel maps methods, em-dash for none', () => {
+    expect(methodLabel('venmo')).toBe('Venmo');
+    expect(methodLabel('check')).toBe('Check');
+    expect(methodLabel(null)).toBe('—');
+  });
+
+  test('depositStatusChip: held neutral, applied green, forfeited warning', () => {
+    expect(depositStatusChip('held')).toEqual({ label: 'Held', tone: 'neutral' });
+    expect(depositStatusChip('applied')).toEqual({ label: 'Applied', tone: 'green' });
+    expect(depositStatusChip('refunded')).toEqual({ label: 'Refunded', tone: 'muted' });
+    expect(depositStatusChip('forfeited')).toEqual({ label: 'Forfeited', tone: 'warning' });
+    expect(depositStatusChip('requested')).toEqual({ label: 'Requested', tone: 'muted' });
   });
 });

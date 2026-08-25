@@ -8,3 +8,10 @@ export const SUPPORT_EMAIL = 'support@stridetail.app';
  * same link the client got by SMS. Change both together.
  */
 export const REPORT_BASE_URL = 'https://stridetail.app/report';
+
+/**
+ * Base URL for public invoice links (Plan 5), mirroring REPORT_BASE_URL. The
+ * invoice-public function and email template land in Plan 5 Task 5 — keep
+ * their base in sync with this constant, exactly like the report pair.
+ */
+export const INVOICE_BASE_URL = 'https://stridetail.app/invoice';

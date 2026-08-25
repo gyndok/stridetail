@@ -39,15 +39,17 @@ export async function listInvoices(businessId: string): Promise<InvoiceListItem[
   return (data ?? []) as unknown as InvoiceListItem[];
 }
 
+// The client embed carries phones so the detail screen's "Text the client"
+// can compose a device SMS (report-card parity) — Task 4 addition.
 export const INVOICE_DETAIL_COLUMNS =
   'id, business_id, client_id, number, status, issued_on, due_on, public_token, ' +
   'sent_at, paid_at, revoked_at, notes_md, created_at, updated_at, ' +
-  'client:clients(name), ' +
+  'client:clients(name, phones), ' +
   'items:invoice_items(id, visit_id, description, amount_cents, kind, created_at), ' +
   'payments:payments(id, method, amount_cents, received_on, memo, created_at)';
 
 export type InvoiceDetail = Invoice & {
-  client: { name: string } | null;
+  client: { name: string; phones: string[] | null } | null;
   items: Pick<InvoiceItem, 'id' | 'visit_id' | 'description' | 'amount_cents' | 'kind' | 'created_at'>[];
   payments: Pick<Payment, 'id' | 'method' | 'amount_cents' | 'received_on' | 'memo' | 'created_at'>[];
 };
@@ -86,6 +88,23 @@ export async function listHeldDeposits(businessId: string): Promise<HeldDeposit[
   return (data ?? []) as unknown as HeldDeposit[];
 }
 
+/**
+ * Full deposit ledger (every status) in the SAME queue order as the held
+ * view, so toggling held/all never reshuffles rows within a client group.
+ */
+export async function listAllDeposits(businessId: string): Promise<HeldDeposit[]> {
+  const { data, error } = await supabase
+    .from('deposits')
+    .select(
+      'id, client_id, amount_cents, status, method, received_on, memo, created_at, client:clients(name)',
+    )
+    .eq('business_id', businessId)
+    .order('received_on', { ascending: true, nullsFirst: false })
+    .order('created_at', {});
+  if (error) throw error;
+  return (data ?? []) as unknown as HeldDeposit[];
+}
+
 export type DepositGroup = {
   clientId: string;
   clientName: string;
@@ -108,6 +127,77 @@ export function groupHeldDeposits(deposits: HeldDeposit[]): DepositGroup[] {
     byClient.set(d.client_id, group);
   }
   return [...byClient.values()].sort((a, b) => a.clientName.localeCompare(b.clientName));
+}
+
+// ---- New-invoice flow reads (Task 4) ----
+
+/**
+ * Named columns for the new-invoice preview. Price columns ride the SERVICES
+ * embed (the owner select policy exposes full service rows, prices included —
+ * Plan 3 Task 5 precedent; services_public exists for walkers and this is an
+ * owner-only screen). visits.price_cents_snapshot has NO client select grant,
+ * so the preview re-computes the amount via priceSnapshotCents instead.
+ */
+export const UNINVOICED_VISIT_COLUMNS =
+  'id, business_id, client_id, pet_ids, scheduled_start, business_tz, status, ' +
+  'service:services(name, base_price_cents, extra_pet_price_cents)';
+
+export type UninvoicedVisitRow = {
+  id: string;
+  business_id: string;
+  client_id: string;
+  pet_ids: string[];
+  scheduled_start: string;
+  business_tz: string;
+  status: string;
+  service: { name: string; base_price_cents: number; extra_pet_price_cents: number } | null;
+};
+
+/**
+ * Completed visits for the client with no invoice_items row — the same
+ * eligibility as create_invoice's NOT EXISTS. PostgREST cannot express the
+ * anti-join in one query, so this fetches the business's invoiced visit ids
+ * (invoice_items where visit_id is set) and filters client-side; both reads
+ * are owner-RLS'd and business-scoped.
+ */
+export async function listUninvoicedVisits(
+  businessId: string,
+  clientId: string,
+): Promise<UninvoicedVisitRow[]> {
+  const [visitsRes, invoicedRes] = await Promise.all([
+    supabase
+      .from('visits')
+      .select(UNINVOICED_VISIT_COLUMNS)
+      .eq('business_id', businessId)
+      .eq('client_id', clientId)
+      .eq('status', 'completed')
+      .order('scheduled_start', { ascending: true }),
+    supabase
+      .from('invoice_items')
+      .select('visit_id')
+      .eq('business_id', businessId)
+      .not('visit_id', 'is', null),
+  ]);
+  if (visitsRes.error) throw visitsRes.error;
+  if (invoicedRes.error) throw invoicedRes.error;
+  const invoiced = new Set(
+    ((invoicedRes.data ?? []) as { visit_id: string | null }[]).map((r) => r.visit_id),
+  );
+  return ((visitsRes.data ?? []) as unknown as UninvoicedVisitRow[]).filter(
+    (v) => !invoiced.has(v.id),
+  );
+}
+
+/** Cheap invoiced check for the visit screen's "Add to an invoice →" row. */
+export async function isVisitInvoiced(businessId: string, visitId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('invoice_items')
+    .select('id')
+    .eq('business_id', businessId)
+    .eq('visit_id', visitId)
+    .limit(1);
+  if (error) throw error;
+  return ((data ?? []) as unknown[]).length > 0;
 }
 
 // ---- RPC wrappers (Task 2 definer functions; every one audited server-side) ----

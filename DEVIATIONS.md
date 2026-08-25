@@ -1684,3 +1684,78 @@ deployed-but-dormant for a possible toll-free future.
   OwnerRail change.
 - `/billing/new`, `/billing/[id]`, `/billing/deposits` pushes use `as Href`
   casts — the routes land in Task 4 (Plan 2 Task 4 precedent; 404 until then).
+
+## Plan 5, Task 4 — invoice creation, detail, payments, deposit ledger (2026-08-25)
+
+- **Create-flow simplification (recorded per the task): no per-visit
+  checkboxes.** `create_invoice` takes a date RANGE, which cannot express an
+  arbitrary unchecked subset, so the eligible visits render read-only and a
+  From/To `DateField` pair filters the preview live and feeds the RPC. The
+  pair defaults BLANK (= no limit, i.e. spanning all uninvoiced) rather than
+  prefilled min/max — blank and min/max select the same set, and blank keeps
+  "everything" visibly the default. Preview and draft therefore always agree.
+- **Preview amounts are re-computed, not read:** `visits.price_cents_snapshot`
+  has no client select grant (Plan 3 Task 1 column rule — the owner included),
+  so `eligibleVisitLine` re-derives the amount via the same
+  `priceSnapshotCents(service, pet_count)` math that stamped the snapshot,
+  from the owner-readable `services` embed. If a service price changed since
+  booking the estimate can drift; the RPC always writes the stored snapshot,
+  and the totals card says "estimated" for this reason.
+- **Service names/prices come from `services`, not `services_public`
+  (recorded per the task):** this is an owner-only screen and the owner select
+  policy exposes full service rows including prices (Plan 3 Task 5 precedent);
+  `services_public` exists for walkers.
+- **`listUninvoicedVisits` mirrors the RPC's NOT EXISTS client-side:**
+  PostgREST cannot express the anti-join in one query, so it fetches the
+  business's invoiced visit ids (`invoice_items` where `visit_id is not null`)
+  alongside the completed client visits and filters in code. Both reads are
+  owner-RLS'd and business-scoped.
+- **`newInvoice.ts` mirrors `create_invoice` and is pinned to it in tests:**
+  `visitLocalDate`/`filterByLocalDateRange` reuse the `formatInTimeZone(...,
+  business_tz, 'yyyy-MM-dd')` pattern from schedule/api (the RPC's
+  `(scheduled_start at time zone business_tz)::date`); `eligibleVisitLine`
+  mirrors the `'Dy, Mon FMDD'` description via `'EEE, MMM d'`; and
+  `depositPreview` implements stop-at-first-misfit with the pgTAP
+  2500/2000-vs-3000 vector pinned (2500 applies, 2000 no longer fits, loop
+  stops even though a later deposit would fit). `eligibleVisitLine` takes the
+  embedded visit row instead of the plan's `(visit, serviceName)` pair — the
+  embed already carries the name and the prices.
+- `parseSignedDollars` wraps `dollarsStringToCents` with an optional leading
+  minus for manual lines (the services helper rightly rejects negatives for
+  price fields); `manualLineError` mirrors `add_invoice_item`'s prechecks
+  (blank description, unparseable, zero) so failures surface before the RPC.
+- **No "Resend email" on a sent invoice (recorded per the task):**
+  `send_invoice` is drafts-only (a re-send would otherwise rotate the live
+  token — Task 2 rule) and no invoice-resend RPC exists. V1 re-notifies via
+  Share link + the device-SMS "Text the client" button; a proper resend (queue
+  another `invoice_ready` email without touching the token) is Plan 6 polish.
+- **No standalone Revoke on invoices (recorded per the task):** `void_invoice`
+  already stamps `revoked_at` and kills the public page; unlike reports there
+  is no revoke-but-keep-payable use case worth a v1 RPC.
+- `invoiceSmsBody` added to `deviceSms.ts` WITHOUT a send-sms template
+  counterpart: the sms channel is dormant and invoices notify by email only,
+  so the body is defined app-side; keep its wording aligned with the
+  `invoice_ready` email template when Task 5 writes it.
+- `INVOICE_BASE_URL` added to `src/lib/brand.ts` and `invoiceLink()` to
+  `newInvoice.ts`, mirroring the `REPORT_BASE_URL`/`reportLink` pair; the
+  `invoice-public` function that serves it lands in Task 5.
+- `INVOICE_DETAIL_COLUMNS`' client embed gains `phones` so the detail screen
+  can compose the device SMS (report-card parity).
+- After **Send**, the mutation re-reads the invoice before offering the share
+  sheet: the token is minted server-side and a cache invalidation alone would
+  race the Alert.
+- `listAllDeposits` added for the ledger's All toggle, in the SAME queue order
+  as `listHeldDeposits` so toggling never reshuffles rows within a client
+  group; `depositStatusChip`/`methodLabel`/`PAYMENT_METHODS` live in
+  `money.ts` with the other pure label helpers. Forfeited renders `warning`
+  (money the client lost — worth noticing), refunded/requested `muted`.
+- The Task 3 invoice list's inline status pill was extracted to
+  `src/features/billing/StatusBadge.tsx` (with `toneColor`) — three screens
+  now render it; the list screen was refactored to use it, no visual change.
+- VisitScreen's "Add to an invoice →" row shows for owner + completed +
+  `isVisitInvoiced === false` (a business-scoped `invoice_items` probe that
+  only fires for owner sessions) and pushes `/billing/new?client=<id>`;
+  new.tsx reads the `client` param to preselect the picker.
+- Screens stay untested markup over the tested pure/api layer (house
+  approach): `newInvoice.test.ts` (24), api/money/deviceSms additions ride
+  the existing suites.

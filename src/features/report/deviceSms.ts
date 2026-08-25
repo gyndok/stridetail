@@ -59,6 +59,16 @@ export function reportSmsBody(
 }
 
 /**
+ * Invoice-ready body ("Text the client" on the invoice detail, Plan 5 Task 4).
+ * No send-sms template counterpart exists — the sms channel is dormant and
+ * invoices notify by email only — so this body is defined here; keep its
+ * wording in sync with the invoice_ready EMAIL template (Plan 5 Task 5).
+ */
+export function invoiceSmsBody(businessName: string, numberLabel: string, link: string): string {
+  return `${businessName}: Your invoice ${numberLabel} is ready. View and pay: ${link}`;
+}
+
+/**
  * Finished body WITHOUT the report link — the walker's offline path: a
  * finish queued in the outbox has no report token yet (finish_visit creates
  * it server-side), so the honest message defers the link; the owner's report

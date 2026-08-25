@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Alert, Linking, Pressable, Share, Text, View } from 'react-native';
 
 import { useSession } from '@/src/features/auth/session';
+import { isVisitInvoiced } from '@/src/features/billing/api';
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
 import { telUrl } from '@/src/features/clients/form';
@@ -304,6 +305,13 @@ export default function VisitScreen() {
     enabled: !!businessId && isOwnerRole && !!v,
     queryFn: () => pickerContext(businessId!, new Date(v!.scheduled_start), new Date(v!.scheduled_end)),
   });
+  // Owner-only billing entry: only a completed, not-yet-invoiced visit offers
+  // "Add to an invoice" (invoice_items is owner-RLS'd — never a walker query).
+  const invoiced = useQuery({
+    queryKey: ['visitInvoiced', businessId, v?.id],
+    enabled: !!businessId && isOwnerRole && v?.status === 'completed',
+    queryFn: () => isVisitInvoiced(businessId!, v!.id),
+  });
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['visitDetail', id] });
@@ -520,6 +528,18 @@ export default function VisitScreen() {
           serviceName={d?.service?.name ?? v.service?.name ?? null}
           businessName={businessName}
         />
+      ) : null}
+
+      {isOwnerRole && v.status === 'completed' && invoiced.data === false ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/billing/new?client=${v.client_id}` as Href)}
+        >
+          <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>Billing</Text>
+            <Text style={{ color: t.colors.inkMuted }}>Add to an invoice →</Text>
+          </Card>
+        </Pressable>
       ) : null}
 
       {manageError ? <Text style={{ color: t.colors.danger }}>{manageError}</Text> : null}

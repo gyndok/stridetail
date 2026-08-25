@@ -1,0 +1,338 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, Linking, Pressable, Share, Text, View } from 'react-native';
+
+import {
+  getInvoice,
+  recordPayment,
+  removeInvoiceItem,
+  sendInvoice,
+  voidInvoice,
+  type InvoiceDetail,
+} from '@/src/features/billing/api';
+import {
+  formatCents,
+  formatIsoDate,
+  invoiceNumberLabel,
+  methodLabel,
+  PAYMENT_METHODS,
+  statusChip,
+  sumCents,
+} from '@/src/features/billing/money';
+import { invoiceLink } from '@/src/features/billing/newInvoice';
+import { StatusBadge } from '@/src/features/billing/StatusBadge';
+import { useActiveBusiness } from '@/src/features/business/active';
+import { useMemberships } from '@/src/features/business/useMemberships';
+import { invoiceSmsBody, smsUrl } from '@/src/features/report/deviceSms';
+import { Chip } from '@/src/features/schedule/Chip';
+import { dollarsStringToCents } from '@/src/features/services/form';
+import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
+import { Button } from '@/src/ui/Button';
+import { Card } from '@/src/ui/Card';
+import { DateField } from '@/src/ui/DateField';
+import { dateToYmd } from '@/src/ui/datetime';
+import { Screen } from '@/src/ui/Screen';
+import { TextField } from '@/src/ui/TextField';
+import { useTheme } from '@/src/ui/theme';
+
+import type { PaymentMethod } from '@/src/features/billing/types';
+
+/**
+ * Invoice detail (Plan 5 Task 4): lines, totals, payments, and the status-
+ * driven actions — Send (draft), Record payment (sent), Void (draft|sent),
+ * Share link / device-SMS (sent|paid with a live token). Resending the email
+ * on an already-sent invoice has NO server path (send_invoice is drafts-only
+ * so a re-send cannot rotate the live token — Task 2 rule); v1 re-notifies
+ * via Share/SMS instead (recorded; Plan 6 polish).
+ */
+
+function errorText(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+export default function InvoiceDetailScreen() {
+  const t = useTheme();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { businessId } = useActiveBusiness();
+  const memberships = useMemberships();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [error, setError] = useState<string | null>(null);
+
+  // Record-payment form (visible while status is sent).
+  const [payOpen, setPayOpen] = useState(false);
+  const [method, setMethod] = useState<PaymentMethod>('venmo');
+  const [amountText, setAmountText] = useState('');
+  const [receivedText, setReceivedText] = useState(() => dateToYmd(new Date()));
+  const [memoText, setMemoText] = useState('');
+
+  const invoice = useQuery({
+    queryKey: ['invoice', businessId, id],
+    enabled: !!businessId && !!id,
+    queryFn: () => getInvoice(businessId!, id!),
+  });
+  useRefetchOnFocus(invoice.refetch);
+
+  const refresh = () => {
+    setError(null);
+    void queryClient.invalidateQueries({ queryKey: ['invoice', businessId, id] });
+    void queryClient.invalidateQueries({ queryKey: ['invoices', businessId] });
+    void queryClient.invalidateQueries({ queryKey: ['deposits', businessId, 'held'] });
+  };
+  const fail = (e: unknown) => setError(errorText(e));
+
+  const sendMut = useMutation({
+    // Re-read after the RPC: the token is minted server-side and the share
+    // offer needs it in hand (invalidation alone would race the Alert).
+    mutationFn: async (): Promise<InvoiceDetail> => {
+      await sendInvoice(id!);
+      return getInvoice(businessId!, id!);
+    },
+    onSuccess: (fresh) => {
+      refresh();
+      if (fresh.public_token) {
+        const link = invoiceLink(fresh.public_token);
+        Alert.alert('Invoice sent', 'The client gets the payment link by email. Share it too?', [
+          { text: 'Done', style: 'cancel' },
+          { text: 'Share link', onPress: () => void Share.share({ message: link }) },
+        ]);
+      }
+    },
+    onError: fail,
+  });
+  const removeMut = useMutation({
+    mutationFn: (itemId: string) => removeInvoiceItem(itemId),
+    onSuccess: refresh,
+    onError: fail,
+  });
+  const voidMut = useMutation({ mutationFn: () => voidInvoice(id!), onSuccess: refresh, onError: fail });
+  const payMut = useMutation({
+    mutationFn: (args: { cents: number }) =>
+      recordPayment(id!, method, args.cents, receivedText, memoText.trim() || null),
+    onSuccess: () => {
+      setPayOpen(false);
+      setAmountText('');
+      setMemoText('');
+      refresh();
+    },
+    onError: fail,
+  });
+
+  const inv = invoice.data ?? null;
+
+  if (!inv) {
+    return (
+      <Screen title="Invoice">
+        <Button title="Back" variant="ghost" onPress={() => router.back()} />
+        {invoice.error ? (
+          <Text style={{ color: t.colors.danger }}>{errorText(invoice.error)}</Text>
+        ) : (
+          <Text style={{ color: t.colors.inkMuted }}>Loading…</Text>
+        )}
+      </Screen>
+    );
+  }
+
+  const itemsCents = sumCents(inv.items);
+  const paymentsCents = sumCents(inv.payments);
+  const chip = statusChip(inv, { itemsCents, paymentsCents }, new Date());
+  const editable = inv.status === 'draft' || inv.status === 'sent';
+  const shareable = !!inv.public_token && !inv.revoked_at && inv.status !== 'void';
+  const link = inv.public_token ? invoiceLink(inv.public_token) : null;
+  const clientPhone = inv.client?.phones?.[0] ?? null;
+  const businessName =
+    memberships.data?.find((m) => m.business_id === businessId)?.business.name ??
+    'Your pet care team';
+  const items = [...inv.items].sort(
+    (a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id),
+  );
+
+  function confirmSend() {
+    Alert.alert('Send invoice', 'Email the client a link to view and pay this invoice?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Send', onPress: () => sendMut.mutate() },
+    ]);
+  }
+  function confirmVoid() {
+    Alert.alert(
+      'Void invoice',
+      'Visits become invoiceable again, applied deposits return to held, and the public link stops working. This cannot be undone.',
+      [
+        { text: 'Keep invoice', style: 'cancel' },
+        { text: 'Void', style: 'destructive', onPress: () => voidMut.mutate() },
+      ],
+    );
+  }
+  function submitPayment() {
+    setError(null);
+    const cents = dollarsStringToCents(amountText);
+    if (cents === null || cents <= 0) return setError('Enter a payment amount like 25.00');
+    if (!receivedText) return setError('Pick the date the payment was received');
+    payMut.mutate({ cents });
+  }
+
+  const rowBetween = {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    gap: t.space.sm,
+  };
+  const chipRow = { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: t.space.sm };
+
+  return (
+    <Screen title={invoiceNumberLabel(inv.number)}>
+      <Button title="Back" variant="ghost" onPress={() => router.back()} />
+
+      <Card style={{ gap: t.space.xs }}>
+        <View style={rowBetween}>
+          <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>
+            {inv.client?.name ?? 'Client'}
+          </Text>
+          <StatusBadge label={chip.label} tone={chip.tone} />
+        </View>
+        <Text style={{ color: t.colors.inkMuted }}>Issued {formatIsoDate(inv.issued_on)}</Text>
+        {inv.due_on ? (
+          <Text style={{ color: t.colors.inkMuted }}>Due {formatIsoDate(inv.due_on)}</Text>
+        ) : null}
+        {inv.revoked_at ? (
+          <Text style={{ color: t.colors.danger }}>Public link revoked.</Text>
+        ) : null}
+      </Card>
+
+      <Text style={[t.type.title, { color: t.colors.ink }]}>Lines</Text>
+      <Card style={{ gap: t.space.sm }}>
+        {items.map((item) => (
+          <View key={item.id} style={rowBetween}>
+            <View style={{ flexShrink: 1 }}>
+              <Text style={{ color: t.colors.ink }}>{item.description}</Text>
+              {item.kind === 'manual' && editable ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => removeMut.mutate(item.id)}
+                  disabled={removeMut.isPending}
+                >
+                  <Text style={{ color: t.colors.danger, fontSize: 12, fontWeight: '700' }}>
+                    Remove
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+            <Text
+              style={{
+                color: item.amount_cents < 0 ? t.colors.green : t.colors.ink,
+                fontWeight: '700',
+              }}
+            >
+              {formatCents(item.amount_cents)}
+            </Text>
+          </View>
+        ))}
+        {items.length === 0 ? (
+          <Text style={{ color: t.colors.inkMuted }}>
+            {inv.status === 'void' ? 'Lines were released when this invoice was voided.' : 'No lines.'}
+          </Text>
+        ) : null}
+      </Card>
+
+      <Card style={{ gap: t.space.xs }}>
+        <View style={rowBetween}>
+          <Text style={{ color: t.colors.inkMuted }}>Total</Text>
+          <Text style={{ color: t.colors.ink }}>{formatCents(itemsCents)}</Text>
+        </View>
+        <View style={rowBetween}>
+          <Text style={{ color: t.colors.inkMuted }}>Payments</Text>
+          <Text style={{ color: t.colors.ink }}>{formatCents(-paymentsCents)}</Text>
+        </View>
+        <View style={rowBetween}>
+          <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>Balance</Text>
+          <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>
+            {formatCents(itemsCents - paymentsCents)}
+          </Text>
+        </View>
+      </Card>
+
+      {inv.payments.length > 0 ? (
+        <>
+          <Text style={[t.type.title, { color: t.colors.ink }]}>Payments</Text>
+          <Card style={{ gap: t.space.sm }}>
+            {inv.payments.map((p) => (
+              <View key={p.id} style={rowBetween}>
+                <View style={{ flexShrink: 1 }}>
+                  <Text style={{ color: t.colors.ink }}>
+                    {methodLabel(p.method)} · {formatIsoDate(p.received_on)}
+                  </Text>
+                  {p.memo ? <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>{p.memo}</Text> : null}
+                </View>
+                <Text style={{ color: t.colors.green, fontWeight: '700' }}>
+                  {formatCents(p.amount_cents)}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        </>
+      ) : null}
+
+      {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
+
+      {inv.status === 'draft' ? (
+        <Button title="Send invoice" onPress={confirmSend} loading={sendMut.isPending} />
+      ) : null}
+
+      {inv.status === 'sent' && !payOpen ? (
+        <Button title="Record payment" onPress={() => setPayOpen(true)} />
+      ) : null}
+      {inv.status === 'sent' && payOpen ? (
+        <Card style={{ gap: t.space.sm }}>
+          <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Record payment</Text>
+          <View style={chipRow}>
+            {PAYMENT_METHODS.map((m) => (
+              <Chip
+                key={m.value}
+                label={m.label}
+                selected={method === m.value}
+                onPress={() => setMethod(m.value)}
+              />
+            ))}
+          </View>
+          <TextField
+            label="Amount ($)"
+            value={amountText}
+            onChangeText={setAmountText}
+            placeholder="25.00"
+            keyboardType="numbers-and-punctuation"
+          />
+          <DateField label="Received" value={receivedText} onChange={setReceivedText} />
+          <TextField label="Memo (optional)" value={memoText} onChangeText={setMemoText} />
+          <Button title="Save payment" onPress={submitPayment} loading={payMut.isPending} />
+          <Button title="Close" variant="ghost" onPress={() => setPayOpen(false)} />
+        </Card>
+      ) : null}
+
+      {shareable && link ? (
+        <>
+          <Button
+            title="Share link"
+            variant="secondary"
+            onPress={() => void Share.share({ message: link })}
+          />
+          {clientPhone ? (
+            <Button
+              title="Text the client"
+              variant="secondary"
+              onPress={() =>
+                void Linking.openURL(
+                  smsUrl(clientPhone, invoiceSmsBody(businessName, invoiceNumberLabel(inv.number), link)),
+                )
+              }
+            />
+          ) : null}
+        </>
+      ) : null}
+
+      {editable ? (
+        <Button title="Void invoice" variant="ghost" onPress={confirmVoid} loading={voidMut.isPending} />
+      ) : null}
+    </Screen>
+  );
+}

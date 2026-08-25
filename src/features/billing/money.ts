@@ -6,7 +6,7 @@
 
 import { centsToDollarsString } from '@/src/features/services/form';
 
-import type { InvoiceStatus } from './types';
+import type { DepositStatus, InvoiceStatus, PaymentMethod } from './types';
 
 export function sumCents(rows: { amount_cents: number }[]): number {
   return rows.reduce((sum, r) => sum + r.amount_cents, 0);
@@ -119,6 +119,36 @@ export function invoiceNumberLabel(n: number): string {
 export function formatCents(cents: number): string {
   const sign = cents < 0 ? '-' : '';
   return `${sign}$${centsToDollarsString(Math.abs(cents))}`;
+}
+
+/** Method choices for the payment/deposit forms, in display order. */
+export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: 'venmo', label: 'Venmo' },
+  { value: 'zelle', label: 'Zelle' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'check', label: 'Check' },
+  { value: 'other', label: 'Other' },
+];
+
+export function methodLabel(method: PaymentMethod | null): string {
+  return PAYMENT_METHODS.find((m) => m.value === method)?.label ?? '—';
+}
+
+/**
+ * Deposit ledger chip: held = the live queue (neutral), applied = consumed by
+ * an invoice (green), refunded = returned (muted), forfeited = kept per policy
+ * (warning — money the client lost, worth noticing), requested = not yet
+ * received (muted; reserved state, v1 never writes it).
+ */
+export function depositStatusChip(status: DepositStatus): { label: string; tone: ChipTone } {
+  const map: Record<DepositStatus, { label: string; tone: ChipTone }> = {
+    requested: { label: 'Requested', tone: 'muted' },
+    held: { label: 'Held', tone: 'neutral' },
+    applied: { label: 'Applied', tone: 'green' },
+    refunded: { label: 'Refunded', tone: 'muted' },
+    forfeited: { label: 'Forfeited', tone: 'warning' },
+  };
+  return map[status];
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

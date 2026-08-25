@@ -13,15 +13,15 @@ import {
   statusChip,
   sumCents,
   unpaidTotalCents,
-  type ChipTone,
 } from '@/src/features/billing/money';
+import { StatusBadge } from '@/src/features/billing/StatusBadge';
 import { Chip } from '@/src/features/schedule/Chip';
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
-import { useTheme, type Theme } from '@/src/ui/theme';
+import { useTheme } from '@/src/ui/theme';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -37,15 +37,6 @@ function applyFilter(invoices: InvoiceListItem[], filter: FilterKey): InvoiceLis
   if (filter === 'unpaid') return invoices.filter((inv) => inv.status === 'sent');
   if (filter === 'draft') return invoices.filter((inv) => inv.status === 'draft');
   return invoices;
-}
-
-// statusChip tone -> token color (greens for paid, per Round 0).
-function toneColor(tone: ChipTone, t: Theme): string {
-  if (tone === 'green') return t.colors.green;
-  if (tone === 'danger') return t.colors.danger;
-  if (tone === 'warning') return t.colors.warning;
-  if (tone === 'muted') return t.colors.inkMuted;
-  return t.colors.ink;
 }
 
 function SummaryStat({ label, value }: { label: string; value: string }) {
@@ -117,7 +108,6 @@ export default function BillingIndex() {
           { itemsCents: sumCents(inv.items), paymentsCents: sumCents(inv.payments) },
           now,
         );
-        const color = toneColor(chip.tone, t);
         return (
           // Route exists in Task 4; `as Href` until .expo/types regenerate (house precedent).
           <Pressable key={inv.id} onPress={() => router.push(`/billing/${inv.id}` as Href)}>
@@ -128,12 +118,7 @@ export default function BillingIndex() {
                 <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>
                   {invoiceNumberLabel(inv.number)} · {inv.client?.name ?? 'Client'}
                 </Text>
-                <View
-                  style={{ borderWidth: 1, borderColor: color, borderRadius: t.radius.pill,
-                    paddingHorizontal: t.space.sm, paddingVertical: t.space.xs / 2 }}
-                >
-                  <Text style={{ color, fontSize: 12, fontWeight: '700' }}>{chip.label}</Text>
-                </View>
+                <StatusBadge label={chip.label} tone={chip.tone} />
               </View>
               <View
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: t.space.sm }}
