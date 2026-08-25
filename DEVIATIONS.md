@@ -1542,3 +1542,49 @@ deployed-but-dormant for a possible toll-free future.
 - Checks: 542 jest (45 suites), typecheck, lint, 289 pgTAP (10 db suites) all green;
   `cron.job` on the reset local stack shows only `expand-series-nightly` +
   `send-email-every-minute`.
+
+## Plan 5, Task 1 — billing schema (2026-08-25)
+
+- **`invoice_items.kind` is `text` with a check constraint** (`visit`/`manual`/
+  `deposit_credit`), not a fifth enum: the task's enum list (invoice_status,
+  deposit_status, payment_method, payout_status) is read as exhaustive and the
+  spec §3 table names the values inline.
+- **Sanity constraints added beyond the spec's column list** (Plan 3 Task 1
+  precedent): `unique (business_id, number)` on invoices (the Task-2 for-update
+  allocator makes duplicates impossible; the index makes that a hard invariant),
+  `payout_percent between 0 and 100` (spec gives only `numeric(5,2) default 0`;
+  the pgTAP brief asks for bounds sanity), `amount_cents > 0` on deposits and
+  payments (invoice_items/payout_items stay signed — manual discounts and payout
+  adjustments are negative lines by design), and
+  `period_end >= period_start` on payout_statements.
+- **Spec `?` convention read as nullable; unmarked columns are `not null`** —
+  so `issued_on` is `not null` (no default: Task-2 `create_invoice` stamps it,
+  and a `current_date` default would encode the server zone against the
+  no-hardcoded-tz rule), while `due_on`/`method`/`received_on`/`visit_id` are
+  nullable.
+- **FK delete behavior chosen where the spec is silent:** client/business
+  deletion cascades (matches visits); `invoice_items.visit_id` and
+  `payout_items.visit_id` are `on delete set null` (deleting a visit must not
+  destroy a billing line — the description survives, and the unique slot frees);
+  `deposits.applied_invoice_id` is `on delete set null`;
+  `payout_statements.walker_id` has no action (plain FK, `visit_series.walker_id`
+  precedent).
+- **The transition guard runs its who-check before the matrix**, so a non-owner
+  attempting ANY status change (legal-shaped or not) gets
+  `only the business owner can change invoice status`, and only owners/elevated
+  callers ever see `illegal invoice status transition: % -> %`. Elevated
+  (`auth.uid()` null) skips the who-check only — the matrix always applies
+  (asserted in the pgTAP matrix with a null actor).
+- **`businesses.payment_instructions_md` / `invoice_next_number` are readable by
+  walkers** via the pre-existing whole-table businesses grant + member select
+  policy. Accepted: the instructions text is shown on the PUBLIC invoice page by
+  design, and the counter is not pricing; column-restricting businesses would
+  break every `businesses(...)` embed for no secrecy gain.
+- pgTAP grew from the plan's four bullet lines to 60 assertions: enum labels,
+  defaults + bounds, owner CRUD under RLS, invoice-once/payout-once unique
+  probes, kind/amount/period check probes, the walker/other-walker/cross-owner/
+  anon isolation matrix (incl. finalized-own visible, draft-own and others'
+  invisible, zero-row write attempts verified as no-ops), the full 12-pair × 4-actor
+  invoice transition matrix (005-style temp-function loop), and aggregated
+  grant assertions for authenticated/anon/service_role plus the trigger
+  function's execute revoke.
