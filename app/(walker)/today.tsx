@@ -36,11 +36,11 @@ function errorText(e: unknown): string {
 export default function Today() {
   const t = useTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { businessId } = useActiveBusiness();
   const memberships = useMemberships();
   const isOwner =
     memberships.data?.find((m) => m.business_id === businessId)?.role === 'owner';
-  const queryClient = useQueryClient();
-  const { businessId } = useActiveBusiness();
   const [error, setError] = useState<string | null>(null);
   // Inline decline form (works on Android too — Alert.prompt is iOS-only).
   const [decliningId, setDecliningId] = useState<string | null>(null);
