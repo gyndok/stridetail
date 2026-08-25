@@ -212,7 +212,7 @@ Last updated: 2026-08-25
   | 2 | billing RPCs (create/send/pay/void/deposits) | [x] | 22b1794 |
   | 3 | billing api + owner tab + invoice list | [x] | 8fa548b |
   | 4 | new-invoice flow + detail + deposit ledger | [x] | 5126160 |
-  | 5 | invoice-public page + email template | [ ] | |
+  | 5 | invoice-public page + email template | [x] | 1458347 |
   | 6 | hosted deploy, OTA, Checkpoint 6 script | [ ] | |
 - [ ] Plan 6 — walker payouts UI + corrections polish + Checkpoint 6 device run
 - Open (validate with Alexandra): payout model (% assumption), packages/bundles, tax lines, invoice numbering scheme
