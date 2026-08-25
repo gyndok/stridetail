@@ -202,6 +202,21 @@ Last updated: 2026-08-25
 
 - [ ] Missed visits: accepted/offered visits whose window passed without a start currently vanish from Today — surface in needs-attention ("missed yesterday") — noticed 2026-08-25
 
+## Slice 2 — Bill (spec 2026-08-25; Plans 5–6)
+
+- [~] Plan 5 — invoices, deposits, payments (`docs/superpowers/plans/2026-08-25-stridetail-plan5-invoices.md`); executing
+
+  | # | Plan 5 task | Status | Commit |
+  |---|-------------|--------|--------|
+  | 1 | billing schema + pgTAP | [ ] | |
+  | 2 | billing RPCs (create/send/pay/void/deposits) | [ ] | |
+  | 3 | billing api + owner tab + invoice list | [ ] | |
+  | 4 | new-invoice flow + detail + deposit ledger | [ ] | |
+  | 5 | invoice-public page + email template | [ ] | |
+  | 6 | hosted deploy, OTA, Checkpoint 6 script | [ ] | |
+- [ ] Plan 6 — walker payouts UI + corrections polish + Checkpoint 6 device run
+- Open (validate with Alexandra): payout model (% assumption), packages/bundles, tax lines, invoice numbering scheme
+
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 
 Source: Alexandra's discovery survey (link in `docs/HANDOFF.md`). Spec §1 captures the rest.
