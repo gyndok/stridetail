@@ -20,8 +20,9 @@
 //
 // Payload is INVOICE-SAFE ONLY (spec §4): business name/brand/logo, the
 // client's FIRST name only, invoice number label/dates/status/paidAt, line
-// items (description, amount, kind), payment totals, and the business's
-// payment-instructions text. NEVER: client full/last name, address, phones,
+// items (description, amount, kind), payment totals, the business's
+// payment-instructions text, and — Plan 6 — the Venmo pay primitives
+// (handle, balance, note) while the invoice is sent and unpaid. NEVER: client full/last name, address, phones,
 // emails, access codes, walker anything, visit ids. Every field below is an
 // explicit allow-list pick — nothing is spread from a row.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
@@ -127,7 +128,7 @@ Deno.serve(async (req) => {
   const [bizRes, clientRes, itemsRes, paymentsRes] = await Promise.all([
     admin
       .from('businesses')
-      .select('name, brand_color, logo_path, payment_instructions_md, time_zone')
+      .select('name, brand_color, logo_path, payment_instructions_md, time_zone, venmo_handle')
       .eq('id', inv.business_id)
       .maybeSingle(),
     admin.from('clients').select('name').eq('id', inv.client_id).maybeSingle(),
@@ -148,6 +149,7 @@ Deno.serve(async (req) => {
     logo_path: string | null;
     payment_instructions_md: string | null;
     time_zone: string;
+    venmo_handle: string | null;
   } | null;
   const client = clientRes.data as { name: string } | null;
   const items = (itemsRes.data ?? []) as { description: string; amount_cents: number; kind: string }[];
@@ -156,6 +158,18 @@ Deno.serve(async (req) => {
   const logoUrl = await signedUrl(admin, biz?.logo_path ?? null);
   const itemsTotalCents = items.reduce((sum, r) => sum + r.amount_cents, 0);
   const paymentsTotalCents = payments.reduce((sum, r) => sum + r.amount_cents, 0);
+  const balanceCents = itemsTotalCents - paymentsTotalCents;
+
+  // Plan 6 Task 3: Venmo pay primitives — ONLY while the invoice is actually
+  // payable: a handle on file, status 'sent' (unpaid; paid invoices show the
+  // PAID stamp instead), and a positive balance. The page builds the link
+  // (src/lib/venmo.ts) and adjusts for tips client-side; this function never
+  // constructs a URL.
+  const venmoHandle = biz?.venmo_handle?.trim() || null;
+  const venmo =
+    venmoHandle && inv.status === 'sent' && balanceCents > 0
+      ? { handle: venmoHandle, amountCents: balanceCents, note: numberLabel(inv.number) }
+      : null;
 
   return json({
     business: {
@@ -178,7 +192,8 @@ Deno.serve(async (req) => {
       kind: it.kind,
     })),
     paymentsTotalCents,
-    balanceCents: itemsTotalCents - paymentsTotalCents,
+    balanceCents,
     paymentInstructionsMd: biz?.payment_instructions_md ?? null,
+    venmo,
   });
 });

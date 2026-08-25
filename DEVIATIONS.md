@@ -2022,3 +2022,74 @@ deployed-but-dormant for a possible toll-free future.
 - Jest: `payouts.test.ts` (20 tests) query shapes/RPC args/chip/periodLabel/
   signed parsing; `settings.test.ts` (8 tests) modes list, query/update
   shapes, venmo normalization — 28 new tests, suite at 695.
+
+## Plan 6, Task 3 — combined report+invoice page + Venmo pay link + tips (2026-08-25)
+
+- **Venmo link research (recorded per the task):** Venmo has NO official
+  deep-link documentation; both forms are long-standing community-documented
+  behaviour (Beals' app-teardown post, O'Leary's web-app write-up, current
+  how-to guides): mobile scheme
+  `venmo://paycharge?txn=pay&recipients=<handle>&amount=<x.yy>&note=<text>` and
+  web `https://venmo.com/<handle>?txn=pay&amount=<x.yy>&note=<url-encoded>`
+  (amount = plain dollars, decimal allowed, no `$`; note URL-escaped; `txn`
+  also takes `charge`). On mobile with the app installed the HTTPS venmo.com
+  link is intercepted by the app (universal link) and prefills the payment;
+  without the app it lands on the recipient's profile page. The `venmo://`
+  scheme hard-errors in any browser without the app, so the page uses the
+  HTTPS form as the ONLY link (recorded per the task's "prefer https as
+  primary") — no scheme-first attempt, no user-agent sniffing.
+  `account.venmo.com/u/<handle>` is a profile URL with no documented
+  txn/amount/note support, so `venmo.com/<handle>` is used.
+- **The link builder is app-side only — NO Deno copy** (the task's "decide"
+  clause): invoice-public ships primitives (`venmo {handle, amountCents,
+  note}`) and never constructs a URL — the page must rebuild the link per tip
+  selection anyway, so the builder lives once in `src/lib/venmo.ts` (pure,
+  jest: withTip/centsToAmountParam/venmoLink incl. the 4500+500 → "50.00"
+  vector, note encoding, leading-@ strip).
+- **invoice-public's venmo block additionally requires `balanceCents > 0`**
+  (beyond the task's "handle set AND status='sent'"): a sent invoice fully
+  covered by recorded payments (balance ≤ 0) must not offer a
+  "Pay $0.00"/negative button. Asserted in E2E only via the normal unpaid
+  case; the gate is conservative belt-and-braces.
+- **report-public's invoice lookup** is one PostgREST query from the invoices
+  side (`invoice_items!inner(visit_id)` filter, status in sent|paid,
+  `revoked_at is null`, token not null, limit 1 + maybeSingle — the
+  invoice-once unique slot means at most one live row). Payload gains
+  `invoice: {token} | null` — TOKEN ONLY; the plan sketch's "total due /
+  PAID" on the report card was dropped per the task brief ("fetches nothing
+  extra"): amounts stay behind invoice-public, and the report's leak posture
+  is unchanged.
+- **The report card links with expo-router `Link` + `asChild`:** on web it
+  renders a RELATIVE `<a href="/invoice/<token>">` (same origin as the report
+  page — no host baked in); on native it is an in-app push to the same
+  `/invoice/[token]` route, which exists in this app — a real navigation, so
+  no "native fallback text" was needed (recorded per the task).
+- **Tip UI:** preset chips No tip / +$5 / +$10 / Custom (schedule `Chip`
+  reuse); custom is a dollars TextField parsed by the existing strict
+  `dollarsStringToCents` (invalid non-empty input shows an inline error and
+  disables the pay button; tip treated as 0 until valid). The math line
+  renders only when a tip is selected ("$45.00 + $5.00 tip = $50.00" via
+  `formatCents`); the button reads "Pay $X with Venmo" and opens the built
+  link with `Linking.openURL`.
+- **The "Paying by Zelle or another way? See instructions below." note
+  renders only when `paymentInstructionsMd` exists** — otherwise it would
+  point at a section that isn't there. Paid invoices keep the existing PAID
+  stamp; the whole Venmo card is absent (server-gated AND page-gated).
+- **send-email templates untouched (recorded per the task):** the
+  visit_finished email already links the report page, which now IS the
+  combined page — no wording change needed.
+- **E2E (local `supabase functions serve`, bun fetch + psql script,
+  db reset after): 21/21 checks.** per_visit walker finish (SQL-impersonated
+  claims, 013 pattern) → report payload carries exactly `invoice: {token}`
+  matching the auto-sent invoice; manual-business report → `invoice: null`;
+  leak-greps still clean on BOTH payloads (client last name, address, phone
+  digits, emails, notes markers, price/walker/address/phones/private/code/
+  access strings, own-token absence); invoice A venmo block exact
+  (handle/4500/INV-0001) while sent, `venmo: null` once paid in full (PAID +
+  balance 0) and for the no-handle business; report still carries the token
+  for a PAID invoice; voided invoice → 404 byte-identical to unknown and
+  malformed; report B's invoice reverts to null after the void; revoked
+  report → 404 byte-identical to unknown. Rate limiters untouched.
+- Checks: 704 jest (53 suites, +9 venmo), typecheck, lint, deno polyline 8/8
+  (copy untouched) all green; migrations untouched (no db:reset/db:test
+  churn beyond the E2E cleanup reset).

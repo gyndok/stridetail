@@ -19,7 +19,9 @@
 //
 // Payload is REPORT-SAFE ONLY (spec §6.4): business name/brand/logo, pet
 // names, service name, times, duration, distance, a simplified route
-// polyline, and the event timeline (type, time, text, photo signed URLs 24h).
+// polyline, the event timeline (type, time, text, photo signed URLs 24h),
+// and — Plan 6 — the public TOKEN of the live invoice containing this visit
+// (token only; amounts and status live behind invoice-public).
 // NEVER: client address, access codes, price, walker name/contact, client
 // phones, private notes. Every field below is an explicit allow-list pick —
 // nothing is spread from a row.
@@ -121,7 +123,7 @@ Deno.serve(async (req) => {
   const report = reportData as ReportRow | null;
   if (!report || report.revoked_at !== null) return notFound();
 
-  const [bizRes, visitRes, eventsRes, tracksRes] = await Promise.all([
+  const [bizRes, visitRes, eventsRes, tracksRes, invoiceRes] = await Promise.all([
     admin.from('businesses').select('name, brand_color, logo_path').eq('id', report.business_id).maybeSingle(),
     admin.from('visits').select('business_tz').eq('id', report.visit_id).maybeSingle(),
     admin
@@ -134,14 +136,29 @@ Deno.serve(async (req) => {
       .select('segment_no, points')
       .eq('visit_id', report.visit_id)
       .order('segment_no', { ascending: true }),
+    // Plan 6 Task 3: the live invoice (if any) containing this visit — TOKEN
+    // ONLY. The page fetches invoice-public itself; no amount, number, status,
+    // or any other invoice field rides on the report payload. sent|paid with a
+    // token and not revoked = the invoice page would render it.
+    admin
+      .from('invoices')
+      .select('public_token, invoice_items!inner(visit_id)')
+      .eq('invoice_items.visit_id', report.visit_id)
+      .in('status', ['sent', 'paid'])
+      .is('revoked_at', null)
+      .not('public_token', 'is', null)
+      .limit(1)
+      .maybeSingle(),
   ]);
-  const firstErr = bizRes.error ?? visitRes.error ?? eventsRes.error ?? tracksRes.error;
+  const firstErr =
+    bizRes.error ?? visitRes.error ?? eventsRes.error ?? tracksRes.error ?? invoiceRes.error;
   if (firstErr) return json({ error: 'server error' }, 500);
 
   const biz = bizRes.data as { name: string; brand_color: string; logo_path: string | null } | null;
   const visit = visitRes.data as { business_tz: string } | null;
   const events = (eventsRes.data ?? []) as EventRow[];
   const tracks = (tracksRes.data ?? []) as { segment_no: number; points: TrackPoint[] }[];
+  const invoiceToken = (invoiceRes.data as { public_token: string | null } | null)?.public_token ?? null;
 
   const logoUrl = await signedUrl(admin, biz?.logo_path ?? null);
   const timeline = [];
@@ -165,5 +182,6 @@ Deno.serve(async (req) => {
     summary: pickSummary(report.summary ?? {}),
     timeline,
     route,
+    invoice: invoiceToken ? { token: invoiceToken } : null,
   });
 });

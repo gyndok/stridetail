@@ -22,6 +22,12 @@ export type ReportPayload = {
   };
   timeline: { type: string; occurredAt: string; text: string | null; photoUrl: string | null }[];
   route: { lat: number; lng: number }[];
+  /**
+   * Public token of the live (sent|paid) invoice containing this visit —
+   * TOKEN ONLY (Plan 6 Task 3). The page links to /invoice/[token], which
+   * fetches invoice-public itself; no invoice amounts ride on the report.
+   */
+  invoice: { token: string } | null;
 };
 
 /** Unknown or revoked token — the page shows the friendly gone state. */

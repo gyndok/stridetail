@@ -29,6 +29,13 @@ export type InvoicePayload = {
   paymentsTotalCents: number;
   balanceCents: number;
   paymentInstructionsMd: string | null;
+  /**
+   * Venmo pay primitives (Plan 6 Task 3) — present only while the invoice is
+   * sent, unpaid, with a positive balance AND the business has a handle on
+   * file. The page builds the link via src/lib/venmo.ts (tips adjust the
+   * amount client-side); the function never ships a URL.
+   */
+  venmo: { handle: string; amountCents: number; note: string } | null;
 };
 
 /** Unknown, revoked, or voided token — the page shows the friendly gone state. */

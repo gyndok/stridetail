@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Image, Platform, ScrollView, Text, View } from 'react-native';
+import { Link, useLocalSearchParams, type Href } from 'expo-router';
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchPublicReport, ReportUnavailableError, type ReportPayload } from '@/src/features/report/api';
@@ -67,6 +67,26 @@ function RouteSketch({ report }: { report: ReportPayload }) {
   );
 }
 
+// Plan 6 Task 3: when the payload carries an invoice token, one card links to
+// the public invoice page. Nothing extra is fetched here — the report payload
+// holds the TOKEN only. Built with expo-router's Link: on web it renders a
+// RELATIVE <a href="/invoice/<token>"> (same origin as this report page), and
+// on native it is an in-app navigation to the same /invoice/[token] route —
+// both routes live in this app, so no external URL is needed.
+function InvoiceCard({ token }: { token: string }) {
+  const t = useTheme();
+  return (
+    <Link href={`/invoice/${token}` as Href} asChild>
+      <Pressable accessibilityRole="link">
+        <Card style={{ gap: t.space.xs }}>
+          <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Billing</Text>
+          <Text style={[t.type.title, { color: t.colors.ink }]}>{'Invoice & payment →'}</Text>
+        </Card>
+      </Pressable>
+    </Link>
+  );
+}
+
 function ReportBody({ report }: { report: ReportPayload }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
@@ -105,6 +125,8 @@ function ReportBody({ report }: { report: ReportPayload }) {
           </Text>
           <Text style={{ color: t.colors.inkMuted }}>{petsServiceLine(report.summary)}</Text>
         </Card>
+
+        {report.invoice ? <InvoiceCard token={report.invoice.token} /> : null}
 
         {stats.length > 0 ? (
           <View style={{ flexDirection: 'row', gap: t.space.md }}>

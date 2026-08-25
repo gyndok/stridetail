@@ -1,16 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Image, Linking, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { formatCents } from '@/src/features/billing/money';
 import {
   fetchPublicInvoice,
   invoiceViewModel,
   InvoiceUnavailableError,
   type InvoicePayload,
 } from '@/src/features/billing/publicInvoice';
+import { Chip } from '@/src/features/schedule/Chip';
+import { dollarsStringToCents } from '@/src/features/services/form';
 import { APP_NAME } from '@/src/lib/brand';
+import { venmoLink, withTip } from '@/src/lib/venmo';
+import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
+import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
 
 // Public invoice page (Plan 5 Task 5). Direct-linked from the client's email —
@@ -47,6 +54,76 @@ function TotalsRow({ label, value, bold }: { label: string; value: string; bold?
       <Text style={{ color: t.colors.ink, fontWeight: weight }}>{label}</Text>
       <Text style={{ color: t.colors.ink, fontWeight: weight }}>{value}</Text>
     </View>
+  );
+}
+
+// Plan 6 Task 3: tip nudge + prefilled Venmo pay button. Renders only when the
+// payload carries the venmo block (function-gated: handle on file, status
+// 'sent', positive balance). The link is the HTTPS venmo.com profile form —
+// on mobile the Venmo app intercepts it and prefills amount + note; without
+// the app the browser lands on the business's Venmo profile (see
+// src/lib/venmo.ts for the recorded convention research).
+const TIP_PRESETS = [
+  { key: 'none', label: 'No tip', cents: 0 },
+  { key: 'five', label: '+$5', cents: 500 },
+  { key: 'ten', label: '+$10', cents: 1000 },
+] as const;
+
+function VenmoPayCard({
+  venmo,
+  hasInstructions,
+}: {
+  venmo: NonNullable<InvoicePayload['venmo']>;
+  hasInstructions: boolean;
+}) {
+  const t = useTheme();
+  const [choice, setChoice] = useState<'none' | 'five' | 'ten' | 'custom'>('none');
+  const [customText, setCustomText] = useState('');
+  const customCents = customText.trim() ? dollarsStringToCents(customText) : null;
+  const customInvalid = choice === 'custom' && customText.trim().length > 0 && customCents == null;
+  const tipCents =
+    choice === 'custom' ? (customCents ?? 0) : TIP_PRESETS.find((p) => p.key === choice)!.cents;
+  const totalCents = withTip(venmo.amountCents, tipCents);
+  return (
+    <Card style={{ gap: t.space.sm }}>
+      <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Pay with Venmo</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
+        {TIP_PRESETS.map((p) => (
+          <Chip key={p.key} label={p.label} selected={choice === p.key} onPress={() => setChoice(p.key)} />
+        ))}
+        <Chip label="Custom tip" selected={choice === 'custom'} onPress={() => setChoice('custom')} />
+      </View>
+      {choice === 'custom' ? (
+        <TextField
+          label="Tip amount ($)"
+          value={customText}
+          onChangeText={setCustomText}
+          placeholder="3.50"
+          keyboardType="decimal-pad"
+          autoCapitalize="none"
+          error={customInvalid ? 'Enter a dollar amount like 3.50' : undefined}
+        />
+      ) : null}
+      {tipCents > 0 ? (
+        <Text style={{ color: t.colors.ink }}>
+          {formatCents(venmo.amountCents)} + {formatCents(tipCents)} tip = {formatCents(totalCents)}
+        </Text>
+      ) : null}
+      <Button
+        title={`Pay ${formatCents(totalCents)} with Venmo`}
+        disabled={customInvalid}
+        onPress={() =>
+          void Linking.openURL(
+            venmoLink({ handle: venmo.handle, amountCents: venmo.amountCents, note: venmo.note, tipCents })
+          )
+        }
+      />
+      {hasInstructions ? (
+        <Text style={{ color: t.colors.inkMuted, fontSize: 13 }}>
+          Paying by Zelle or another way? See instructions below.
+        </Text>
+      ) : null}
+    </Card>
   );
 }
 
@@ -116,6 +193,10 @@ function InvoiceBody({ payload }: { payload: InvoicePayload }) {
           {vm.paymentsText ? <TotalsRow label="Payments" value={vm.paymentsText} /> : null}
           <TotalsRow label={vm.paid ? 'Balance' : 'Balance due'} value={vm.balanceText} bold />
         </Card>
+
+        {payload.venmo && !vm.paid ? (
+          <VenmoPayCard venmo={payload.venmo} hasInstructions={!!payload.paymentInstructionsMd} />
+        ) : null}
 
         {payload.paymentInstructionsMd ? (
           <Card style={{ gap: t.space.sm }}>

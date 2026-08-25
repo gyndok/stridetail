@@ -25,6 +25,7 @@ const payload: InvoicePayload = {
   paymentsTotalCents: 1000,
   balanceCents: 2500,
   paymentInstructionsMd: 'Venmo @pawwhisker',
+  venmo: { handle: 'pawwhisker', amountCents: 2500, note: 'INV-0007' },
 };
 
 describe('invoiceViewModel', () => {
