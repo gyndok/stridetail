@@ -197,6 +197,8 @@ Last updated: 2026-08-25
 - [ ] EAS Update (OTA) setup — first item after build quota returns; JS-only changes should not cost native builds
 - [ ] Drag-and-drop reassign on the web week grid (click-reassign shipped)
 
+- [ ] Missed visits: accepted/offered visits whose window passed without a start currently vanish from Today — surface in needs-attention ("missed yesterday") — noticed 2026-08-25
+
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 
 Source: Alexandra's discovery survey (link in `docs/HANDOFF.md`). Spec §1 captures the rest.
