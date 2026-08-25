@@ -222,7 +222,17 @@ Last updated: 2026-08-25
   (walker payouts) is **schema-only** (tables + `payout_percent` deployed; finalize
   RPCs/UI = Plan 6); item 6's payouts section likewise waits for Plan 6. Checkpoint 6
   script appended to `checkpoints.md` (PENDING — device run with Plan 6).
-- [ ] Plan 6 — walker payouts UI + corrections polish + Checkpoint 6 device run
+- [~] Plan 6 — payouts + auto-invoice flow + Venmo pay link (`docs/superpowers/plans/2026-08-25-stridetail-plan6-payouts-autoflow.md`); executing
+
+  | # | Plan 6 task | Status | Commit |
+  |---|-------------|--------|--------|
+  | 1 | auto-invoice setting + finish hook + payout RPCs | [ ] | |
+  | 2 | payouts UI + billing settings | [ ] | |
+  | 3 | combined report+invoice page + Venmo/tip link | [ ] | |
+  | 4 | polish: resend, true preview amounts, missed visits | [ ] | |
+  | 5 | hosted deploy, OTA, Checkpoint 6 | [ ] | |
+- [ ] Icon system v1 — ~18 theme-wired SVG icons (react-native-svg = native module → next EAS build), preview dev route
+- Parked for Alexandra: Stripe per-tenant (true auto-detected payment + tips), payout % model, packages, tax
 - Open (validate with Alexandra): payout model (% assumption), packages/bundles, tax lines, invoice numbering scheme
 
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
