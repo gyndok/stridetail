@@ -1495,3 +1495,50 @@ built and idle.
   says the hero card is for the next visit; a silent gap read as a bug in testing).
 - Checks: 539 jest (45 suites — 9 new helper tests), typecheck, lint all green. Device
   pass rides the next checkpoint; OTA pending (PRD-CHECKLIST polish note).
+
+## SMS surfacing retired — email-only queueing and delivery status (2026-08-25)
+
+Sponsor request: the owner Today carried a permanent "8 SMS messages not sent — SMS
+pending setup" needs-attention card. SMS (Twilio) was dropped for slice 1
+(docs/HANDOFF.md); email (Resend) is live. Migration `20260824000013_sms_dormant.sql`
+retires the sms channel's user-facing noise while keeping the whole sms pipeline
+deployed-but-dormant for a possible toll-free future.
+
+- **start_visit/finish_visit queue EMAIL only** (0012 bodies minus the
+  `queue_client_sms` calls). `queue_client_sms` itself stays in place as the
+  toll-free re-enable hook; existing sms notification rows are kept as history.
+- **resend_report now re-queues the visit_finished EMAIL** (0012 had left it
+  sms-only). Precondition flips from "client has no phone number on file" to
+  "client has no email on file"; audit action stays `report.resend`.
+- **`send-sms-every-minute` pg_cron job unscheduled** — it POSTed the function
+  sixty times an hour to drain zero rows. Function, templates, and
+  `sms_cron_secret` stay deployed; the re-schedule one-liner is commented at the
+  bottom of 0013 (full body in 0011). NOTE: 0013 must also be pushed to HOSTED
+  for the cron stop + RPC change to take effect there.
+- **listProblemNotifications excludes channel='sms' AND
+  status='skipped_no_provider'** (server-side `.or()`): a dormant-channel skip is
+  the expected state of history rows, not a problem. A real FAILED sms — if the
+  channel ever returns — still surfaces, as do all email problems.
+- **`smsIssueLabel` → `notificationIssueLabel`**, channel-aware: all-email rows
+  read "N emails not delivered", any other mix falls back to
+  "N notifications not delivered". The "pending setup" wording is gone from the
+  strip (with the exclusion rule it would only ever describe email-provider
+  misconfiguration, which the report card line still names).
+- **Report card delivery line now reads the EMAIL notification row**, not
+  `visit_reports.sms_status`: new `getReportEmailStatus` fetches the latest
+  channel='email' visit_finished row for the visit (owner-select RLS). Sent time
+  is the notification's sender-stamped `updated_at` (send-email deliberately does
+  not mirror onto visit_reports — recorded in the email-channel entry). Null row
+  renders "Email: not sent — client has no email on file". "Resend SMS" →
+  "Resend email" (same RPC); "Text the client" (device-composed sms:) and
+  Share/Revoke unchanged. `REPORT_COLUMNS` drops `sms_status` (column itself
+  stays in the schema, dormant).
+- pgTAP: 007 fixtures gain a client email; start/finish/resend assertions flip to
+  email rows plus two new "queues NO sms row" checks (plan 74 → 76). 010's matrix
+  now asserts no sms row even with a phone on file; finish queues exactly one
+  (email) row. 009 unchanged beyond comments — its queue rows were already seeded
+  directly, and the claim/RLS mechanics stay live for the invite path and the
+  toll-free future.
+- Checks: 542 jest (45 suites), typecheck, lint, 289 pgTAP (10 db suites) all green;
+  `cron.job` on the reset local stack shows only `expand-series-nightly` +
+  `send-email-every-minute`.

@@ -3,10 +3,14 @@ create extension if not exists pgtap with schema extensions;
 select plan(15);
 
 -- Plan 4 Task 6 — notification queue transitions + owner invite-SMS insert
--- policy. 007 already covers: RPC-queued rows, walker-invisible notifications,
--- client roles cannot insert arbitrary notifications. New here: the due-row
--- claim semantics the send-sms function relies on, the next_attempt_at
--- default, and the narrow owner INSERT path for invite SMS.
+-- policy. 007 already covers: RPC-queued rows (email-only since 0013),
+-- walker-invisible notifications, client roles cannot insert arbitrary
+-- notifications. New here: the due-row claim semantics the channel senders
+-- rely on, the next_attempt_at default, and the narrow owner INSERT path for
+-- invite SMS. The sms channel is DORMANT (0013 unscheduled its cron; the RPCs
+-- no longer queue sms rows) so the queue rows are seeded directly — the claim
+-- mechanics and RLS are channel-agnostic and must keep working for the
+-- toll-free re-enable.
 
 -- fixtures: owner A + walker A in business A, owner B in business B.
 insert into auth.users (id, email) values

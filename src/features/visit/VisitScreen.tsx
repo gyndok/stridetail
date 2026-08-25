@@ -19,6 +19,7 @@ import {
   pickerContext,
 } from '@/src/features/schedule/api';
 import {
+  getReportEmailStatus,
   getVisitReport,
   listPetNames,
   reportLink,
@@ -137,8 +138,9 @@ function PetSection({ pet }: { pet: VisitPetInfo }) {
 
 /**
  * Report card for a completed visit (moved intact from the old owner
- * schedule/[id].tsx): SMS delivery line, Share link, device-composed Text,
- * Resend and Revoke through the audited owner RPCs behind Alert confirms.
+ * schedule/[id].tsx): email delivery line (the live channel — sms is dormant),
+ * Share link, device-composed Text, Resend email and Revoke through the
+ * audited owner RPCs behind Alert confirms.
  */
 function ReportSection({
   businessId,
@@ -164,7 +166,12 @@ function ReportSection({
     queryKey: ['visitReport', businessId, visitId],
     queryFn: () => getVisitReport(businessId, visitId),
   });
-  // Pet names for the device-composed SMS body (send-sms context parity).
+  // Delivery state of the report EMAIL (latest visit_finished email row).
+  const emailStatus = useQuery({
+    queryKey: ['visitReportEmail', businessId, visitId],
+    queryFn: () => getReportEmailStatus(businessId, visitId),
+  });
+  // Pet names for the device-composed SMS body (sender context parity).
   const petNames = useQuery({
     queryKey: ['reportPetNames', businessId, visitId],
     queryFn: () => listPetNames(petIds),
@@ -172,6 +179,7 @@ function ReportSection({
   const refresh = () => {
     setError(null);
     void queryClient.invalidateQueries({ queryKey: ['visitReport', businessId, visitId] });
+    void queryClient.invalidateQueries({ queryKey: ['visitReportEmail', businessId, visitId] });
   };
   const fail = (e: unknown) => setError(errorText(e));
   const resendMut = useMutation({ mutationFn: () => resendReport(visitId), onSuccess: refresh, onError: fail });
@@ -190,7 +198,7 @@ function ReportSection({
   }
 
   function confirmResend() {
-    Alert.alert('Resend report', 'Send the report link to the client again by SMS?', [
+    Alert.alert('Resend report', 'Send the report link to the client again by email?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Resend', onPress: () => resendMut.mutate() },
     ]);
@@ -214,8 +222,10 @@ function ReportSection({
           <Text style={{ color: t.colors.danger }}>
             Report link revoked {formatInTimeZone(new Date(r.revoked_at), tz, 'MMM d, HH:mm')}
           </Text>
+        ) : emailStatus.isPending ? (
+          <Text style={{ color: t.colors.inkMuted }}>Email: checking…</Text>
         ) : (
-          <Text style={{ color: t.colors.inkMuted }}>{reportStatusLine(r, tz)}</Text>
+          <Text style={{ color: t.colors.inkMuted }}>{reportStatusLine(emailStatus.data ?? null, tz)}</Text>
         )}
         {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
       </Card>
@@ -245,7 +255,7 @@ function ReportSection({
               }
             />
           ) : null}
-          <Button title="Resend SMS" variant="secondary" onPress={confirmResend} loading={resendMut.isPending} />
+          <Button title="Resend email" variant="secondary" onPress={confirmResend} loading={resendMut.isPending} />
           <Button title="Revoke link" variant="ghost" onPress={confirmRevoke} loading={revokeMut.isPending} />
         </>
       ) : null}

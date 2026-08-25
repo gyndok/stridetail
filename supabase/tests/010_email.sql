@@ -2,10 +2,12 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(12);
 
--- Email channel (migration 20260824000012): start_visit/finish_visit ALSO
--- queue a channel='email' notification to clients.email when present, keeping
--- the sms row — the channel-specific sender decides deliverability. 007/009
--- cover the sms rows and claim semantics; new here is the email queuing matrix.
+-- Email channel (migration 20260824000012, sms retired by 20260824000013):
+-- start_visit/finish_visit queue ONLY a channel='email' notification to
+-- clients.email when present — sms rows are no longer queued (channel dormant
+-- pending a toll-free future; queue_client_sms and send-sms stay deployed).
+-- 007 covers the RPC email rows, 009 the claim semantics; new here is the
+-- contact-matrix queuing behaviour.
 
 -- fixtures: owner + walker in business A (010-scoped fixed uuids).
 insert into auth.users (id, email) values
@@ -75,16 +77,15 @@ set local request.jwt.claims to '{}';
 
 select is((select count(*) from notifications
            where payload->>'visitId' = '00000000-0000-0000-0000-0000000010f1'
-             and channel = 'sms' and "to" = '+15550001111'
-             and template = 'visit_started' and status = 'queued')::int, 1,
-  'both-contact client: start queues the sms row (unchanged)');
+             and channel = 'sms')::int, 0,
+  'both-contact client: NO sms row even with a phone on file (sms dormant, 0013)');
 
 select is((select count(*) from notifications
            where payload->>'visitId' = '00000000-0000-0000-0000-0000000010f1'
              and channel = 'email' and "to" = 'both@example.com'
              and template = 'visit_started' and status = 'queued'
              and next_attempt_at is not null)::int, 1,
-  'both-contact client: start ALSO queues an email row, born due');
+  'both-contact client: start queues the email row, born due');
 
 select is((select count(*) from notifications
            where payload->>'visitId' = '00000000-0000-0000-0000-0000000010f2'
@@ -99,19 +100,19 @@ select is((select count(*) from notifications
 
 select is((select count(*) from notifications
            where payload->>'visitId' = '00000000-0000-0000-0000-0000000010f3'
-             and channel = 'sms' and "to" = '+15550003333')::int, 1,
-  'phone-only client: sms row still queued');
+             and channel = 'sms')::int, 0,
+  'phone-only client: no sms row despite the phone (sms dormant, 0013)');
 
 select is((select count(*) from notifications
            where payload->>'visitId' = '00000000-0000-0000-0000-0000000010f3'
              and channel = 'email')::int, 0,
-  'phone-only client: no email row (email is null)');
+  'phone-only client: no email row (email is null) — nothing queued at all');
 
 select is((select count(*) from notifications
            where payload->>'visitId' = '00000000-0000-0000-0000-0000000010f4')::int, 0,
   'no-contact client: nothing queued at all');
 
--- ===== finish_visit: both channels carry the report token =====
+-- ===== finish_visit: the email row alone carries the report token =====
 set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-000000000042","role":"authenticated"}';
 select finish_visit('00000000-0000-0000-0000-0000000010f1', null);
 set local request.jwt.claims to '{}';
@@ -121,8 +122,8 @@ select is((select count(*) from notifications n
            where n.template = 'visit_finished'
              and n.payload->>'visitId' = '00000000-0000-0000-0000-0000000010f1'
              and n.payload->>'reportToken' = r.public_token
-             and n.channel in ('sms', 'email'))::int, 2,
-  'finish queues sms AND email visit_finished rows, both carrying the report token');
+             and n.channel = 'email')::int, 1,
+  'finish queues exactly one visit_finished row — email, carrying the report token');
 
 select * from finish();
 rollback;

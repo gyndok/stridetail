@@ -81,8 +81,9 @@ export default function ScheduleIndex() {
     enabled: !!businessId,
     queryFn: () => listActiveMembers(businessId!),
   });
-  // "Report not sent" badges: visits referenced by failed / skipped_no_provider
-  // notification rows (owner-select RLS — owner screen only).
+  // "Report not sent" badges: visits referenced by undelivered notification
+  // rows (dormant-sms rows excluded in the query; owner-select RLS — owner
+  // screen only).
   const notifications = useQuery({
     queryKey: ['notifications', businessId, 'problems'],
     enabled: !!businessId,
@@ -92,7 +93,7 @@ export default function ScheduleIndex() {
 
   const filtered = applyFilter(visits.data ?? [], filter);
   const groups = groupVisitsByLocalDay(filtered);
-  const smsProblemVisits = problemVisitIds(notifications.data ?? []);
+  const problemVisits = problemVisitIds(notifications.data ?? []);
 
   if (weekMode) {
     return (
@@ -173,7 +174,7 @@ export default function ScheduleIndex() {
                     Declined: {v.decline_reason}
                   </Text>
                 ) : null}
-                {smsProblemVisits.has(v.id) ? (
+                {problemVisits.has(v.id) ? (
                   <View
                     style={{ alignSelf: 'flex-start', borderWidth: 1, borderColor: t.colors.warning,
                       borderRadius: t.radius.pill, paddingHorizontal: t.space.sm, paddingVertical: t.space.xs / 2 }}

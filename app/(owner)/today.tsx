@@ -7,9 +7,9 @@ import { useActiveBusiness } from '@/src/features/business/active';
 import {
   listProblemNotifications,
   listVisits,
+  notificationIssueLabel,
   pickUpNext,
   restOfDay,
-  smsIssueLabel,
   visitDayLabel,
   visitTimeRange,
   type Visit,
@@ -58,8 +58,9 @@ export default function Today() {
         toUtc: new Date(Date.now() + LOOKAHEAD_MS),
       }),
   });
-  // Undelivered SMS (failed / skipped_no_provider) — owner-select RLS, so this
-  // query exists only on the owner Today (walkers would read zero rows anyway).
+  // Undelivered notifications (dormant-sms rows excluded in the query) —
+  // owner-select RLS, so this query exists only on the owner Today (walkers
+  // would read zero rows anyway).
   const notifications = useQuery({
     queryKey: ['notifications', businessId, 'problems'],
     enabled: !!businessId,
@@ -70,8 +71,8 @@ export default function Today() {
   const all = visits.data ?? [];
   const unassignedCount = all.filter((v) => v.status === 'unassigned').length;
   const declined = all.filter((v) => v.decline_reason != null && v.status === 'unassigned');
-  const smsLabel = smsIssueLabel(notifications.data ?? []);
-  const attention = unassignedCount > 0 || declined.length > 0 || !!smsLabel;
+  const notifLabel = notificationIssueLabel(notifications.data ?? []);
+  const attention = unassignedCount > 0 || declined.length > 0 || !!notifLabel;
 
   // Hero + rest-of-day are the owner's OWN visits: the owner query is the
   // business-wide listVisits, filtered client-side to the session user.
@@ -96,7 +97,7 @@ export default function Today() {
                 {unassignedCount} unassigned visit{unassignedCount === 1 ? '' : 's'} in the next 14 days
               </Text>
             ) : null}
-            {smsLabel ? <Text style={{ color: t.colors.warning, fontWeight: '700' }}>{smsLabel}</Text> : null}
+            {notifLabel ? <Text style={{ color: t.colors.warning, fontWeight: '700' }}>{notifLabel}</Text> : null}
             {declined.map((v) => (
               <Pressable
                 key={v.id}

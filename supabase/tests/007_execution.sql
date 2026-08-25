@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(74);
+select plan(76);
 
 -- fixtures: owner A + two walkers in business A, owner B in business B. Fixed uuids so
 -- cross-walker/cross-business failure tests can target real row ids (002/003/005 style).
@@ -20,10 +20,12 @@ insert into memberships (business_id, user_id, role, status) values
   ('00000000-0000-0000-0000-00000000aaaa', '00000000-0000-0000-0000-000000000023', 'walker', 'active'),
   ('00000000-0000-0000-0000-00000000bbbb', '00000000-0000-0000-0000-000000000024', 'owner', 'active');
 
-insert into clients (id, business_id, name, phones) values
-  ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-00000000aaaa', 'Dana Harper', '{+15550001111}'),
-  ('00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-00000000aaaa', 'No Phone', '{}'),
-  ('00000000-0000-0000-0000-0000000000c9', '00000000-0000-0000-0000-00000000bbbb', 'Remote Client', '{+15559998888}');
+-- c1 has an email (the live notification channel — sms is dormant, 0013);
+-- c2 has NO email and NO phone (queue-skip path).
+insert into clients (id, business_id, name, phones, email) values
+  ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-00000000aaaa', 'Dana Harper', '{+15550001111}', 'dana@example.com'),
+  ('00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-00000000aaaa', 'No Contact', '{}', null),
+  ('00000000-0000-0000-0000-0000000000c9', '00000000-0000-0000-0000-00000000bbbb', 'Remote Client', '{+15559998888}', null);
 
 insert into pets (id, client_id, business_id, name) values
   ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000c1',
@@ -36,7 +38,7 @@ insert into services (id, business_id, name, kind, base_price_cents, extra_pet_p
 -- f1: accepted, walker A1 (start_visit flow); f2: in_progress, walker A2 (cross-walker
 -- denials); f3: accepted, walker A1 (non-running denials); f4: in_progress, walker A1,
 -- started 30 min ago (events/tracks/distance/finish flow); f6: accepted, walker A1,
--- client with no phone (queue-skip); f9: business B visit (cross-business counts).
+-- client with no email (queue-skip); f9: business B visit (cross-business counts).
 -- Fixture inserts take any status directly: the transition guard is an UPDATE trigger.
 insert into visits (id, business_id, client_id, service_id, walker_id, pet_ids,
                     scheduled_start, scheduled_end, business_tz, status, price_cents_snapshot, started_at) values
@@ -208,10 +210,15 @@ select is((select count(*) from visit_events
 
 select is((select count(*) from notifications
            where business_id = '00000000-0000-0000-0000-00000000aaaa'
-             and template = 'visit_started' and "to" = '+15550001111'
+             and channel = 'email' and template = 'visit_started' and "to" = 'dana@example.com'
              and status = 'queued' and next_attempt_at is not null
              and payload->>'visitId' = '00000000-0000-0000-0000-0000000000f1')::int, 1,
-  'start queues a visit_started SMS to the client''s first phone');
+  'start queues a visit_started email to the client''s address');
+
+select is((select count(*) from notifications
+           where payload->>'visitId' = '00000000-0000-0000-0000-0000000000f1'
+             and channel = 'sms')::int, 0,
+  'start queues NO sms row (sms channel dormant, migration 0013)');
 
 select is((select count(*) from audit_log
            where action = 'visit.start' and entity = 'visit'
@@ -229,14 +236,14 @@ select throws_ok(
 
 select lives_ok(
   $$ select start_visit('00000000-0000-0000-0000-0000000000f6') $$,
-  'start works for a client with no phone on file');
+  'start works for a client with no email on file');
 
 reset role;
 set local request.jwt.claims to '{}';
 
 select is((select count(*) from notifications
            where payload->>'visitId' = '00000000-0000-0000-0000-0000000000f6')::int, 0,
-  'no notification is queued when the client has no phone (skip recorded)');
+  'no notification is queued when the client has no email (skip recorded)');
 
 -- ===== recompute_visit_distance: hand-checkable fixture =====
 -- Expected: seg1 111.19493 m (bad-acc point filtered) + seg2 222.38985 m = 333.58478 m.
@@ -329,11 +336,16 @@ select is((select private_notes_md from visit_reports
 
 select is((select count(*) from notifications n
            join visit_reports r on r.visit_id = '00000000-0000-0000-0000-0000000000f4'
-           where n.template = 'visit_finished' and n."to" = '+15550001111'
+           where n.channel = 'email' and n.template = 'visit_finished' and n."to" = 'dana@example.com'
              and n.status = 'queued'
              and n.payload->>'visitId' = '00000000-0000-0000-0000-0000000000f4'
              and n.payload->>'reportToken' = r.public_token)::int, 1,
-  'finish queues a visit_finished SMS carrying the report token');
+  'finish queues a visit_finished email carrying the report token');
+
+select is((select count(*) from notifications
+           where payload->>'visitId' = '00000000-0000-0000-0000-0000000000f4'
+             and channel = 'sms')::int, 0,
+  'finish queues NO sms row (sms channel dormant, migration 0013)');
 
 select is((select count(*) from audit_log
            where action = 'visit.complete' and entity = 'visit'
@@ -434,9 +446,9 @@ select ok((select sent_at from visit_reports
   'resend bumps sent_at');
 
 select is((select count(*) from notifications
-           where template = 'visit_finished'
+           where template = 'visit_finished' and channel = 'email'
              and payload->>'visitId' = '00000000-0000-0000-0000-0000000000f4')::int, 2,
-  'resend queues a second visit_finished notification');
+  'resend queues a second visit_finished email notification');
 
 select is((select count(*) from audit_log
            where action = 'report.resend' and entity = 'visit_report'

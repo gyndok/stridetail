@@ -358,28 +358,31 @@ export function needsAttention(v: { status: string; decline_reason: string | nul
   return v.status === 'unassigned' || v.decline_reason != null;
 }
 
-// ---- SMS delivery surfacing (Plan 4 Task 6) ----
+// ---- Notification delivery surfacing (Plan 4 Task 6; email-only since the
+// sms channel went dormant — migration 0013) ----
 
 export type ProblemNotification = {
   id: string;
+  channel: string;
   template: string;
   status: 'failed' | 'skipped_no_provider';
   payload: Record<string, unknown>;
 };
 
 /**
- * Owner-only strip line for undelivered SMS. All problem rows count (invites
- * included — the query is by terminal status, the simplest robust signal);
- * when every one is skipped_no_provider the label says why (Twilio not yet
- * configured) instead of implying a transient failure.
+ * Owner-only strip line for undelivered notifications. All problem rows count
+ * (invites included — the query is by terminal status, the simplest robust
+ * signal). Channel-aware wording: with email as the only live channel the
+ * common case reads "N emails not delivered"; a mixed set (a real sms failure
+ * would surface again if the channel ever returns) falls back to the generic
+ * noun rather than mislabeling.
  */
-export function smsIssueLabel(notifs: { status: string }[]): string | null {
+export function notificationIssueLabel(notifs: { channel: string; status: string }[]): string | null {
   const n = notifs.length;
   if (n === 0) return null;
-  const noun = n === 1 ? 'SMS message' : 'SMS messages';
-  return notifs.every((x) => x.status === 'skipped_no_provider')
-    ? `${n} ${noun} not sent — SMS pending setup`
-    : `${n} ${noun} not sent`;
+  const allEmail = notifs.every((x) => x.channel === 'email');
+  const noun = allEmail ? (n === 1 ? 'email' : 'emails') : (n === 1 ? 'notification' : 'notifications');
+  return `${n} ${noun} not delivered`;
 }
 
 /** Visit ids referenced by problem notifications ("Report not sent" badges). */
@@ -532,17 +535,24 @@ export async function getVisit(businessId: string, id: string): Promise<Visit> {
 }
 
 /**
- * Undelivered SMS rows for the business. Owner-select RLS makes this
+ * Undelivered notification rows for the business. Owner-select RLS makes this
  * owner-only by construction (walkers read zero rows); 'failed' means the
- * sender gave up after its retry schedule, 'skipped_no_provider' means Twilio
- * credentials are not configured yet.
+ * sender gave up after its retry schedule, 'skipped_no_provider' means that
+ * channel's provider credentials are not configured.
+ *
+ * EXCLUDED: channel='sms' AND status='skipped_no_provider' — the sms channel
+ * is deliberately dormant (no Twilio, migration 0013), so "sms skipped for
+ * lack of a provider" is the expected state of history rows, not a problem to
+ * surface. A real failed sms (if the channel ever returns) and every email
+ * problem still surface.
  */
 export async function listProblemNotifications(businessId: string): Promise<ProblemNotification[]> {
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, template, status, payload')
+    .select('id, channel, template, status, payload')
     .eq('business_id', businessId)
     .in('status', ['failed', 'skipped_no_provider'])
+    .or('channel.neq.sms,status.neq.skipped_no_provider')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as unknown as ProblemNotification[];

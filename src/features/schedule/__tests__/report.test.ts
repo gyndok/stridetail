@@ -1,4 +1,5 @@
 import {
+  getReportEmailStatus,
   getVisitReport,
   REPORT_COLUMNS,
   reportLink,
@@ -20,7 +21,7 @@ jest.mock('@/src/lib/supabase', () => ({
       const entry = { table, steps: [] as Step[] };
       mockLog.push(entry);
       const builder: Record<string, unknown> = {};
-      for (const m of ['select', 'eq', 'maybeSingle']) {
+      for (const m of ['select', 'eq', 'order', 'limit', 'maybeSingle']) {
         builder[m] = (...args: unknown[]) => {
           entry.steps.push([m, args]);
           return builder;
@@ -47,14 +48,14 @@ beforeEach(() => {
 
 test('REPORT_COLUMNS carries the card fields and never the private notes', () => {
   const cols = REPORT_COLUMNS.split(',').map((c) => c.trim());
-  expect(cols).toEqual(['public_token', 'sent_at', 'sms_status', 'revoked_at']);
+  expect(cols).toEqual(['public_token', 'sent_at', 'revoked_at']);
   expect(REPORT_COLUMNS).not.toContain('private_notes_md');
   expect(REPORT_COLUMNS).not.toContain('*');
 });
 
 test('getVisitReport selects named columns pinned to business and visit, maybeSingle', async () => {
   mockResult = {
-    data: { public_token: 'ab'.repeat(24), sent_at: null, sms_status: null, revoked_at: null },
+    data: { public_token: 'ab'.repeat(24), sent_at: null, revoked_at: null },
     error: null,
   };
   const r = await getVisitReport('biz-1', 'visit-1');
@@ -74,6 +75,29 @@ test('getVisitReport returns null when no report row exists', async () => {
   await expect(getVisitReport('biz-1', 'visit-1')).resolves.toBeNull();
 });
 
+test('getReportEmailStatus reads the LATEST visit_finished email row for the visit', async () => {
+  mockResult = { data: { status: 'sent', updated_at: '2026-08-24T20:12:00Z' }, error: null };
+  const n = await getReportEmailStatus('biz-1', 'visit-1');
+  expect(n?.status).toBe('sent');
+  const entry = mockLog[0]!;
+  expect(entry.table).toBe('notifications');
+  expect(entry.steps).toEqual([
+    ['select', ['status, updated_at']],
+    ['eq', ['business_id', 'biz-1']],
+    ['eq', ['channel', 'email']],
+    ['eq', ['template', 'visit_finished']],
+    ['eq', ['payload->>visitId', 'visit-1']],
+    ['order', ['created_at', { ascending: false }]],
+    ['limit', [1]],
+    ['maybeSingle', []],
+  ]);
+});
+
+test('getReportEmailStatus returns null when nothing was ever queued (no email on file)', async () => {
+  mockResult = { data: null, error: null };
+  await expect(getReportEmailStatus('biz-1', 'visit-1')).resolves.toBeNull();
+});
+
 test('resend and revoke go through the audited RPCs', async () => {
   await resendReport('visit-1');
   await revokeReport('visit-1');
@@ -85,35 +109,43 @@ test('resend and revoke go through the audited RPCs', async () => {
 
 // ---- link ----
 
-test('reportLink joins the shared base with the token (mirrors send-sms)', () => {
+test('reportLink joins the shared base with the token (mirrors the senders)', () => {
   const token = 'cd'.repeat(24);
   expect(reportLink(token)).toBe(`${REPORT_BASE_URL}/${token}`);
   expect(reportLink(token).startsWith('https://stridetail.app/report/')).toBe(true);
 });
 
-// ---- SMS status line ----
+// ---- email delivery status line ----
 
 const tz = 'America/Chicago';
 
-test('reportStatusLine: queued until the sender stamps a status', () => {
-  expect(reportStatusLine({ sms_status: null, sent_at: null }, tz)).toBe('SMS: queued');
+test('reportStatusLine: no notification row means the client had no email at finish', () => {
+  expect(reportStatusLine(null, tz)).toBe('Email: not sent — client has no email on file');
+});
+
+test('reportStatusLine: queued until the send-email cron drains the row', () => {
+  expect(reportStatusLine({ status: 'queued', updated_at: null }, tz)).toBe('Email: queued');
+  // 'sending' is a mid-claim blink, still "queued" to the owner.
+  expect(reportStatusLine({ status: 'sending', updated_at: '2026-08-24T20:00:00Z' }, tz)).toBe(
+    'Email: queued',
+  );
 });
 
 test('reportStatusLine: sent shows the business-local send time', () => {
   // 2026-08-24T20:12:00Z is 15:12 CDT.
-  expect(reportStatusLine({ sms_status: 'sent', sent_at: '2026-08-24T20:12:00Z' }, tz)).toBe(
-    'SMS: sent Aug 24, 3:12 PM',
+  expect(reportStatusLine({ status: 'sent', updated_at: '2026-08-24T20:12:00Z' }, tz)).toBe(
+    'Email: sent Aug 24, 3:12 PM',
   );
-  expect(reportStatusLine({ sms_status: 'sent', sent_at: null }, tz)).toBe('SMS: sent');
+  expect(reportStatusLine({ status: 'sent', updated_at: null }, tz)).toBe('Email: sent');
 });
 
 test('reportStatusLine: terminal failure states', () => {
-  expect(reportStatusLine({ sms_status: 'failed', sent_at: null }, tz)).toBe('SMS: failed to send');
-  expect(reportStatusLine({ sms_status: 'skipped_no_provider', sent_at: null }, tz)).toBe(
-    'SMS: not sent — SMS pending setup',
+  expect(reportStatusLine({ status: 'failed', updated_at: null }, tz)).toBe('Email: failed to send');
+  expect(reportStatusLine({ status: 'skipped_no_provider', updated_at: null }, tz)).toBe(
+    'Email: not sent — email delivery pending setup',
   );
 });
 
 test('reportStatusLine: unknown statuses pass through verbatim', () => {
-  expect(reportStatusLine({ sms_status: 'sending', sent_at: null }, tz)).toBe('SMS: sending');
+  expect(reportStatusLine({ status: 'mystery', updated_at: null }, tz)).toBe('Email: mystery');
 });

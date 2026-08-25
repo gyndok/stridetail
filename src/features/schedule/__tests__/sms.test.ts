@@ -1,4 +1,12 @@
-import { listProblemNotifications, problemVisitIds, smsIssueLabel, type ProblemNotification } from '../api';
+import {
+  listProblemNotifications,
+  notificationIssueLabel,
+  problemVisitIds,
+  type ProblemNotification,
+} from '../api';
+
+// Notification-problem surfacing (Plan 4 Task 6; sms retired by migration
+// 0013 — email is the live channel, dormant-sms rows are excluded).
 
 // ---- supabase mock (chain recorder, matching visits.test.ts) ----
 
@@ -12,7 +20,7 @@ jest.mock('@/src/lib/supabase', () => ({
       const entry = { table, steps: [] as Step[] };
       mockLog.push(entry);
       const builder: Record<string, unknown> = {};
-      for (const m of ['select', 'eq', 'in', 'order']) {
+      for (const m of ['select', 'eq', 'in', 'or', 'order']) {
         builder[m] = (...args: unknown[]) => {
           entry.steps.push([m, args]);
           return builder;
@@ -31,53 +39,60 @@ beforeEach(() => {
 
 // ---- pure helpers ----
 
-const skipped = (over?: Partial<ProblemNotification>): ProblemNotification => ({
+const failedEmail = (over?: Partial<ProblemNotification>): ProblemNotification => ({
   id: 'n1',
+  channel: 'email',
   template: 'visit_finished',
-  status: 'skipped_no_provider',
+  status: 'failed',
   payload: {},
   ...over,
 });
 
-test('smsIssueLabel: null when nothing is undelivered', () => {
-  expect(smsIssueLabel([])).toBeNull();
+test('notificationIssueLabel: null when nothing is undelivered', () => {
+  expect(notificationIssueLabel([])).toBeNull();
 });
 
-test('smsIssueLabel: all skipped_no_provider explains SMS is pending setup', () => {
-  expect(smsIssueLabel([skipped()])).toBe('1 SMS message not sent — SMS pending setup');
-  expect(smsIssueLabel([skipped(), skipped({ id: 'n2' })])).toBe(
-    '2 SMS messages not sent — SMS pending setup',
+test('notificationIssueLabel: all-email rows read as emails, singular and plural', () => {
+  expect(notificationIssueLabel([failedEmail()])).toBe('1 email not delivered');
+  expect(notificationIssueLabel([failedEmail(), failedEmail({ id: 'n2', status: 'skipped_no_provider' })])).toBe(
+    '2 emails not delivered',
   );
 });
 
-test('smsIssueLabel: any hard failure drops the setup note', () => {
-  expect(smsIssueLabel([skipped(), skipped({ id: 'n2', status: 'failed' })])).toBe(
-    '2 SMS messages not sent',
+test('notificationIssueLabel: a non-email row falls back to the generic noun', () => {
+  // A real FAILED sms (never excluded by the query) still surfaces honestly.
+  expect(notificationIssueLabel([failedEmail(), failedEmail({ id: 'n2', channel: 'sms' })])).toBe(
+    '2 notifications not delivered',
   );
+  expect(notificationIssueLabel([failedEmail({ channel: 'sms' })])).toBe('1 notification not delivered');
 });
 
 test('problemVisitIds collects visitId payloads and ignores rows without one', () => {
   const ids = problemVisitIds([
-    skipped({ payload: { visitId: 'v1', reportToken: 't' } }),
-    skipped({ id: 'n2', payload: { visitId: 'v1' } }), // duplicate collapses
-    skipped({ id: 'n3', template: 'invite', payload: { token: 'x' } }), // no visit
-    skipped({ id: 'n4', payload: { visitId: 42 } }), // non-string ignored
+    failedEmail({ payload: { visitId: 'v1', reportToken: 't' } }),
+    failedEmail({ id: 'n2', payload: { visitId: 'v1' } }), // duplicate collapses
+    failedEmail({ id: 'n3', template: 'invite', payload: { token: 'x' } }), // no visit
+    failedEmail({ id: 'n4', payload: { visitId: 42 } }), // non-string ignored
   ]);
   expect([...ids].sort()).toEqual(['v1']);
 });
 
 // ---- query shape ----
 
-test('listProblemNotifications scopes to the business and terminal statuses only', async () => {
-  mockResult = { data: [skipped()], error: null };
+test('listProblemNotifications scopes to the business, terminal statuses, and excludes dormant-sms skips', async () => {
+  mockResult = { data: [failedEmail()], error: null };
   const rows = await listProblemNotifications('b1');
   expect(rows).toHaveLength(1);
   const q = mockLog[0]!;
   expect(q.table).toBe('notifications');
   expect(q.steps).toEqual([
-    ['select', ['id, template, status, payload']],
+    ['select', ['id, channel, template, status, payload']],
     ['eq', ['business_id', 'b1']],
     ['in', ['status', ['failed', 'skipped_no_provider']]],
+    // NOT(channel='sms' AND status='skipped_no_provider'): an sms row skipped
+    // for lack of a provider is the dormant channel's expected state, not a
+    // problem; failed sms and every email problem still match.
+    ['or', ['channel.neq.sms,status.neq.skipped_no_provider']],
     ['order', ['created_at', { ascending: false }]],
   ]);
 });
