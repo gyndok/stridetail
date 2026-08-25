@@ -134,7 +134,7 @@ export const VISIT_COLUMNS =
   'id, business_id, client_id, service_id, series_id, walker_id, pet_ids, ' +
   'scheduled_start, scheduled_end, business_tz, status, owner_notes_md, ' +
   'decline_reason, started_at, finished_at, ' +
-  'client:clients(name), service:services(name, duration_min)';
+  'client:clients(name, phones), service:services(name, duration_min)';
 
 export type Visit = {
   id: string;
@@ -152,7 +152,8 @@ export type Visit = {
   decline_reason: string | null;
   started_at: string | null;
   finished_at: string | null;
-  client: { name: string } | null;
+  /** phones rides on the owner read path only (MY_VISIT_COLUMNS omits it). */
+  client: { name: string; phones?: string[] } | null;
   service: { name: string; duration_min: number } | null;
 };
 

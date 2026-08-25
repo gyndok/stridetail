@@ -407,6 +407,12 @@ verify_jwt = true
 enabled = true
 verify_jwt = true
 
+# Cron-only email queue drain: same pattern as send-sms with its OWN secret,
+# EMAIL_CRON_SECRET (see supabase/migrations/20260824000012_email_channel.sql).
+[functions.send-email]
+enabled = true
+verify_jwt = true
+
 # PUBLIC BY DESIGN — the only verify_jwt=false function. Report links go to
 # pet-owner clients by SMS; they have no account or JWT. The credential is the
 # 48-hex public_token itself (24 random bytes, unique, revocable); unknown and

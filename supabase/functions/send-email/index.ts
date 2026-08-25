@@ -1,15 +1,16 @@
-// Drains the notifications queue: claims due SMS rows, renders their template
-// bodies, and delivers via Twilio when credentials are configured — otherwise
-// marks them skipped_no_provider (terminal) so the pipeline is fully testable
-// before A2P 10DLC registration lands (Plan 4 Task 6).
+// Drains the notifications queue's EMAIL rows: claims due channel='email'
+// rows, renders their template messages, and delivers via Resend when
+// credentials are configured — otherwise marks them skipped_no_provider
+// (terminal) so the pipeline is fully testable before the Resend domain/key
+// land. Exact mirror of ../send-sms/index.ts (which owns the sms rows; each
+// sender claims only its own channel).
 //
-// Single entry path, POST, cron only (mirrors expand-series' cron path):
-// verify_jwt stays ON, so the platform rejects any request without a valid JWT
-// before this code runs; pg_cron/pg_net sends the anon key as the Bearer token
-// (satisfies verify_jwt) plus an `x-cron-secret` header compared constant-time
-// against the SMS_CRON_SECRET function env — its own secret, deliberately NOT
-// shared with expand-series' EXPAND_CRON_SECRET. The anon JWT alone unlocks
-// nothing; there is no user path.
+// Single entry path, POST, cron only: verify_jwt stays ON, so the platform
+// rejects any request without a valid JWT before this code runs; pg_cron/
+// pg_net sends the anon key as Bearer (satisfies verify_jwt) plus an
+// `x-cron-secret` header compared constant-time against the EMAIL_CRON_SECRET
+// function env — its own secret, deliberately NOT shared with send-sms or
+// expand-series. The anon JWT alone unlocks nothing; there is no user path.
 //
 // Claim (double-send race safety): due ids are read first, then
 // `UPDATE ... SET status='sending' WHERE id IN (...) AND status='queued'
@@ -19,14 +20,15 @@
 // Status transitions: queued -> sending -> sent (provider_id stamped)
 //                                       -> queued again (retry, attempts++/backoff)
 //                                       -> failed (MAX_ATTEMPTS reached, terminal)
-//                                       -> skipped_no_provider (no Twilio env, terminal)
-// visit_finished rows mirror their outcome onto visit_reports.sms_status, and a
-// REAL send stamps visit_reports.sent_at (Task-1 semantics: finish/resend only
-// queue; the sender owns sent_at).
+//                                       -> skipped_no_provider (no Resend env, terminal)
+// DELIBERATE DIVERGENCE from send-sms: email outcomes are NOT mirrored onto
+// visit_reports.sms_status — that column is the SMS channel's delivery state
+// (the owner report card reads it as such), so the email outcome lives on the
+// notification row alone. Recorded in DEVIATIONS.md.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 import { corsHeaders } from '../_shared/cors.ts';
-import { backoffMinutes, MAX_ATTEMPTS, renderSms, type SmsContext } from './templates.ts';
+import { backoffMinutes, MAX_ATTEMPTS, renderEmail, type EmailContext, type EmailMessage } from './templates.ts';
 
 const CLAIM_LIMIT = 25;
 const DEFAULT_REPORT_BASE = 'https://stridetail.app/report';
@@ -62,15 +64,16 @@ type SendResult = {
   template: string;
   to: string;
   status: 'sent' | 'queued' | 'failed' | 'skipped_no_provider';
+  subject?: string;
   body?: string;
   error?: string;
 };
 
-type Twilio = { sid: string; token: string; from: string };
+type Resend = { apiKey: string; from: string };
 
 /** Assemble the template context for one notification row (admin reads). */
-async function buildContext(admin: SupabaseClient, row: NotificationRow): Promise<SmsContext> {
-  const ctx: SmsContext = { businessName: 'Your pet care team', petNames: 'your pet', serviceName: 'scheduled' };
+async function buildContext(admin: SupabaseClient, row: NotificationRow): Promise<EmailContext> {
+  const ctx: EmailContext = { businessName: 'Your pet care team', petNames: 'your pet', serviceName: 'scheduled' };
 
   const { data: biz } = await admin.from('businesses').select('name').eq('id', row.business_id).maybeSingle();
   if (biz?.name) ctx.businessName = biz.name as string;
@@ -111,51 +114,35 @@ async function buildContext(admin: SupabaseClient, row: NotificationRow): Promis
   return ctx;
 }
 
-/**
- * Mirror a terminal outcome (or a real send) onto the visit report row.
- * Only visit_finished notifications correspond to a report.
- */
-async function mirrorReport(
-  admin: SupabaseClient,
-  row: NotificationRow,
-  smsStatus: string,
-  sent: boolean,
-): Promise<void> {
-  if (row.template !== 'visit_finished') return;
-  const visitId = row.payload['visitId'];
-  if (typeof visitId !== 'string') return;
-  const patch: Record<string, unknown> = { sms_status: smsStatus, updated_at: new Date().toISOString() };
-  if (sent) patch['sent_at'] = new Date().toISOString();
-  await admin.from('visit_reports').update(patch).eq('visit_id', visitId);
-}
-
-/** Twilio REST send (no SDK): basic auth + form-encoded POST. */
-async function twilioSend(tw: Twilio, to: string, body: string): Promise<{ sid?: string; error?: string }> {
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${tw.sid}/Messages.json`;
-  const form = new URLSearchParams({ To: to, From: tw.from, Body: body });
+/** Resend REST send (no SDK): bearer auth + JSON POST. */
+async function resendSend(
+  rs: Resend,
+  to: string,
+  msg: EmailMessage,
+): Promise<{ id?: string; error?: string }> {
   try {
-    const res = await fetch(url, {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${btoa(`${tw.sid}:${tw.token}`)}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Bearer ${rs.apiKey}`,
+        'Content-Type': 'application/json',
       },
-      body: form.toString(),
+      body: JSON.stringify({ from: rs.from, to: [to], subject: msg.subject, html: msg.html, text: msg.text }),
     });
-    const data = (await res.json().catch(() => null)) as { sid?: string; message?: string } | null;
-    if (!res.ok) return { error: data?.message ?? `twilio http ${res.status}` };
-    return { sid: data?.sid };
+    const data = (await res.json().catch(() => null)) as { id?: string; message?: string } | null;
+    if (!res.ok) return { error: data?.message ?? `resend http ${res.status}` };
+    return { id: data?.id };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }
 }
 
-async function processRow(admin: SupabaseClient, row: NotificationRow, twilio: Twilio | null): Promise<SendResult> {
+async function processRow(admin: SupabaseClient, row: NotificationRow, resend: Resend | null): Promise<SendResult> {
   const nowIso = () => new Date().toISOString();
   const ctx = await buildContext(admin, row);
-  const body = renderSms(row.template, ctx);
+  const msg = renderEmail(row.template, ctx);
 
-  if (body === null) {
+  if (msg === null) {
     // Unknown template: permanent, retries can never help.
     await admin
       .from('notifications')
@@ -164,25 +151,31 @@ async function processRow(admin: SupabaseClient, row: NotificationRow, twilio: T
     return { id: row.id, template: row.template, to: row.to, status: 'failed', error: 'unknown template' };
   }
 
-  if (!twilio) {
-    // No provider configured: terminal skip — visible in the owner UI as
-    // "SMS pending setup"; everything else about the visit proceeded normally.
+  if (!resend) {
+    // No provider configured: terminal skip — everything else about the visit
+    // proceeded normally, and the sms channel (or the device-composed SMS
+    // button) still carries the message.
     await admin
       .from('notifications')
-      .update({ status: 'skipped_no_provider', last_error: 'no sms provider configured', updated_at: nowIso() })
+      .update({ status: 'skipped_no_provider', last_error: 'no email provider configured', updated_at: nowIso() })
       .eq('id', row.id);
-    await mirrorReport(admin, row, 'skipped_no_provider', false);
-    return { id: row.id, template: row.template, to: row.to, status: 'skipped_no_provider', body };
+    return {
+      id: row.id,
+      template: row.template,
+      to: row.to,
+      status: 'skipped_no_provider',
+      subject: msg.subject,
+      body: msg.text,
+    };
   }
 
-  const sendRes = await twilioSend(twilio, row.to, body);
+  const sendRes = await resendSend(resend, row.to, msg);
   if (!sendRes.error) {
     await admin
       .from('notifications')
-      .update({ status: 'sent', provider_id: sendRes.sid ?? null, last_error: null, updated_at: nowIso() })
+      .update({ status: 'sent', provider_id: sendRes.id ?? null, last_error: null, updated_at: nowIso() })
       .eq('id', row.id);
-    await mirrorReport(admin, row, 'sent', true);
-    return { id: row.id, template: row.template, to: row.to, status: 'sent', body };
+    return { id: row.id, template: row.template, to: row.to, status: 'sent', subject: msg.subject, body: msg.text };
   }
 
   const attempts = row.attempts + 1;
@@ -191,7 +184,6 @@ async function processRow(admin: SupabaseClient, row: NotificationRow, twilio: T
       .from('notifications')
       .update({ status: 'failed', attempts, last_error: sendRes.error, updated_at: nowIso() })
       .eq('id', row.id);
-    await mirrorReport(admin, row, 'failed', false);
     return { id: row.id, template: row.template, to: row.to, status: 'failed', error: sendRes.error };
   }
   const nextAt = new Date(Date.now() + backoffMinutes(attempts) * 60_000).toISOString();
@@ -208,7 +200,7 @@ Deno.serve(async (req) => {
 
   const url = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const secret = Deno.env.get('SMS_CRON_SECRET');
+  const secret = Deno.env.get('EMAIL_CRON_SECRET');
   if (!url || !serviceKey || !secret) return json({ error: 'misconfigured' }, 500);
 
   const given = req.headers.get('x-cron-secret') ?? '';
@@ -216,15 +208,14 @@ Deno.serve(async (req) => {
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-  // Claim: read due SMS ids (oldest first), then flip them to 'sending' with a
-  // status='queued' guard so a concurrent claimer can never double-send.
-  // channel='sms' keeps this sender off the email rows, which belong to
-  // send-email (added with the email channel, migration 0012).
+  // Claim: read due EMAIL ids (oldest first), then flip them to 'sending' with
+  // a status='queued' guard so a concurrent claimer can never double-send.
+  // channel='email' keeps this sender off the sms rows (send-sms mirrors it).
   const { data: due, error: dueErr } = await admin
     .from('notifications')
     .select('id')
     .eq('status', 'queued')
-    .eq('channel', 'sms')
+    .eq('channel', 'email')
     .lte('next_attempt_at', new Date().toISOString())
     .order('next_attempt_at', { ascending: true })
     .order('created_at', { ascending: true })
@@ -243,14 +234,13 @@ Deno.serve(async (req) => {
     .select('id, business_id, channel, to, template, payload, status, attempts');
   if (claimErr) return json({ error: claimErr.message }, 500);
 
-  const sid = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const token = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const from = Deno.env.get('TWILIO_FROM');
-  const twilio: Twilio | null = sid && token && from ? { sid, token, from } : null;
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  const from = Deno.env.get('EMAIL_FROM');
+  const resend: Resend | null = apiKey && from ? { apiKey, from } : null;
 
   const results: SendResult[] = [];
   for (const row of (claimed ?? []) as NotificationRow[]) {
-    results.push(await processRow(admin, row, twilio));
+    results.push(await processRow(admin, row, resend));
   }
-  return json({ provider: twilio ? 'twilio' : 'none', results });
+  return json({ provider: resend ? 'resend' : 'none', results });
 });

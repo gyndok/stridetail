@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Share, Text } from 'react-native';
+import { Alert, Linking, Share, Text } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
+import { useMemberships } from '@/src/features/business/useMemberships';
+import { joinPetNames, reportSmsBody, smsUrl } from '@/src/features/report/deviceSms';
 import {
   cancelVisit,
   getVisit,
@@ -15,6 +17,7 @@ import {
 } from '@/src/features/schedule/api';
 import {
   getVisitReport,
+  listPetNames,
   reportLink,
   reportStatusLine,
   resendReport,
@@ -48,10 +51,18 @@ function ReportSection({
   businessId,
   visitId,
   tz,
+  clientPhone,
+  petIds,
+  serviceName,
+  businessName,
 }: {
   businessId: string;
   visitId: string;
   tz: string;
+  clientPhone: string | null;
+  petIds: string[];
+  serviceName: string | null;
+  businessName: string;
 }) {
   const t = useTheme();
   const queryClient = useQueryClient();
@@ -59,6 +70,11 @@ function ReportSection({
   const report = useQuery({
     queryKey: ['visitReport', businessId, visitId],
     queryFn: () => getVisitReport(businessId, visitId),
+  });
+  // Pet names for the device-composed SMS body (send-sms context parity).
+  const petNames = useQuery({
+    queryKey: ['reportPetNames', businessId, visitId],
+    queryFn: () => listPetNames(petIds),
   });
   const refresh = () => {
     setError(null);
@@ -117,6 +133,25 @@ function ReportSection({
             variant="secondary"
             onPress={() => void Share.share({ message: reportLink(r.public_token) })}
           />
+          {clientPhone ? (
+            <Button
+              title="Text the client"
+              variant="secondary"
+              onPress={() =>
+                void Linking.openURL(
+                  smsUrl(
+                    clientPhone,
+                    reportSmsBody(
+                      businessName,
+                      joinPetNames(petNames.data ?? []),
+                      serviceName ?? 'scheduled',
+                      reportLink(r.public_token),
+                    ),
+                  ),
+                )
+              }
+            />
+          ) : null}
           <Button title="Resend SMS" variant="secondary" onPress={confirmResend} loading={resendMut.isPending} />
           <Button title="Revoke link" variant="ghost" onPress={confirmRevoke} loading={revokeMut.isPending} />
         </>
@@ -130,6 +165,7 @@ export default function VisitDetail() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { businessId } = useActiveBusiness();
+  const memberships = useMemberships();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [pickedWalker, setPickedWalker] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -251,7 +287,18 @@ export default function VisitDetail() {
       ) : null}
 
       {v.status === 'completed' && businessId ? (
-        <ReportSection businessId={businessId} visitId={v.id} tz={v.business_tz} />
+        <ReportSection
+          businessId={businessId}
+          visitId={v.id}
+          tz={v.business_tz}
+          clientPhone={v.client?.phones?.[0] ?? null}
+          petIds={v.pet_ids}
+          serviceName={v.service?.name ?? null}
+          businessName={
+            memberships.data?.find((m) => m.business_id === businessId)?.business.name ??
+            'Your pet care team'
+          }
+        />
       ) : null}
 
       {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}

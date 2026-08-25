@@ -21,6 +21,13 @@ import {
   revealFallback,
   tickerTime,
 } from '@/src/features/visit/active';
+import {
+  finishedNoLinkSmsBody,
+  joinPetNames,
+  reportSmsBody,
+  smsUrl,
+} from '@/src/features/report/deviceSms';
+import { getVisitReport, reportLink } from '@/src/features/schedule/report';
 import { appendVisitEvent, appendVisitFinish } from '@/src/features/visit/api';
 import { fetchVisitDetail, type VisitDetail } from '@/src/features/visit/detail';
 import { useWalkTheme } from '@/src/features/settings/walkTheme';
@@ -242,11 +249,61 @@ function ActiveVisitBody() {
       );
       void queryClient.invalidateQueries({ queryKey: ['myVisits'] });
       kickSync();
-      router.replace('/today' as Href);
+      offerClientText(d);
     } catch (e) {
       setFinishError(errorText(e));
       setFinishing(false);
     }
+  };
+
+  // Post-finish "Text the client": opens the walker's own Messages composer
+  // (device-composed SMS — no carrier registration; docs/HANDOFF.md). The
+  // finish is outbox-queued, so the report token may not exist client-side
+  // yet: poll visit_reports briefly (walker reads own reports per RLS) and
+  // fall back to the honest no-link body when the sync hasn't landed — the
+  // owner's report card sends the linked one. Recorded in DEVIATIONS.md.
+  const offerClientText = (detailNow: VisitDetail) => {
+    const goToday = () => router.replace('/today' as Href);
+    const phone = detailNow.client?.phones?.[0];
+    if (!phone) {
+      goToday();
+      return;
+    }
+    void (async () => {
+      const businessName =
+        memberships.data?.find((m) => m.business_id === detailNow.visit.business_id)?.business
+          .name ?? 'Your pet care team';
+      const petNames = joinPetNames(pets.map((p) => p.name));
+      let token: string | null = null;
+      for (let i = 0; i < 3 && token === null; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 700));
+        try {
+          token =
+            (await getVisitReport(detailNow.visit.business_id, detailNow.visit.id))
+              ?.public_token ?? null;
+        } catch {
+          token = null; // offline / not yet synced — the no-link body applies
+        }
+      }
+      const body = token
+        ? reportSmsBody(businessName, petNames, detailNow.service?.name ?? 'scheduled', reportLink(token))
+        : finishedNoLinkSmsBody(businessName, petNames);
+      Alert.alert(
+        'Visit finished',
+        'Text the client from your phone?',
+        [
+          { text: 'Not now', style: 'cancel', onPress: goToday },
+          {
+            text: 'Text the client',
+            onPress: () => {
+              void Linking.openURL(smsUrl(phone, body));
+              goToday();
+            },
+          },
+        ],
+        { cancelable: true, onDismiss: goToday },
+      );
+    })();
   };
 
   const onConfirmFinish = () => {

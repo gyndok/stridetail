@@ -183,7 +183,7 @@ test('listVisits selects named columns with embeds and a start-time window', asy
   expect(q.table).toBe('visits');
   const select = q.steps.find(([n]) => n === 'select')![1][0] as string;
   expect(select).toBe(VISIT_COLUMNS);
-  expect(select).toContain('client:clients(name)');
+  expect(select).toContain('client:clients(name, phones)');
   expect(select).toContain('service:services(name, duration_min)');
   const names = q.steps.map(([n]) => n);
   expect(names).toContain('gte');

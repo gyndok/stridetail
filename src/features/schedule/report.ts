@@ -63,6 +63,17 @@ export function reportStatusLine(
   }
 }
 
+/**
+ * Pet names for the device-composed SMS body (owner RLS read). Sorted by name
+ * to match the send-sms sender's context assembly.
+ */
+export async function listPetNames(petIds: string[]): Promise<string[]> {
+  if (petIds.length === 0) return [];
+  const { data, error } = await supabase.from('pets').select('name').in('id', petIds).order('name');
+  if (error) throw error;
+  return ((data ?? []) as { name: string }[]).map((p) => p.name);
+}
+
 /** Owner re-queues the report SMS (audited 'report.resend' in the DB). */
 export async function resendReport(visitId: string): Promise<void> {
   const { error } = await supabase.rpc('resend_report', { p_visit: visitId });

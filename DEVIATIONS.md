@@ -1227,3 +1227,57 @@ scoped to the session user by design.
   is that these are exceptions, so the default should always be the collapsed one). No event type
   was removed: the buttons still write the same `ate`/`drank`/`meds` events, so nothing that
   already exists in a report or the outbox changes meaning.
+
+## Post-Plan-4 — email channel + device-composed SMS (no-10DLC strategy, 2026-08-24)
+
+Implements the docs/HANDOFF.md "no Twilio 10DLC" decision: email first (Resend) plus a
+"Text the client" button that opens the user's own Messages composer. `send-sms` stays as
+built and idle.
+
+- **`send-sms`'s due-row picker gained `.eq('channel','sms')`** — a necessary edit outside
+  the task's file list: before email rows existed the filter was implicit (every row was
+  sms), but without it send-sms would claim `channel='email'` rows, render them through the
+  SMS templates, and (with Twilio configured) text an email address. `send-email` carries
+  the mirror filter `.eq('channel','email')`. E2E asserts a queued sms row survives a
+  send-email drain untouched.
+- **Email outcomes are NOT mirrored onto `visit_reports.sms_status`** (recorded per the
+  task): that column is the SMS channel's delivery state — the owner report card renders it
+  as "SMS: …" — so a visit_finished EMAIL outcome lives on its notification row alone.
+  `send-email` has no `mirrorReport` at all; per-channel delivery surfacing in the owner UI
+  is a later refinement if wanted.
+- **`resend_report` stays sms-only:** it is the owner's explicit "Resend SMS" action and
+  raises on a phone-less client (Task-1 semantics). The owner's email-ish path is the Share
+  button (and now "Text the client"); an explicit "resend email" action was not added.
+- **`queue_client_email` also skips empty-string emails**, not just null — `clients.email`
+  is free text from the client form, and `''` would otherwise queue an undeliverable row.
+- **Backoff constants + template map are per-function copies** (send-email does not import
+  from send-sms) — the expand.ts / polyline.ts copy precedent: each function dir stays
+  self-contained for deploy; both deno test files pin the same 1/5/15/60/60/60 schedule.
+- **Migration 0012 re-states the start/finish grants** after `create or replace` — grants
+  survive replacement (attached to the signature), but restating keeps the migration
+  standalone if 0009's grant lines ever change.
+- **Walker post-finish "Text the client" is offline-honest (recorded per the task):** the
+  finish is outbox-queued and `finish_visit` creates the report token server-side, so the
+  walker may not have a token client-side. After finish the screen polls `visit_reports`
+  (walker reads own reports per Task-1 RLS) 3 × 700 ms; a token found (online, sync drained)
+  yields the full linked body, otherwise the honest no-link body "[Business]: [Pet]'s visit
+  is finished — report link coming separately." — the OWNER's report card (which always has
+  the token) sends the linked one. The Alert is cancelable with `onDismiss` navigating to
+  Today so an Android outside-tap never strands the walker on a completed visit's screen.
+- **`VISIT_COLUMNS`'s client embed gained `phones`** (owner read path; RLS: owners already
+  read full client rows) so the owner report card can offer "Text the client" without a
+  second query; `MY_VISIT_COLUMNS` is unchanged — the walker path already gets phones via
+  `fetchVisitDetail`. `Visit.client.phones` is optional so walker-shaped rows still fit.
+- **`sms:` URL separator is platform-dependent** (`smsUrl` in
+  `src/features/report/deviceSms.ts`): iOS `sms:<phone>&body=`, Android `sms:<phone>?body=`;
+  phone normalized like `telUrl` (digits + leading `+`), body `encodeURIComponent`ed. Bodies
+  are pinned by jest to the exact send-sms template strings.
+- **E2E against `supabase functions serve` (bun fetch script, no RESEND env):** wrong and
+  missing secret 403; correct secret → 200, provider `none`, exactly the 2 due email rows
+  processed as `skipped_no_provider` with the exact rendered subject ("E2E Email Biz: your
+  pet's scheduled visit has started") and texts (visit_finished carrying
+  `https://stridetail.app/report/<token>`); future-dated email row and queued sms row
+  untouched; rows terminal with `last_error 'no email provider configured'`; re-invoke
+  processes 0; fixtures cleaned. 15/15 checks passed. Resend send path is code-complete but
+  exercised only at the type level (no API key — by design until the sponsor creates the
+  Resend account on stridetail.app).
