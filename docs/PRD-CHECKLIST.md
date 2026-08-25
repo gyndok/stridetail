@@ -67,7 +67,7 @@ Last updated: 2026-08-25
   | 3 | offline day cache + outbox sync worker | [x] | `42ec5a3` |
   | 4 | walker visit detail + gated start | [x] | `fc09520` |
   | 5 | active visit: field mode, events, photos, reveal, finish | [x] | `7d7a403` |
-  | 6 | send-sms + notification queue + owner surfacing | [x] | `1ca1e04` |
+  | 6 | send-sms + notification queue + owner surfacing | [x] | `1ca1e04` — sms surfacing since retired (`158788d`, migration 0013): RPCs queue email only, sms cron unscheduled, dormant-sms skips no longer hit needs-attention; function/templates/queue stay deployed for a toll-free future |
   | 7 | report-public + web report page + resend/revoke | [x] | `1e83f2a` |
   | 8 | Expo Web rail + week grid | [x] | `136df85` |
   | 9 | hosted deploy, advisors, builds | [x] | migrations 9–12 hosted; ingest-track/send-sms/send-email (verify_jwt on) + report-public (off, token-gated) live; SMS_CRON_SECRET/EMAIL_CRON_SECRET set; smoke 23/23 (walk start→track→finish→report 200→revoke 404; live pg_cron drained queue to `skipped_no_provider`); advisors: no new findings; build `7d8cb2dd` |
@@ -78,12 +78,12 @@ Last updated: 2026-08-25
 ## Spec §2 — In-scope functionality
 
 1. [~] Self-serve business creation (name, logo, brand color, IANA tz, policies) — creator = `owner` — *name + device-detected IANA tz via onboarding screen, `create_business` RPC seeds owner membership + 8 services (Task 9); logo, brand color picker, and policies UI still pending (settings, Task 10 / later plan)*
-2. [~] Memberships `owner`/`walker`, SMS/email invite link, `is_platform_admin` flag — *schema + RPCs (Task 6); owner creates invite + shares `stridetail://invite/<token>` via share sheet, `invite-accept` edge function + accept screen, walker routed to walker tabs (Task 11, verified against local stack); invite SMS queueable from the Team screen through the `send-sms` queue (Plan 4 Task 6; delivers once Twilio credentials land, `skipped_no_provider` until then); `is_platform_admin` is a column only, no UI*
+2. [~] Memberships `owner`/`walker`, SMS/email invite link, `is_platform_admin` flag — *schema + RPCs (Task 6); owner creates invite + shares `stridetail://invite/<token>` via share sheet, `invite-accept` edge function + accept screen, walker routed to walker tabs (Task 11, verified against local stack); invite SMS queueable from the Team screen through the `send-sms` queue (Plan 4 Task 6) but the sms channel is DORMANT since migration 0013 (cron unscheduled — queued invite sms will not drain until the toll-free re-enable; owners share the invite link via the share sheet, which is the working path); `is_platform_admin` is a column only, no UI*
 3. [~] Clients + pets: instructions, vet info, vaccine docs w/ expiry, secured access info — *owner side complete: clients w/ geocoding, pet profiles + photos, vaccine docs w/ expiry badges, audited access-codes screen (Plan 2 Tasks 4–7); walker read paths + visit-gated reveal in Plan 3*
 4. [x] Per-business service catalog seeded (Plan 1) + owner management UI *(Plan 3 Task 5)*
 5. [~] Scheduling: one-off + weekly series (8-week expansion), assignment offer/accept/decline, availability, time off, conflict-aware picker, needs-attention *(Plan 3; device verification = Checkpoint 3)*
 6. [~] Visit execution: Today, start/finish, background GPS, per-pet timestamped events, multi-pet, private notes — *full walker UI built: detail + gated start (Plan 4 Task 4), field-mode active screen with per-pet events/photos/notes, gated reveal w/ grace fallback, finish w/ private notes, resume banner (Plan 4 Task 5); hosted pipeline proven end-to-end (Task 9 smoke: start→events→GPS ingest 318.9 m→finish→report row); device verification = Checkpoint 4*
-7. [~] Reports: tokenised public page, SMS on start/finish, retry, owner resend/revoke — *SMS queue + per-minute `send-sms` cron with 1/5/15/60-min retry, provider-abstracted (`skipped_no_provider` until Twilio), owner "not sent" surfacing (Plan 4 Task 6); public page + resend/revoke UI (Task 7); whole pipeline live on hosted (Task 9): per-minute cron drains queue, report-public serves the token 200/404-on-revoke — only actual SMS/email delivery awaits provider credentials*
+7. [~] Reports: tokenised public page, notification on start/finish, retry, owner resend/revoke — *spec said SMS; delivered as EMAIL (Resend, live) after the 10DLC drop. Queue + per-minute `send-email` cron with 1/5/15/60-min retry (Plan 4 Task 6 pattern); public page + resend/revoke UI (Task 7); pipeline live on hosted (Task 9). SMS retired from queueing/surfacing 2026-08-25 (`158788d`, migration 0013 — needs hosted push): RPCs queue email only, owner card shows the email delivery state, "Resend email"; send-sms stays deployed dormant*
 8. [~] Offline: day cache + ordered outbox sync — *sync worker + persisted query cache + grace-window reveal helpers done (Plan 4 Task 3); field screens consume them (Tasks 4–5: outbox-first events/finish, per-visit sync badge, offline reveal fallback); airplane-mode device pass = Checkpoint 4; hosted server side (RPCs, RLS insert paths, ingest idempotency by `client_uuid`) verified in Task 9 smoke*
 9. [~] Expo Web owner layout ≥ 900 px: rail nav, week grid — *built (Plan 4 Task 8): left rail via the Tabs navigator's `tabBarPosition: 'left'` + custom tab bar, business-tz week grid with status-colored blocks and an inline offer/reassign + reschedule panel (first `rescheduleVisit` UI); drag-and-drop deferred (recorded follow-up); verified via `expo export --platform web` (48 routes; also fixes the pre-existing web-bundle break via expo-sqlite web stubs) — signed-in browser pass rides with Task 9/Checkpoint 4*
 10. [~] White-label: name/logo/accent everywhere — *theme provider accent override done (Task 2); surfaces pending*
@@ -113,7 +113,7 @@ Last updated: 2026-08-25
 - [x] Outbox: local-first writes, in-order sync worker, idempotent by `client_uuid` — *ordered drain with stop-on-retryable + backoff, permanent 4xx parked as `error`, photo-then-event sequencing, already-done RPC conflicts = success; kicks on foreground/append/segment-roll + 30 s active-visit interval (Plan 4 Task 3)*
 - [x] GPS task: 5 s / 10 m, High accuracy, SQLite `track_points`, 60 s segment roll-up *(Task 5)*
 - [x] Recovery: re-register task + restore active visit on relaunch *(Task 5 — verified on device, Checkpoint 1)*
-- [x] Notification retry with backoff (1/5/15/60 min, 6 attempts) + "Report not sent" badge — *sender-owned backoff + terminal states (Plan 4 Task 6), owner needs-attention line + per-visit badges; per-minute cron live on hosted (Task 9); real retries only exercisable once a provider is configured*
+- [x] Notification retry with backoff (1/5/15/60 min, 6 attempts) + "Report not sent" badge — *sender-owned backoff + terminal states (Plan 4 Task 6), owner needs-attention line + per-visit badges; per-minute cron live on hosted (Task 9). Since `158788d` (0013) the surfacing is email-only: dormant-sms `skipped_no_provider` rows are excluded (that permanent "SMS pending setup" card is gone), a real failed sms or any email problem still surfaces; retries are live on the email channel (Resend)*
 
 ## Spec §9 — UI
 
@@ -138,7 +138,7 @@ Last updated: 2026-08-25
 2. [ ] Client w/ codes + pet w/ vaccine PDF; schedule walk; contractor accepts; owner sees it
 3. [~] Reveal codes denied before Start — PROVEN (Checkpoint 3); shown-after + audit entry lands with Plan 4's start flow
 4. [~] **Checkpoint 1** — airplane mode, force-kill, relaunch, finish: PASS (GPS only); events/photos/sync pending Plan 4
-5. [ ] Client phone gets "started"/"finished" SMS; report shows branding/map/photos, no address/codes/price
+5. [ ] ~~Client phone gets "started"/"finished" SMS~~ → client EMAIL gets "started"/"finished" (sms dormant, 0013); report shows branding/map/photos, no address/codes/price
 6. [ ] Owner reschedules on laptop week grid; walker sees change
 
 ## Spec §13 / handoff — Open items (sponsor)
@@ -153,7 +153,10 @@ Last updated: 2026-08-25
 - [x] Device-composed SMS: "Text the client" button (pre-filled `sms:` link) on the owner visit
   detail and the walker finish flow — `244acb4` (walker offline path sends an honest
   no-link body; the owner card sends the linked one)
-- [ ] Parked: toll-free SMS verification — revisit when automated texting is wanted
+- [ ] Parked: toll-free SMS verification — revisit when automated texting is wanted. Re-enable
+  hooks are documented in migration `20260824000013_sms_dormant.sql`: re-add the
+  `queue_client_sms` calls to start/finish (and resend if wanted) + re-schedule the
+  `send-sms-every-minute` cron; function, templates, and secrets are all still deployed
 - [ ] Google Maps API key for Android
 - [~] Apple Developer, Google Play, Expo/EAS accounts — Apple (individual, team NJ4JGW72MW) + EAS (`geffreykleins-team`) done; **App Store Connect app record "Stridetail" created (1.0 Prepare for Submission)**; Google Play pending; platform entity TBD
 - [x] Docker on the Mac mini (colima) — `bun run db:test` runs
