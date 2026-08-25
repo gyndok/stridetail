@@ -231,7 +231,7 @@ Last updated: 2026-08-25
   | 3 | combined report+invoice page + Venmo/tip link | [ ] | |
   | 4 | polish: resend, true preview amounts, missed visits | [ ] | |
   | 5 | hosted deploy, OTA, Checkpoint 6 | [ ] | |
-- [ ] Icon system v1 — ~18 theme-wired SVG icons (react-native-svg = native module → next EAS build), preview dev route
+- [x] Icon system v1 — 19 theme-wired SVG icons, tab bars + event buttons + lock/billing rows wired, `/dev/icons` preview route (`24924e9`) *(2026-08-25)* — **react-native-svg is a native module: do NOT publish an OTA carrying this before the next dev-client rebuild + EAS build**
 - Parked for Alexandra: Stripe per-tenant (true auto-detected payment + tips), payout % model, packages, tax
 - Open (validate with Alexandra): payout model (% assumption), packages/bundles, tax lines, invoice numbering scheme
 
