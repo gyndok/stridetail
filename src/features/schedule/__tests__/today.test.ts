@@ -6,6 +6,9 @@ import {
   joinServices,
   listMyVisits,
   partitionWalkerDay,
+  pickUpNext,
+  restOfDay,
+  serviceRequiresGps,
   visitTimeRange,
   visitsOnLocalDay,
   type ScheduleMember,
@@ -25,7 +28,7 @@ jest.mock('@/src/lib/supabase', () => ({
       const entry = { table, steps: [] as Step[] };
       mockLog.push(entry);
       const builder: Record<string, unknown> = {};
-      for (const m of ['select', 'eq', 'neq', 'not', 'gte', 'lt', 'gt', 'order', 'insert', 'update', 'single']) {
+      for (const m of ['select', 'eq', 'neq', 'not', 'gte', 'lt', 'gt', 'order', 'insert', 'update', 'single', 'maybeSingle']) {
         builder[m] = (...args: unknown[]) => {
           entry.steps.push([m, args]);
           return builder;
@@ -182,4 +185,101 @@ test('groupTodayByWalker: owner first, walkers alphabetical, Unassigned last, ca
 test('groupTodayByWalker drops empty groups (members with no visits today)', () => {
   const groups = groupTodayByWalker([gv('z1', 'w-zed', 'accepted', '2026-09-01T14:00:00Z')], members);
   expect(groups.map((g) => g.name)).toEqual(['Zed']);
+});
+
+// ---- pickUpNext (Today hero, part B) ----
+// NOW is still 2026-09-01 21:30 Chicago = 2026-09-02T02:30Z.
+
+function uv(id: string, status: string, start: string, endMinLater = 30) {
+  const end = new Date(new Date(start).getTime() + endMinLater * 60_000).toISOString();
+  return { id, status, scheduled_start: start, scheduled_end: end, business_tz: CHI };
+}
+
+test('pickUpNext: an in_progress visit always wins, even one past its scheduled end', () => {
+  const rows = [
+    uv('acc-soon', 'accepted', '2026-09-02T03:00:00Z'),
+    // Started this morning and never finished — scheduled window long over.
+    uv('running', 'in_progress', '2026-09-01T14:00:00Z'),
+  ];
+  expect(pickUpNext(rows, NOW)?.id).toBe('running');
+});
+
+test('pickUpNext: two in_progress visits — soonest scheduled start wins', () => {
+  const rows = [
+    uv('run-late', 'in_progress', '2026-09-02T01:00:00Z'),
+    uv('run-early', 'in_progress', '2026-09-01T14:00:00Z'),
+  ];
+  expect(pickUpNext(rows, NOW)?.id).toBe('run-early');
+});
+
+test('pickUpNext: soonest not-yet-over accepted beats any offered; over accepted skipped', () => {
+  const rows = [
+    uv('offer-now', 'offered', '2026-09-02T02:45:00Z'),
+    uv('acc-tomorrow', 'accepted', '2026-09-02T14:00:00Z'),
+    uv('acc-tonight', 'accepted', '2026-09-02T03:00:00Z'),
+    // Ended 02:00Z < now 02:30Z — stale, never the hero.
+    uv('acc-over', 'accepted', '2026-09-02T01:30:00Z'),
+  ];
+  expect(pickUpNext(rows, NOW)?.id).toBe('acc-tonight');
+});
+
+test('pickUpNext: offered only when no accepted/in_progress qualifies; over offers skipped', () => {
+  const rows = [
+    uv('offer-far', 'offered', '2026-09-10T14:00:00Z'),
+    uv('offer-soon', 'offered', '2026-09-02T03:00:00Z'),
+    uv('offer-over', 'offered', '2026-09-02T01:30:00Z'),
+    uv('acc-over', 'accepted', '2026-09-02T01:30:00Z'),
+    uv('done', 'completed', '2026-09-02T03:00:00Z'),
+    uv('gone', 'cancelled', '2026-09-02T03:00:00Z'),
+  ];
+  expect(pickUpNext(rows, NOW)?.id).toBe('offer-soon');
+});
+
+test('pickUpNext: null when nothing qualifies', () => {
+  expect(pickUpNext([], NOW)).toBeNull();
+  expect(pickUpNext([uv('done', 'completed', '2026-09-02T03:00:00Z')], NOW)).toBeNull();
+});
+
+// ---- restOfDay (Today hero, part B) ----
+
+test('restOfDay: today-local-day accepted/offered/in_progress, hero excluded, over excluded, ascending', () => {
+  const rows = [
+    uv('hero', 'accepted', '2026-09-02T03:00:00Z'), // tonight 22:00 CDT — the hero
+    uv('later', 'accepted', '2026-09-02T03:30:00Z'), // tonight 22:30 CDT
+    uv('offer-tonight', 'offered', '2026-09-02T03:15:00Z'),
+    uv('running', 'in_progress', '2026-09-01T14:00:00Z'), // past end but still running
+    uv('acc-over', 'accepted', '2026-09-02T01:30:00Z'), // ended 02:00Z < now
+    uv('done', 'completed', '2026-09-02T03:45:00Z'),
+    uv('tomorrow', 'accepted', '2026-09-02T14:00:00Z'), // Sep 2 local — not today
+  ];
+  expect(restOfDay(rows, NOW, 'hero').map((v) => v.id)).toEqual([
+    'running',
+    'offer-tonight',
+    'later',
+  ]);
+});
+
+test('restOfDay: null excludeId keeps everything that qualifies', () => {
+  const rows = [uv('a', 'accepted', '2026-09-02T03:00:00Z')];
+  expect(restOfDay(rows, NOW, null).map((v) => v.id)).toEqual(['a']);
+});
+
+// ---- serviceRequiresGps (hero Start needs the flag; price-free view) ----
+
+test('serviceRequiresGps reads services_public by id, named columns, no price', async () => {
+  mockResults.push({ data: { id: 's1', requires_gps: true }, error: null });
+  const out = await serviceRequiresGps('s1');
+  expect(out).toBe(true);
+  expect(mockLog.map((q) => q.table)).toEqual(['services_public']);
+  const q = mockLog[0]!;
+  const select = q.steps.find(([n]) => n === 'select')![1][0] as string;
+  expect(select).not.toContain('*');
+  expect(select).not.toContain('price');
+  expect(select).toContain('requires_gps');
+  expect(q.steps.filter(([n]) => n === 'eq').map(([, a]) => a)).toEqual([['id', 's1']]);
+});
+
+test('serviceRequiresGps: a missing row resolves false, never throws', async () => {
+  mockResults.push({ data: null, error: null });
+  await expect(serviceRequiresGps('s-gone')).resolves.toBe(false);
 });

@@ -1432,3 +1432,66 @@ built and idle.
   helpers (established approach); the resolver carries the unit matrix.
 - Both `today.tsx` files compile untouched (they import from `schedule/api`, not from the
   route files). Checks: 530 jest (45 suites), typecheck, lint all green.
+
+## Today/navigation redesign, part B — up-next hero + single-mode navigation (2026-08-25)
+
+- **DELETED: the walker-view banner** (`app/(walker)/_layout.tsx` restored to the plain
+  Tabs version — no memberships lookup, no `SafeAreaInsetsContext` override, no banner
+  Pressable). The redesign removes the mode concept entirely: an owner's own field work
+  now lives on their OWN Today (hero + rest-of-day) and the unified visit screen, so
+  there is no second mode to label. Contractors never saw the banner, so nothing changes
+  for them. The banner shipped in exactly one build (recorded in PRD-CHECKLIST).
+- **DELETED: the owner Today "My visits" toggle** (the button that pushed
+  `/(walker)/today`). Same reason: the owner no longer visits the walker group at all —
+  their next visit is the hero on their own Today, its execution path (Start → active
+  screen) rides the part-A cross-group href. `resolveHome` still routes contractors to
+  `/(walker)/today`; that group remains the contractor shell, untouched.
+- **DELETED: the owner Today by-walker Team grouping** ("Today's visits" sections per
+  walker). The business-wide picture lives in Schedule (list + web week grid);
+  `groupTodayByWalker` stays exported and unit-tested in `schedule/api.ts` (no screen
+  consumer right now) rather than being churned out and back if a business-wide Today
+  strip returns. Owner Today no longer issues the `scheduleMembers` query at all.
+- **"Soonest future accepted" read as "not already over"** (`pickUpNext`): accepted and
+  offered candidates qualify while `scheduled_end > now` — a visit that should have
+  started ten minutes ago is still the thing to do next, but one whose whole window
+  passed unstarted is stale and never the hero. `in_progress` is exempt (it is running,
+  however late) and always wins; ties break by soonest `scheduled_start`. Same
+  "not over" rule keeps `restOfDay` to genuinely remaining visits. Pinned in
+  `today.test.ts` (tests written failing-first).
+- **Walker hero excludes `offered`** — the offers strip (kept, above the hero) already
+  renders every offer with Accept/Decline, and the design names the walker hero as
+  "next accepted/in_progress". The owner hero DOES take an offered visit (an owner can
+  be offered a visit by... themselves force-assigning is direct-accept, but a declined
+  re-offer round-trip can land one) with Accept big + Decline as the small secondary
+  (inline reason form — Alert.prompt is iOS-only, the Task 8 precedent).
+- **Hero Start fetches `requires_gps` per-visit from `services_public`**
+  (`serviceRequiresGps`, prefetched via useQuery the moment the action resolves to
+  'start'). When the flag is unknowable at press time (offline, nothing cached) Start
+  assumes GPS: recording an unneeded route beats silently losing a required one. The
+  start flow otherwise mirrors the unified visit screen's `onStart` exactly — outbox
+  `appendVisitStart` first, optimistic `['visitDetail', id]` status, list invalidations,
+  GPS-permission failure alerts but never blocks the start, `kickSync`, then the part-A
+  cross-group active href. Navigation is `router.push` (not the visit screen's
+  `replace`) so back returns to Today.
+- **`InlineNextAction` (rest-of-day cards) renders only accept/start/resume** — the
+  single actionable kinds for one's own upcoming visits. offer/report/none render
+  nothing on a card; those flows live on the visit screen. Each card gets its own
+  mutation runner (error text renders inside that card).
+- **Owner rest-of-day cards keep the Round 0 "Client & pets" ghost button** — the design
+  prescribes "VisitCards with their inline next action" and Round 0 asked for the
+  client/pet profile one tap from Today; removing it would regress accepted tenant
+  feedback. The walker cards keep their card-wide press to the visit screen (no client
+  route exists in that group — Round 0 note).
+- Walker Today's recovery banner ("A visit is still in progress", from
+  `recoverActiveVisit`) is kept alongside the hero: the hero needs the server row in
+  the query window, the banner works from the local `active_visit` marker even when the
+  fetch fails — "remove nothing else" per the design. When both render they offer the
+  same Resume.
+- Hero pet names come from the existing `listPetNames` (schedule/report.ts) under a new
+  `['visitPetNames', visitId]` key; empty pet list skips the query.
+- VisitCard's new optional `action` prop renders between the walker line and `children`;
+  every existing call site passes nothing and is pixel-identical.
+- "Up next" with no qualifying visit renders a one-line muted empty state (the design
+  says the hero card is for the next visit; a silent gap read as a bug in testing).
+- Checks: 539 jest (45 suites — 9 new helper tests), typecheck, lint all green. Device
+  pass rides the next checkpoint; OTA pending (PRD-CHECKLIST polish note).

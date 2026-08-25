@@ -4,13 +4,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
+import { useSession } from '@/src/features/auth/session';
 import {
   acceptVisit,
   declineVisit,
   listMyVisits,
   partitionWalkerDay,
+  pickUpNext,
+  restOfDay,
   type Visit,
 } from '@/src/features/schedule/api';
+import { InlineNextAction, UpNextHero } from '@/src/features/schedule/UpNextHero';
 import { VisitCard } from '@/src/features/schedule/VisitCard';
 import { recoverActiveVisit } from '@/src/lib/gps/controller';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
@@ -36,6 +40,7 @@ export default function Today() {
   const t = useTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { userId } = useSession();
   const { businessId } = useActiveBusiness();
   const [error, setError] = useState<string | null>(null);
   // Inline decline form (works on Android too — Alert.prompt is iOS-only).
@@ -98,7 +103,13 @@ export default function Today() {
     onError: (e) => setError(errorText(e)),
   });
 
-  const { offers, today } = partitionWalkerDay(visits.data ?? [], new Date());
+  // Part B: offers keep their own strip; the hero and rest-of-day work the
+  // non-offered remainder (accepted/in_progress) so nothing renders twice.
+  const now = new Date();
+  const { offers } = partitionWalkerDay(visits.data ?? [], now);
+  const nonOffers = (visits.data ?? []).filter((v) => v.status !== 'offered');
+  const hero = pickUpNext(nonOffers, now);
+  const rest = restOfDay(nonOffers, now, hero?.id ?? null);
   const busy = acceptMut.isPending || declineMut.isPending;
 
   return (
@@ -188,17 +199,36 @@ export default function Today() {
         ))
       )}
 
-      <Text style={[t.type.title, { color: t.colors.ink }]}>Today</Text>
+      {/* "Up next" hero — the walker's next accepted/in_progress visit. */}
+      {hero ? (
+        <UpNextHero
+          visit={hero}
+          userId={userId}
+          isOwnerRole={false}
+          businessId={businessId}
+          detailHref={`/visit/${hero.id}` as Href}
+        />
+      ) : !visits.isLoading ? (
+        <>
+          <Text style={[t.type.title, { color: t.colors.ink }]}>Up next</Text>
+          <Text style={{ color: t.colors.inkMuted }}>No upcoming visits.</Text>
+        </>
+      ) : null}
+
+      <Text style={[t.type.title, { color: t.colors.ink }]}>Rest of your day</Text>
       {visits.isLoading ? (
         <Text style={{ color: t.colors.inkMuted }}>Loading…</Text>
-      ) : today.length === 0 ? (
-        <Text style={{ color: t.colors.inkMuted }}>Nothing scheduled today.</Text>
+      ) : rest.length === 0 ? (
+        <Text style={{ color: t.colors.inkMuted }}>Nothing else scheduled today.</Text>
       ) : (
-        today.map((v) => (
+        rest.map((v) => (
           <VisitCard
             key={v.id}
             visit={v}
             onPress={() => router.push(`/visit/${v.id}` as Href)}
+            action={
+              <InlineNextAction visit={v} userId={userId} isOwnerRole={false} businessId={businessId} />
+            }
           />
         ))
       )}

@@ -257,6 +257,71 @@ export function partitionWalkerDay<
   };
 }
 
+// ---- Today hero helpers (Today/navigation redesign, part B) ----
+
+export type UpNextVisit = {
+  id: string;
+  status: string;
+  scheduled_start: string;
+  scheduled_end: string;
+  business_tz: string;
+};
+
+/**
+ * The session user's single "Up next" visit (Today hero): an in_progress visit
+ * always wins (soonest scheduled first — it is running even past its window),
+ * then the soonest accepted that is not already over (scheduled_end > now),
+ * then the soonest such offered. Callers pre-filter to the user's OWN visits
+ * (walkers additionally drop offered — those live in the offers strip).
+ */
+export function pickUpNext<T extends UpNextVisit>(visits: T[], nowUtc: Date): T | null {
+  const byStart = (a: T, b: T) => a.scheduled_start.localeCompare(b.scheduled_start);
+  const live = (v: T) => new Date(v.scheduled_end).getTime() > nowUtc.getTime();
+  const running = visits.filter((v) => v.status === 'in_progress').sort(byStart);
+  if (running.length > 0) return running[0]!;
+  const accepted = visits.filter((v) => v.status === 'accepted' && live(v)).sort(byStart);
+  if (accepted.length > 0) return accepted[0]!;
+  const offered = visits.filter((v) => v.status === 'offered' && live(v)).sort(byStart);
+  return offered[0] ?? null;
+}
+
+/**
+ * "Rest of your day": the user's remaining OWN visits on the current local day
+ * (per-visit business_tz) — accepted/offered/in_progress, not already over
+ * (an in_progress visit stays regardless of its window), the hero excluded,
+ * ascending by start.
+ */
+export function restOfDay<T extends UpNextVisit>(
+  visits: T[],
+  nowUtc: Date,
+  excludeId: string | null,
+): T[] {
+  const active = new Set(['accepted', 'offered', 'in_progress']);
+  return visitsOnLocalDay(visits, nowUtc)
+    .filter(
+      (v) =>
+        v.id !== excludeId &&
+        active.has(v.status) &&
+        (v.status === 'in_progress' || new Date(v.scheduled_end).getTime() > nowUtc.getTime()),
+    )
+    .sort((a, b) => a.scheduled_start.localeCompare(b.scheduled_start));
+}
+
+/**
+ * requires_gps for one service, via the price-free services_public definer
+ * view (readable by any member — the hero Start needs the flag without the
+ * owner-only services table). A missing/deactivated service resolves false.
+ */
+export async function serviceRequiresGps(serviceId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('services_public')
+    .select('id, requires_gps')
+    .eq('id', serviceId)
+    .maybeSingle();
+  if (error) throw error;
+  return !!(data as { requires_gps?: boolean } | null)?.requires_gps;
+}
+
 export type WalkerGroup<T> = { key: string; name: string; visits: T[] };
 
 /**

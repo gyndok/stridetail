@@ -1,4 +1,4 @@
-import { PropsWithChildren } from 'react';
+import { PropsWithChildren, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { visitDayLabel, visitTimeRange, type Visit } from '@/src/features/schedule/api';
@@ -13,6 +13,9 @@ type Props = PropsWithChildren<{
   statusLabel?: string;
   /** Show the local day above the time range (for lists spanning dates). */
   showDay?: boolean;
+  /** Resolved next-action button, rendered inline below the facts (part B
+   * rest-of-day lists). Omitted everywhere else — default unchanged. */
+  action?: ReactNode;
   onPress?: () => void;
 }>;
 
@@ -25,7 +28,7 @@ const POSITIVE_STATUSES = new Set(['accepted', 'completed']);
  * green badge on an accepted/completed status (Round 0).
  * Children render below the facts — action rows, decline forms, etc.
  */
-export function VisitCard({ visit, walkerLine, statusLabel, showDay, onPress, children }: Props) {
+export function VisitCard({ visit, walkerLine, statusLabel, showDay, action, onPress, children }: Props) {
   const t = useTheme();
   const positive = statusLabel != null && POSITIVE_STATUSES.has(visit.status);
   const body = (
@@ -60,6 +63,7 @@ export function VisitCard({ visit, walkerLine, statusLabel, showDay, onPress, ch
         </View>
       ) : null}
       {walkerLine ? <Text style={{ color: t.colors.inkMuted }}>{walkerLine}</Text> : null}
+      {action}
       {children}
     </Card>
   );
