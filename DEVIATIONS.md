@@ -1343,3 +1343,45 @@ built and idle.
 - `expo start --web` screenshot not taken: the rail and grid live behind sign-in and this
   environment holds no web session. The export build (48 static route HTML files emitted)
   stands as the verify; a signed-in desktop pass rides with Task 9 / Checkpoint 4.
+
+## Plan 4, Task 9 — hosted deploy, advisors, smoke, builds (2026-08-24)
+
+- Migrations 0009–0012 applied to hosted `vrxoswukuiaerhwammlh` via MCP `apply_migration`
+  (verbatim file content, name = filename stem). Vault secrets `sms_cron_secret` /
+  `email_cron_secret` seeded per-environment by the guarded migration blocks; both read back
+  and aligned onto the functions with `supabase secrets set SMS_CRON_SECRET=… 
+  EMAIL_CRON_SECRET=…` (worked non-interactively this time — the Plan-3 keychain hang did
+  not recur). RESEND_API_KEY/EMAIL_FROM/TWILIO_* deliberately NOT set (sponsor
+  credentials pending); both senders mark rows `skipped_no_provider` as designed.
+- Functions deployed with the repo's copy pattern (`../_shared/cors.ts` rewritten to a
+  bundled `./cors.ts`; templates.ts / polyline.ts siblings included; test files excluded):
+  `ingest-track`, `send-sms`, `send-email` with verify_jwt ON; `report-public` with
+  verify_jwt OFF (public by design — the 48-hex token is the credential, per its config.toml
+  and file header).
+- **Hosted smoke, 23/23 checks** (SMOKE-prefixed throwaway client/pet/visit in the demo
+  business, deleted afterwards — all execution tables back to 0 rows):
+  - SQL role-impersonated walker (`request.jwt.claims` sub + `set local role authenticated`):
+    `start_visit` → in_progress, arrived+started events, sms+email `visit_started` rows
+    queued; direct `visit_events` insert under RLS with an idempotent `client_uuid` replay
+    (1 row); `finish_visit` → completed, report row + token, `visit_finished` rows queued.
+  - `ingest-track` over HTTPS with the walker's REAL JWT (password sign-in): 2 segments →
+    `{distanceM: 318.9, inserted: 2}` (an acc-60 point correctly dropped); full replay →
+    `inserted: 0`, distance unchanged.
+  - `report-public` with no auth headers: 200; exact top-level keys, business tz, pet/service
+    names, distance, 4-event timeline, 5-point route; leak markers (address, phone, email,
+    price, 'walker', 'private') absent. Unknown + malformed tokens → 404.
+    Owner-impersonated `revoke_report` (audited) → same URL 404.
+  - `send-sms`/`send-email`: wrong secret → 403; correct secret → 200 provider 'none'.
+    **The live per-minute pg_cron beat the manual invocations to the queued rows** (the
+    visit_started pair was already `skipped_no_provider` ~a minute after start_visit, and
+    the finished pair drained the same way) — an unplanned but stronger proof: the whole
+    cron → pg_net → Vault-secret → function chain runs unattended on hosted. Terminal DB
+    state asserted: all 4 rows `skipped_no_provider` with the right `last_error`, report
+    `sms_status = skipped_no_provider`, `sent_at` null.
+- **Advisor sweep (security): zero new findings.** Everything reported is a pre-recorded
+  acceptance: `client_access` deny-all INFO + `services_public` definer-view ERROR (Plan 2
+  Task 8), and the authenticated-executable definer-RPC WARNs (Plan 3 Task 9 rationale:
+  guarded RPCs are the API) — Plan 4's `start_visit`/`finish_visit`/`resend_report`/
+  `revoke_report` are new instances of that same accepted pattern (public/anon revoked,
+  internal walker/owner gates, search_path pinned). No follow-up migration needed.
+- Local checks all green post-deploy: 522 jest, 287 pgTAP (10 files), typecheck, lint.

@@ -70,7 +70,7 @@ Last updated: 2026-08-24
   | 6 | send-sms + notification queue + owner surfacing | [x] | `1ca1e04` |
   | 7 | report-public + web report page + resend/revoke | [x] | `1e83f2a` |
   | 8 | Expo Web rail + week grid | [x] | `136df85` |
-  | 9 | hosted deploy, advisors, builds | [ ] | |
+  | 9 | hosted deploy, advisors, builds | [x] | migrations 9–12 hosted; ingest-track/send-sms/send-email (verify_jwt on) + report-public (off, token-gated) live; SMS_CRON_SECRET/EMAIL_CRON_SECRET set; smoke 23/23 (walk start→track→finish→report 200→revoke 404; live pg_cron drained queue to `skipped_no_provider`); advisors: no new findings; build `7d8cb2dd` |
   | 10 | **Checkpoint 4** — full field run | [ ] | |
 
 ---
@@ -82,9 +82,9 @@ Last updated: 2026-08-24
 3. [~] Clients + pets: instructions, vet info, vaccine docs w/ expiry, secured access info — *owner side complete: clients w/ geocoding, pet profiles + photos, vaccine docs w/ expiry badges, audited access-codes screen (Plan 2 Tasks 4–7); walker read paths + visit-gated reveal in Plan 3*
 4. [x] Per-business service catalog seeded (Plan 1) + owner management UI *(Plan 3 Task 5)*
 5. [~] Scheduling: one-off + weekly series (8-week expansion), assignment offer/accept/decline, availability, time off, conflict-aware picker, needs-attention *(Plan 3; device verification = Checkpoint 3)*
-6. [~] Visit execution: Today, start/finish, background GPS, per-pet timestamped events, multi-pet, private notes — *full walker UI built: detail + gated start (Plan 4 Task 4), field-mode active screen with per-pet events/photos/notes, gated reveal w/ grace fallback, finish w/ private notes, resume banner (Plan 4 Task 5); device verification = Checkpoint 4*
-7. [~] Reports: tokenised public page, SMS on start/finish, retry, owner resend/revoke — *SMS queue + per-minute `send-sms` cron with 1/5/15/60-min retry, provider-abstracted (`skipped_no_provider` until Twilio), owner "not sent" surfacing (Plan 4 Task 6); public page + resend/revoke UI in Task 7*
-8. [~] Offline: day cache + ordered outbox sync — *sync worker + persisted query cache + grace-window reveal helpers done (Plan 4 Task 3); field screens consume them (Tasks 4–5: outbox-first events/finish, per-visit sync badge, offline reveal fallback); airplane-mode device pass = Checkpoint 4*
+6. [~] Visit execution: Today, start/finish, background GPS, per-pet timestamped events, multi-pet, private notes — *full walker UI built: detail + gated start (Plan 4 Task 4), field-mode active screen with per-pet events/photos/notes, gated reveal w/ grace fallback, finish w/ private notes, resume banner (Plan 4 Task 5); hosted pipeline proven end-to-end (Task 9 smoke: start→events→GPS ingest 318.9 m→finish→report row); device verification = Checkpoint 4*
+7. [~] Reports: tokenised public page, SMS on start/finish, retry, owner resend/revoke — *SMS queue + per-minute `send-sms` cron with 1/5/15/60-min retry, provider-abstracted (`skipped_no_provider` until Twilio), owner "not sent" surfacing (Plan 4 Task 6); public page + resend/revoke UI (Task 7); whole pipeline live on hosted (Task 9): per-minute cron drains queue, report-public serves the token 200/404-on-revoke — only actual SMS/email delivery awaits provider credentials*
+8. [~] Offline: day cache + ordered outbox sync — *sync worker + persisted query cache + grace-window reveal helpers done (Plan 4 Task 3); field screens consume them (Tasks 4–5: outbox-first events/finish, per-visit sync badge, offline reveal fallback); airplane-mode device pass = Checkpoint 4; hosted server side (RPCs, RLS insert paths, ingest idempotency by `client_uuid`) verified in Task 9 smoke*
 9. [~] Expo Web owner layout ≥ 900 px: rail nav, week grid — *built (Plan 4 Task 8): left rail via the Tabs navigator's `tabBarPosition: 'left'` + custom tab bar, business-tz week grid with status-colored blocks and an inline offer/reassign + reschedule panel (first `rescheduleVisit` UI); drag-and-drop deferred (recorded follow-up); verified via `expo export --platform web` (48 routes; also fixes the pre-existing web-bundle break via expo-sqlite web stubs) — signed-in browser pass rides with Task 9/Checkpoint 4*
 10. [~] White-label: name/logo/accent everywhere — *theme provider accent override done (Task 2); surfaces pending*
 
@@ -93,7 +93,7 @@ Last updated: 2026-08-24
 - [x] `profiles`, `businesses`, `memberships` (+ `services`) *(Task 6)*
 - [x] `clients`, `client_access` (Vault/pgcrypto — pgsodium deprecated), `pets`, `pet_documents` *(Plan 2 Tasks 1–2)*
 - [x] `services` (Plan 1), `availability_rules`, `time_off`, `visit_series`, `visits` *(Plan 3)*
-- [x] `visit_events`, `visit_tracks`, `visit_reports`, `notifications` (+ `audit_log` since Plan 2) *(Plan 4 Task 1)*
+- [x] `visit_events`, `visit_tracks`, `visit_reports`, `notifications` (+ `audit_log` since Plan 2) *(Plan 4 Task 1; on hosted since Task 9)*
 - [x] Local SQLite: `outbox`, `track_points`, `active_visit` *(Task 3/5)*
 
 ## Spec §6 — Security
@@ -101,7 +101,7 @@ Last updated: 2026-08-24
 - [x] RLS on every table; no service-role use from the app *(Task 6 — 4 tables; holds for later plans)*
 - [x] Walker visibility limited to own/offered visits; prices hidden via column grants + `services_public`; clients/pets visible only via visits *(Plan 3)*
 - [~] `client_access` no select policy; `reveal_access` / `reveal_access_owner` audited — *no select policy + zero grants, `reveal_access_owner` + `set_client_access` audited (Plan 2 Task 2); walker-side `reveal_access(visit_id)` in Plan 3*
-- [x] `report-public` returns report-safe fields only — *explicit allow-list payload (business/brand/logo, pet names, service, times, duration, distance, route, timeline); unknown/revoked/malformed tokens all 404; leak-check E2E asserts no address, phone, email, price, walker name, or private notes (Plan 4 Task 7)*
+- [x] `report-public` returns report-safe fields only — *explicit allow-list payload (business/brand/logo, pet names, service, times, duration, distance, route, timeline); unknown/revoked/malformed tokens all 404; leak-check E2E asserts no address, phone, email, price, walker name, or private notes (Plan 4 Task 7); re-proven against the HOSTED function in Task 9 (real token 200, leak markers absent, revoked → 404)*
 - [x] Auth tokens in `expo-secure-store`, auto-refresh on foreground *(Task 7)*
 - [x] Storage bucket `media`, tenant-scoped paths, signed URLs — *bucket + member-read/owner-write policies with safe path parse (Plan 2 Task 3); signed URLs for pet photos + documents in app code (Plan 2 Tasks 6–7)*
 - [~] Audit log for status/assignment/reveal/resend/revoke — *reveal/set audited server-side (Plan 2 Task 2) and surfaced in the access UI (Task 7); status/assignment/resend/revoke in Plans 3–4*
@@ -113,7 +113,7 @@ Last updated: 2026-08-24
 - [x] Outbox: local-first writes, in-order sync worker, idempotent by `client_uuid` — *ordered drain with stop-on-retryable + backoff, permanent 4xx parked as `error`, photo-then-event sequencing, already-done RPC conflicts = success; kicks on foreground/append/segment-roll + 30 s active-visit interval (Plan 4 Task 3)*
 - [x] GPS task: 5 s / 10 m, High accuracy, SQLite `track_points`, 60 s segment roll-up *(Task 5)*
 - [x] Recovery: re-register task + restore active visit on relaunch *(Task 5 — verified on device, Checkpoint 1)*
-- [ ] Notification retry with backoff (1/5/15/60 min, 6 attempts) + "Report not sent" badge
+- [x] Notification retry with backoff (1/5/15/60 min, 6 attempts) + "Report not sent" badge — *sender-owned backoff + terminal states (Plan 4 Task 6), owner needs-attention line + per-visit badges; per-minute cron live on hosted (Task 9); real retries only exercisable once a provider is configured*
 
 ## Spec §9 — UI
 
