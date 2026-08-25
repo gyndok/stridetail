@@ -57,6 +57,7 @@ export function TimeField({ label, value, onChange }: Props) {
           value={pickerValue}
           mode="time"
           display="spinner"
+          themeVariant="light"
           onValueChange={(_event: DateTimePickerChangeEvent, date: Date) => onChange(dateToHhmm(date))}
           onDismiss={() => setOpen(false)}
         />

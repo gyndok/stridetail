@@ -76,6 +76,7 @@ export function DateField({ label, value, onChange, placeholder, minimumDate, on
           value={pickerValue}
           mode="date"
           display="inline"
+          themeVariant="light"
           minimumDate={minimumDate}
           accentColor={t.colors.primary}
           onValueChange={onPick}
