@@ -5,7 +5,7 @@ Living status of Slice 1 "Operate" against the spec
 same commit that completes a task. Legend: `[x]` done · `[ ]` not started · `[~]` in progress ·
 `[!]` blocked.
 
-Last updated: 2026-08-24
+Last updated: 2026-08-25
 
 ---
 
@@ -192,7 +192,8 @@ Last updated: 2026-08-24
 ## Polish backlog
 
 - [ ] Active-walk screen visual polish (sponsor, 2026-08-24) — fold into Round 1 with Alexandra
-- [ ] Walker-view banner build not yet shipped (committed `6cc2d28`; EAS free-tier builds exhausted until Sep 1 or Starter upgrade)
+- [x] Walker-view banner — superseded by the single-mode Today redesign (`e10e43a` deletes it; it shipped in build `2b6561af` only)
+- [ ] Today redesign (hero + single mode) — OTA pending
 - [ ] EAS Update (OTA) setup — first item after build quota returns; JS-only changes should not cost native builds
 - [ ] Drag-and-drop reassign on the web week grid (click-reassign shipped)
 
