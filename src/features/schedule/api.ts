@@ -358,6 +358,32 @@ export function needsAttention(v: { status: string; decline_reason: string | nul
   return v.status === 'unassigned' || v.decline_reason != null;
 }
 
+/** Grace before an unstarted visit counts as missed (Plan 6 Task 4). */
+export const MISSED_GRACE_MS = 3_600_000;
+
+/**
+ * Missed visits (backlog item 2026-08-25): accepted or offered rows whose
+ * scheduled_end passed more than an hour before now and were never started —
+ * they silently vanish from the hero/rest-of-day filters otherwise. Both
+ * sides of the comparison are UTC instants, so the per-visit business_tz is
+ * irrelevant to the cutoff. in_progress is running (however late), and
+ * completed/cancelled/unassigned are not "missed" — unassigned already has
+ * its own needs-attention line. Ascending by start (oldest first).
+ */
+export function missedVisits<T extends { status: string; scheduled_start: string; scheduled_end: string }>(
+  visits: T[],
+  nowUtc: Date,
+): T[] {
+  const cutoff = nowUtc.getTime() - MISSED_GRACE_MS;
+  return visits
+    .filter(
+      (v) =>
+        (v.status === 'accepted' || v.status === 'offered') &&
+        new Date(v.scheduled_end).getTime() < cutoff,
+    )
+    .sort((a, b) => a.scheduled_start.localeCompare(b.scheduled_start));
+}
+
 // ---- Notification delivery surfacing (Plan 4 Task 6; email-only since the
 // sms channel went dormant — migration 0013) ----
 

@@ -7,6 +7,7 @@ import { useActiveBusiness } from '@/src/features/business/active';
 import {
   listProblemNotifications,
   listVisits,
+  missedVisits,
   notificationIssueLabel,
   pickUpNext,
   restOfDay,
@@ -69,15 +70,19 @@ export default function Today() {
   useRefetchOnFocus(visits.refetch);
 
   const all = visits.data ?? [];
+  const now = new Date();
   const unassignedCount = all.filter((v) => v.status === 'unassigned').length;
   const declined = all.filter((v) => v.decline_reason != null && v.status === 'unassigned');
+  // Missed = accepted/offered whose window passed > 1 h ago without a start
+  // (Plan 6 Task 4 backlog item); bounded by the query's 26 h lookback.
+  const missed = missedVisits(all, now);
   const notifLabel = notificationIssueLabel(notifications.data ?? []);
-  const attention = unassignedCount > 0 || declined.length > 0 || !!notifLabel;
+  const attention =
+    unassignedCount > 0 || declined.length > 0 || missed.length > 0 || !!notifLabel;
 
   // Hero + rest-of-day are the owner's OWN visits: the owner query is the
   // business-wide listVisits, filtered client-side to the session user.
   const own = userId ? all.filter((v) => v.walker_id === userId) : [];
-  const now = new Date();
   const hero = pickUpNext(own, now);
   const rest = restOfDay(own, now, hero?.id ?? null);
 
@@ -96,6 +101,17 @@ export default function Today() {
               <Text style={{ color: t.colors.ink, fontWeight: '700' }}>
                 {unassignedCount} unassigned visit{unassignedCount === 1 ? '' : 's'} in the next 14 days
               </Text>
+            ) : null}
+            {missed.length > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/schedule' as Href)}
+                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+              >
+                <Text style={{ color: t.colors.danger, fontWeight: '700' }}>
+                  {missed.length} visit{missed.length === 1 ? '' : 's'} missed — review in Schedule
+                </Text>
+              </Pressable>
             ) : null}
             {notifLabel ? <Text style={{ color: t.colors.warning, fontWeight: '700' }}>{notifLabel}</Text> : null}
             {declined.map((v) => (

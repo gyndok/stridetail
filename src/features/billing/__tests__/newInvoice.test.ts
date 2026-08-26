@@ -9,11 +9,6 @@ import {
   type UninvoicedVisit,
 } from '../newInvoice';
 
-// newInvoice.ts imports priceSnapshotCents from schedule/api, which pulls the
-// supabase client module — stub it (jest hoists this above the imports) so
-// the pure helpers test without env vars.
-jest.mock('@/src/lib/supabase', () => ({ supabase: {} }));
-
 const CHI = 'America/Chicago';
 
 const visit = (over: Partial<UninvoicedVisit>): UninvoicedVisit => ({
@@ -22,7 +17,7 @@ const visit = (over: Partial<UninvoicedVisit>): UninvoicedVisit => ({
   pet_ids: ['p1'],
   scheduled_start: '2026-08-25T14:00:00Z',
   business_tz: CHI,
-  service: { name: 'Walk', base_price_cents: 2500, extra_pet_price_cents: 500 },
+  service: { name: 'Walk' },
   ...over,
 });
 
@@ -71,25 +66,25 @@ describe('filterByLocalDateRange', () => {
   });
 });
 
-// ---- eligibleVisitLine: mirrors the RPC's line description + price snapshot math ----
+// ---- eligibleVisitLine: RPC description mirror + TRUE snapshot amount ----
+// Amounts now come from the uninvoiced_visit_amounts RPC (Plan 6 Task 4) —
+// the line passes the stored snapshot through, never recomputes from prices.
 
 describe('eligibleVisitLine', () => {
   test("description is 'Service — Dy, Mon D' in the business tz (RPC to_char format)", () => {
-    expect(eligibleVisitLine(visit({})).description).toBe('Walk — Tue, Aug 25');
+    expect(eligibleVisitLine(visit({}), 2500).description).toBe('Walk — Tue, Aug 25');
   });
 
-  test('amount is base price for one pet', () => {
-    expect(eligibleVisitLine(visit({})).amountCents).toBe(2500);
+  test('amount is the RPC snapshot verbatim — pet count and service prices are irrelevant', () => {
+    // 1234 matches no price math on this fixture: a recompute would differ.
+    expect(eligibleVisitLine(visit({}), 1234).amountCents).toBe(1234);
+    expect(eligibleVisitLine(visit({ pet_ids: ['a', 'b', 'c'] }), 1234).amountCents).toBe(1234);
   });
 
-  test('amount adds extra-pet price per pet beyond the first (priceSnapshotCents)', () => {
-    expect(eligibleVisitLine(visit({ pet_ids: ['a', 'b', 'c'] })).amountCents).toBe(3500);
-  });
-
-  test('missing service embed falls back to Visit / 0 (display-only estimate)', () => {
-    const line = eligibleVisitLine(visit({ service: null }));
+  test('missing service embed falls back to Visit for the description only', () => {
+    const line = eligibleVisitLine(visit({ service: null }), 700);
     expect(line.description).toBe('Visit — Tue, Aug 25');
-    expect(line.amountCents).toBe(0);
+    expect(line.amountCents).toBe(700);
   });
 });
 

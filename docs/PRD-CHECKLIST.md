@@ -200,7 +200,7 @@ Last updated: 2026-08-25
 - [ ] EAS Update (OTA) setup — first item after build quota returns; JS-only changes should not cost native builds
 - [ ] Drag-and-drop reassign on the web week grid (click-reassign shipped)
 
-- [ ] Missed visits: accepted/offered visits whose window passed without a start currently vanish from Today — surface in needs-attention ("missed yesterday") — noticed 2026-08-25
+- [x] Missed visits: accepted/offered visits whose window passed without a start currently vanish from Today — surface in needs-attention ("missed yesterday") — noticed 2026-08-25; closed by Plan 6 Task 4 (`missedVisits` helper + owner Today "N visits missed — review in Schedule" line)
 
 ## Slice 2 — Bill (spec 2026-08-25; Plans 5–6)
 

@@ -2093,3 +2093,46 @@ deployed-but-dormant for a possible toll-free future.
 - Checks: 704 jest (53 suites, +9 venmo), typecheck, lint, deno polyline 8/8
   (copy untouched) all green; migrations untouched (no db:reset/db:test
   churn beyond the E2E cleanup reset).
+
+## Plan 6, Task 4 — resend email, true preview amounts, missed visits (2026-08-25)
+
+- **`resend_invoice_email` RAISES for a client with no email** (`client has no
+  email on file`, the `resend_report` wording) instead of inheriting
+  `queue_client_email`'s silent skip: send_invoice's skip covers the automatic
+  path, but an explicit resend button that silently does nothing would read as
+  delivered. Draft/void reject via the status check (`invoice is not sent
+  (status: %)`, record_payment wording); a revoked link raises before any
+  queueing; a `public_token is null` belt-and-braces raise covers direct-write
+  slips (a sent invoice always has one via the RPCs). The queued payload is
+  byte-shaped like send_invoice's (`{invoiceId, invoiceToken}`) with the
+  EXISTING token — nothing can rotate a live link, closing the Plan 5 Task 4
+  no-resend deviation. Audit `invoice.resend_email` carries the number.
+- **`uninvoiced_visit_amounts` mirrors create_invoice's eligibility verbatim**
+  (completed + NOT EXISTS in invoice_items, ordered by scheduled_start) and
+  returns the STORED `price_cents_snapshot` — pinned in pgTAP with snapshots
+  (1234/700) that no math on the current service price (2500) can produce, so
+  a recompute regression fails loudly. Owner-guarded stable definer like
+  invoice_totals; grants revoke public/anon, grant authenticated.
+- **The new-invoice preview now shows true amounts:** `UNINVOICED_VISIT_COLUMNS`'
+  services embed slims to `service:services(name)` (descriptions only — the
+  price columns left with the recompute path), `eligibleVisitLine(v,
+  amountCents)` passes the RPC snapshot through, and `depositPreview` consumes
+  the true subtotal. The "Estimated total" row is plain "Total" and the
+  estimate caveat is gone; a line whose amount has not arrived yet renders "…"
+  rather than a lying $0.00. `priceSnapshotCents` keeps its one remaining
+  consumer (schedule/new.tsx stamping the snapshot at creation).
+- **Resend button** renders for sent|paid with a live link (`shareable`
+  already excludes revoked/void) behind a confirm Alert that says the link
+  stays the same; server errors (e.g. no email on file) surface in the
+  screen's error line.
+- **`missedVisits` compares UTC instants only** (`scheduled_end` < now − 1 h):
+  both sides are instants, so the per-visit `business_tz` is irrelevant to the
+  cutoff (recorded per the task). accepted|offered only — in_progress is
+  running however late, completed/cancelled are terminal, and unassigned
+  already has its own needs-attention line. The owner Today line
+  ("N visit(s) missed — review in Schedule", danger tone, pushes /schedule)
+  is bounded by the Today query's 26 h lookback: a visit missed further back
+  ages out of the strip, matching the notification strip's history-not-
+  action-items precedent.
+- Checks: 710 jest (53 suites), 552 pgTAP (14 files, +27 in 014), typecheck,
+  lint all green.

@@ -8,6 +8,7 @@ import {
   createInvoice,
   listHeldDeposits,
   listUninvoicedVisits,
+  uninvoicedVisitAmounts,
 } from '@/src/features/billing/api';
 import { formatCents, sumCents } from '@/src/features/billing/money';
 import {
@@ -34,6 +35,10 @@ import { useTheme } from '@/src/ui/theme';
  * visits render read-only and a from/to DateField pair (blank = no limit,
  * i.e. spanning all uninvoiced) filters the preview live and feeds the RPC,
  * so the preview and the created draft always agree.
+ *
+ * Amounts are TRUE snapshots via the uninvoiced_visit_amounts definer RPC
+ * (Plan 6 Task 4) — the old current-price estimate and its "estimated"
+ * caveat are gone; preview totals now match the draft to the cent.
  */
 
 type ManualRow = { key: number; description: string; amountText: string };
@@ -63,6 +68,13 @@ export default function NewInvoice() {
     enabled: !!businessId && !!clientId,
     queryFn: () => listUninvoicedVisits(businessId!, clientId!),
   });
+  // True stored snapshots per visit (definer RPC — the table's price column
+  // grant hides them from every client role).
+  const amounts = useQuery({
+    queryKey: ['uninvoicedAmounts', businessId, clientId],
+    enabled: !!businessId && !!clientId,
+    queryFn: () => uninvoicedVisitAmounts(clientId!),
+  });
   const deposits = useQuery({
     queryKey: ['deposits', businessId, 'held'],
     enabled: !!businessId,
@@ -70,13 +82,15 @@ export default function NewInvoice() {
   });
 
   // Preview mirrors the RPC exactly (newInvoice.ts helpers): range-filtered
-  // visit lines, then the held queue consumed stop-at-first-misfit.
+  // visit lines at their true snapshots, then the held queue consumed
+  // stop-at-first-misfit against the true subtotal.
   const eligible = filterByLocalDateRange(
     visits.data ?? [],
     fromText.trim() || null,
     toText.trim() || null,
   );
-  const lines = eligible.map(eligibleVisitLine);
+  const amountByVisit = new Map((amounts.data ?? []).map((a) => [a.visit_id, a.amount_cents]));
+  const lines = eligible.map((v) => eligibleVisitLine(v, amountByVisit.get(v.id) ?? 0));
   const subtotal = lines.reduce((sum, l) => sum + l.amountCents, 0);
   const clientHeld = (deposits.data ?? []).filter((d) => d.client_id === clientId);
   const preview = depositPreview(clientHeld, subtotal);
@@ -84,7 +98,7 @@ export default function NewInvoice() {
   const manualCents = manual
     .map((row) => parseSignedDollars(row.amountText))
     .filter((c): c is number => c !== null);
-  const estimatedTotal = subtotal - preview.appliedCents + sumCents(
+  const total = subtotal - preview.appliedCents + sumCents(
     manualCents.map((amount_cents) => ({ amount_cents })),
   );
 
@@ -163,9 +177,12 @@ export default function NewInvoice() {
             placeholder="No limit"
             onClear={() => setToText('')}
           />
-          {visits.error ? (
+          {visits.error || amounts.error ? (
             <Text style={{ color: t.colors.danger }}>
-              {visits.error instanceof Error ? visits.error.message : String(visits.error)}
+              {[visits.error, amounts.error]
+                .filter((e): e is Error => e instanceof Error)
+                .map((e) => e.message)
+                .join(' · ') || 'Could not load visits'}
             </Text>
           ) : null}
           <Card style={{ gap: t.space.sm }}>
@@ -173,7 +190,7 @@ export default function NewInvoice() {
               <View key={v.id} style={rowBetween}>
                 <Text style={{ color: t.colors.ink, flexShrink: 1 }}>{lines[i]!.description}</Text>
                 <Text style={{ color: t.colors.ink, fontWeight: '700' }}>
-                  {formatCents(lines[i]!.amountCents)}
+                  {amountByVisit.has(v.id) ? formatCents(lines[i]!.amountCents) : '…'}
                 </Text>
               </View>
             ))}
@@ -182,7 +199,9 @@ export default function NewInvoice() {
                 No un-invoiced completed visits in this range.
               </Text>
             ) : null}
-            {visits.isPending ? <Text style={{ color: t.colors.inkMuted }}>Loading…</Text> : null}
+            {visits.isPending || amounts.isPending ? (
+              <Text style={{ color: t.colors.inkMuted }}>Loading…</Text>
+            ) : null}
           </Card>
 
           {clientHeld.length > 0 ? (
@@ -256,17 +275,11 @@ export default function NewInvoice() {
               <Text style={{ color: t.colors.ink }}>{formatCents(-preview.appliedCents)}</Text>
             </View>
             <View style={rowBetween}>
+              <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>Total</Text>
               <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>
-                Estimated total
-              </Text>
-              <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>
-                {formatCents(estimatedTotal)}
+                {formatCents(total)}
               </Text>
             </View>
-            <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
-              Visit amounts are estimated from current service prices; the draft uses each
-              visit’s price as booked.
-            </Text>
           </Card>
         </>
       ) : null}

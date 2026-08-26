@@ -7,6 +7,7 @@ import {
   getInvoice,
   recordPayment,
   removeInvoiceItem,
+  resendInvoiceEmail,
   sendInvoice,
   voidInvoice,
   type InvoiceDetail,
@@ -41,10 +42,10 @@ import type { PaymentMethod } from '@/src/features/billing/types';
 /**
  * Invoice detail (Plan 5 Task 4): lines, totals, payments, and the status-
  * driven actions — Send (draft), Record payment (sent), Void (draft|sent),
- * Share link / device-SMS (sent|paid with a live token). Resending the email
- * on an already-sent invoice has NO server path (send_invoice is drafts-only
- * so a re-send cannot rotate the live token — Task 2 rule); v1 re-notifies
- * via Share/SMS instead (recorded; Plan 6 polish).
+ * Share link / device-SMS / Resend email (sent|paid with a live token).
+ * Resend rides the Plan 6 Task 4 resend_invoice_email RPC, which re-queues
+ * the invoice_ready email with the EXISTING token (send_invoice stays
+ * drafts-only so nothing can rotate a live link).
  */
 
 function errorText(e: unknown): string {
@@ -107,6 +108,14 @@ export default function InvoiceDetailScreen() {
     onError: fail,
   });
   const voidMut = useMutation({ mutationFn: () => voidInvoice(id!), onSuccess: refresh, onError: fail });
+  const resendMut = useMutation({
+    mutationFn: () => resendInvoiceEmail(id!),
+    onSuccess: () => {
+      setError(null);
+      Alert.alert('Email queued', 'The client will get the invoice link again by email.');
+    },
+    onError: fail,
+  });
   const payMut = useMutation({
     mutationFn: (args: { cents: number }) =>
       recordPayment(id!, method, args.cents, receivedText, memoText.trim() || null),
@@ -163,6 +172,12 @@ export default function InvoiceDetailScreen() {
         { text: 'Void', style: 'destructive', onPress: () => voidMut.mutate() },
       ],
     );
+  }
+  function confirmResend() {
+    Alert.alert('Resend email', 'Email the client the invoice link again? The link stays the same.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Resend', onPress: () => resendMut.mutate() },
+    ]);
   }
   function submitPayment() {
     setError(null);
@@ -311,6 +326,14 @@ export default function InvoiceDetailScreen() {
 
       {shareable && link ? (
         <>
+          {inv.status === 'sent' || inv.status === 'paid' ? (
+            <Button
+              title="Resend email"
+              variant="secondary"
+              onPress={confirmResend}
+              loading={resendMut.isPending}
+            />
+          ) : null}
           <Button
             title="Share link"
             variant="secondary"

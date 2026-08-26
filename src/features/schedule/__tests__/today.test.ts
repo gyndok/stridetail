@@ -5,6 +5,7 @@ import {
   groupTodayByWalker,
   joinServices,
   listMyVisits,
+  missedVisits,
   partitionWalkerDay,
   pickUpNext,
   restOfDay,
@@ -262,6 +263,43 @@ test('restOfDay: today-local-day accepted/offered/in_progress, hero excluded, ov
 test('restOfDay: null excludeId keeps everything that qualifies', () => {
   const rows = [uv('a', 'accepted', '2026-09-02T03:00:00Z')];
   expect(restOfDay(rows, NOW, null).map((v) => v.id)).toEqual(['a']);
+});
+
+// ---- missedVisits (Plan 6 Task 4 — backlog item 2026-08-25) ----
+// accepted|offered whose scheduled_end passed more than 1 h before now,
+// compared in UTC (both sides are instants — no per-visit tz math needed).
+
+function mv(id: string, status: string, endMinAgo: number) {
+  const end = new Date(NOW.getTime() - endMinAgo * 60_000).toISOString();
+  const start = new Date(NOW.getTime() - (endMinAgo + 30) * 60_000).toISOString();
+  return { id, status, scheduled_start: start, scheduled_end: end, business_tz: CHI };
+}
+
+test('missedVisits: ended 61 min ago is missed, 58 min ago is not (1 h grace)', () => {
+  expect(missedVisits([mv('recent', 'accepted', 58)], NOW)).toEqual([]);
+  expect(missedVisits([mv('stale', 'accepted', 61)], NOW).map((v) => v.id)).toEqual(['stale']);
+});
+
+test('missedVisits: offered counts too; ascending by start', () => {
+  const out = missedVisits(
+    [mv('acc-old', 'accepted', 300), mv('off-older', 'offered', 400)],
+    NOW,
+  );
+  expect(out.map((v) => v.id)).toEqual(['off-older', 'acc-old']);
+});
+
+test('missedVisits: in_progress, completed, cancelled, unassigned are never missed', () => {
+  const rows = [
+    mv('running', 'in_progress', 300),
+    mv('done', 'completed', 300),
+    mv('gone', 'cancelled', 300),
+    mv('open', 'unassigned', 300),
+  ];
+  expect(missedVisits(rows, NOW)).toEqual([]);
+});
+
+test('missedVisits: a visit still inside (or before) its window is never missed', () => {
+  expect(missedVisits([mv('future', 'accepted', -120)], NOW)).toEqual([]);
 });
 
 // ---- serviceRequiresGps (hero Start needs the flag; price-free view) ----

@@ -9,21 +9,20 @@
 
 import { formatInTimeZone } from 'date-fns-tz';
 
-import { priceSnapshotCents } from '@/src/features/schedule/api';
 import { dollarsStringToCents } from '@/src/features/services/form';
 import { INVOICE_BASE_URL } from '@/src/lib/brand';
 
-/** Shape returned by listUninvoicedVisits (api.ts) — service prices ride the
- * owner-readable services embed; visits.price_cents_snapshot has no client
- * select grant, so the preview RE-COMPUTES the amount the same way the
- * snapshot was stamped (priceSnapshotCents). */
+/** Shape returned by listUninvoicedVisits (api.ts) — the services embed
+ * carries the NAME only (descriptions). Amounts come from the
+ * uninvoiced_visit_amounts definer RPC (Plan 6 Task 4): the true stored
+ * price_cents_snapshot, which the table's column grant hides from clients. */
 export type UninvoicedVisit = {
   id: string;
   client_id: string;
   pet_ids: string[];
   scheduled_start: string;
   business_tz: string;
-  service: { name: string; base_price_cents: number; extra_pet_price_cents: number } | null;
+  service: { name: string } | null;
 };
 
 /**
@@ -55,17 +54,16 @@ export function filterByLocalDateRange<T extends { scheduled_start: string; busi
 
 /**
  * Preview line for one eligible visit. Description mirrors the RPC's
- * `s.name || ' — ' || to_char(..., 'Dy, Mon FMDD')`; the amount re-derives
- * the price snapshot from the service's current prices (see UninvoicedVisit
- * note — a display-only estimate; the RPC writes the stored snapshot).
+ * `s.name || ' — ' || to_char(..., 'Dy, Mon FMDD')`; the amount is the TRUE
+ * stored snapshot handed in from uninvoiced_visit_amounts — never recomputed
+ * from current service prices, so the preview always matches the draft.
  */
-export function eligibleVisitLine(v: UninvoicedVisit): {
-  description: string;
-  amountCents: number;
-} {
+export function eligibleVisitLine(
+  v: UninvoicedVisit,
+  amountCents: number,
+): { description: string; amountCents: number } {
   const day = formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'EEE, MMM d');
   const name = v.service?.name ?? 'Visit';
-  const amountCents = v.service ? priceSnapshotCents(v.service, v.pet_ids.length) : 0;
   return { description: `${name} — ${day}`, amountCents };
 }
 

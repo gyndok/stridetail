@@ -132,15 +132,14 @@ export function groupHeldDeposits(deposits: HeldDeposit[]): DepositGroup[] {
 // ---- New-invoice flow reads (Task 4) ----
 
 /**
- * Named columns for the new-invoice preview. Price columns ride the SERVICES
- * embed (the owner select policy exposes full service rows, prices included —
- * Plan 3 Task 5 precedent; services_public exists for walkers and this is an
- * owner-only screen). visits.price_cents_snapshot has NO client select grant,
- * so the preview re-computes the amount via priceSnapshotCents instead.
+ * Named columns for the new-invoice preview. The services embed carries the
+ * NAME only (line descriptions): visits.price_cents_snapshot has NO client
+ * select grant, and since Plan 6 Task 4 the TRUE amounts come from the
+ * uninvoiced_visit_amounts definer RPC instead of a current-price recompute.
  */
 export const UNINVOICED_VISIT_COLUMNS =
   'id, business_id, client_id, pet_ids, scheduled_start, business_tz, status, ' +
-  'service:services(name, base_price_cents, extra_pet_price_cents)';
+  'service:services(name)';
 
 export type UninvoicedVisitRow = {
   id: string;
@@ -150,7 +149,7 @@ export type UninvoicedVisitRow = {
   scheduled_start: string;
   business_tz: string;
   status: string;
-  service: { name: string; base_price_cents: number; extra_pet_price_cents: number } | null;
+  service: { name: string } | null;
 };
 
 /**
@@ -246,6 +245,30 @@ export async function removeInvoiceItem(itemId: string): Promise<void> {
 /** draft -> sent: mints the public token and queues the invoice_ready email. */
 export async function sendInvoice(invoiceId: string): Promise<void> {
   await rpc('send_invoice', { p_invoice: invoiceId });
+}
+
+/**
+ * Re-queue the invoice_ready email for a SENT or PAID invoice with the
+ * existing token (never rotated — send_invoice stays drafts-only). The RPC
+ * raises when the invoice is draft/void, the link is revoked, or the client
+ * has no email on file (an explicit resend must not silently no-op).
+ */
+export async function resendInvoiceEmail(invoiceId: string): Promise<void> {
+  await rpc('resend_invoice_email', { p_invoice: invoiceId });
+}
+
+export type UninvoicedAmount = { visit_id: string; amount_cents: number };
+
+/**
+ * True price snapshots for the client's completed un-invoiced visits (the
+ * same eligibility as create_invoice), via the owner-guarded definer RPC —
+ * the price column grant hides the snapshot from every client role.
+ */
+export async function uninvoicedVisitAmounts(clientId: string): Promise<UninvoicedAmount[]> {
+  const data = await rpc<UninvoicedAmount[] | null>('uninvoiced_visit_amounts', {
+    p_client: clientId,
+  });
+  return data ?? [];
 }
 
 export async function recordPayment(

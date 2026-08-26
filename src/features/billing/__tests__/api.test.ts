@@ -15,8 +15,10 @@ import {
   recordPayment,
   refundDeposit,
   removeInvoiceItem,
+  resendInvoiceEmail,
   sendInvoice,
   UNINVOICED_VISIT_COLUMNS,
+  uninvoicedVisitAmounts,
   voidInvoice,
   type HeldDeposit,
 } from '../api';
@@ -78,13 +80,12 @@ test('no billing column list contains a *', () => {
   expect(UNINVOICED_VISIT_COLUMNS).not.toContain('*');
 });
 
-// The visits price column grant means the snapshot is NOT client-readable;
-// the preview columns must carry service prices instead and never the snapshot.
-test('uninvoiced-visit columns carry service prices, never price_cents_snapshot', () => {
-  expect(UNINVOICED_VISIT_COLUMNS).not.toContain('price_cents_snapshot');
-  expect(UNINVOICED_VISIT_COLUMNS).toContain(
-    'service:services(name, base_price_cents, extra_pet_price_cents)',
-  );
+// The visits price column grant means the snapshot is NOT readable from the
+// table; true amounts come from the uninvoiced_visit_amounts RPC (Plan 6
+// Task 4), so the row columns carry the service NAME only — no price at all.
+test('uninvoiced-visit columns carry the service name only, never any price', () => {
+  expect(UNINVOICED_VISIT_COLUMNS).not.toContain('price');
+  expect(UNINVOICED_VISIT_COLUMNS).toContain('service:services(name)');
 });
 
 describe('listInvoices', () => {
@@ -279,13 +280,34 @@ describe('rpc wrappers', () => {
     ]);
   });
 
-  test('sendInvoice / voidInvoice', async () => {
+  test('sendInvoice / voidInvoice / resendInvoiceEmail', async () => {
     await sendInvoice('inv-1');
     await voidInvoice('inv-1');
+    await resendInvoiceEmail('inv-1');
     expect(mockRpcLog).toEqual([
       { fn: 'send_invoice', args: { p_invoice: 'inv-1' } },
       { fn: 'void_invoice', args: { p_invoice: 'inv-1' } },
+      { fn: 'resend_invoice_email', args: { p_invoice: 'inv-1' } },
     ]);
+  });
+
+  test('uninvoicedVisitAmounts calls the definer RPC and returns its rows', async () => {
+    mockRpcResult = { data: [{ visit_id: 'v1', amount_cents: 1234 }], error: null };
+    const rows = await uninvoicedVisitAmounts('client-1');
+    expect(mockRpcLog).toEqual([
+      { fn: 'uninvoiced_visit_amounts', args: { p_client: 'client-1' } },
+    ]);
+    expect(rows).toEqual([{ visit_id: 'v1', amount_cents: 1234 }]);
+  });
+
+  test('uninvoicedVisitAmounts coerces a null result to an empty list', async () => {
+    mockRpcResult = { data: null, error: null };
+    await expect(uninvoicedVisitAmounts('client-1')).resolves.toEqual([]);
+  });
+
+  test('resendInvoiceEmail errors throw', async () => {
+    mockRpcResult = { data: null, error: new Error('client has no email on file') };
+    await expect(resendInvoiceEmail('inv-1')).rejects.toThrow('client has no email on file');
   });
 
   test('recordPayment defaults the memo to null', async () => {
