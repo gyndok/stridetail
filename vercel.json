@@ -4,8 +4,8 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/invoice/:token", "destination": "/invoice/[token].html" },
-    { "source": "/report/:token", "destination": "/report/[token].html" }
+    { "source": "/invoice/:token", "destination": "/invoice/[token]" },
+    { "source": "/report/:token", "destination": "/report/[token]" }
   ],
   "headers": [
     {
