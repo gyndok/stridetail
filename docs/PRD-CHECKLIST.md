@@ -244,7 +244,7 @@ Last updated: 2026-08-25
 - Parked for Alexandra: Stripe per-tenant (true auto-detected payment + tips), payout % model, packages, tax
 - Open (validate with Alexandra): payout model (% assumption), packages/bundles, tax lines, invoice numbering scheme
 
-- [ ] **DMARC record for stridetail.app** (TXT `_dmarc` = `v=DMARC1; p=none;` in Squarespace) — first Yahoo invoice email landed in spam 2026-08-26; Yahoo/Gmail sender rules expect DMARC. Do before real clients receive invoices. Domain warm-up also helps (mark early sends Not Spam)
+- [x] **DMARC + parked-preset fix, 2026-08-26**: root cause of Yahoo spam-foldering was Squarespace's parked-domain preset (`@ v=spf1 -all` + `_dmarc p=reject adkim=s aspf=s` + empty DKIM) shipped with the domain; replaced via Replace Preset with `_dmarc v=DMARC1; p=none`. Verified at authoritative NS; next invoice email delivered to the Yahoo INBOX first try
 
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 
