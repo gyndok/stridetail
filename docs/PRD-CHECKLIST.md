@@ -222,7 +222,9 @@ Last updated: 2026-08-25
   (walker payouts) is **schema-only** (tables + `payout_percent` deployed; finalize
   RPCs/UI = Plan 6); item 6's payouts section likewise waits for Plan 6. Checkpoint 6
   script appended to `checkpoints.md` (PENDING — device run with Plan 6).
-- [~] Plan 6 — payouts + auto-invoice flow + Venmo pay link (`docs/superpowers/plans/2026-08-25-stridetail-plan6-payouts-autoflow.md`); executing
+- [x] Plan 6 — payouts + auto-invoice flow + Venmo pay link — **COMPLETE 2026-08-25**
+  (all 5 tasks; pending the Checkpoint 6 device run on the new build)
+  (`docs/superpowers/plans/2026-08-25-stridetail-plan6-payouts-autoflow.md`)
 
   | # | Plan 6 task | Status | Commit |
   |---|-------------|--------|--------|
@@ -230,7 +232,14 @@ Last updated: 2026-08-25
   | 2 | payouts UI + billing settings | [x] | `875b3c4` |
   | 3 | combined report+invoice page + Venmo/tip link | [x] | `158e32d` |
   | 4 | polish: resend, true preview amounts, missed visits | [x] | `df3cc70` |
-  | 5 | hosted deploy, OTA, Checkpoint 6 | [ ] | |
+  | 5 | hosted deploy + release (EAS build, NOT OTA) | [x] | migrations 0003–0004 hosted; `report-public` v6 + `invoice-public` v2 redeployed (verify_jwt off, token-gated); smoke on hosted: walker-impersonated finish under per_visit → INV-0002 auto-sent, report payload carries invoice token, invoice payload carries venmo block (20/20 unauthenticated HTTPS checks); payout create → adjust → finalize → walker-impersonated read sees it → paid (1463+1083+500 = 3046 at temp 32.5%); resend queues with the same token; uninvoiced snapshot returns true 3333; fixtures fully cleaned — counts byte-match pre-smoke, business auto_invoice/venmo_handle + invoice_next_number + payout_percent restored and asserted; advisors: no new findings; release = **EAS build** (react-native-svg native module — no OTA published) |
+
+  Slice-2 spec §2 state after Plan 6: item 5 (walker payouts) is now **live on hosted** —
+  statement lifecycle RPCs (create/adjust/finalize/paid/void), owner payouts UI, walker
+  Earnings visibility of finalized statements; item 6's payouts section live likewise.
+  Auto-invoice on finish (per_visit/per_sitting/manual), the combined report→invoice
+  page, and the Venmo/tip pay link are live end-to-end. Slice-2 items 1–7 all live on
+  hosted; Checkpoint 6 device run remains.
 - [x] Icon system v1 — 19 theme-wired SVG icons, tab bars + event buttons + lock/billing rows wired, `/dev/icons` preview route (`24924e9`) *(2026-08-25)* — **react-native-svg is a native module: do NOT publish an OTA carrying this before the next dev-client rebuild + EAS build**
 - Parked for Alexandra: Stripe per-tenant (true auto-detected payment + tips), payout % model, packages, tax
 - Open (validate with Alexandra): payout model (% assumption), packages/bundles, tax lines, invoice numbering scheme

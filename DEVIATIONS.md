@@ -2136,3 +2136,66 @@ deployed-but-dormant for a possible toll-free future.
   action-items precedent.
 - Checks: 710 jest (53 suites), 552 pgTAP (14 files, +27 in 014), typecheck,
   lint all green.
+
+## Plan 6, Task 5 — hosted deploy + release (2026-08-25)
+
+- Migrations 20260825000003–4 applied to hosted `vrxoswukuiaerhwammlh` via MCP
+  `apply_migration` (verbatim file content, name = filename stem). Functions
+  redeployed with the repo's copy pattern (`../_shared/cors.ts` rewritten to a
+  bundled `./cors.ts`, `polyline.ts` sibling included for report-public, test
+  files excluded): `report-public` v6 and `invoice-public` v2, both with
+  verify_jwt OFF (public by design — the 48-hex token is the credential, per
+  their config.toml and file headers).
+- **Hosted smoke, all asserts passed** (SQL role-impersonated walker+owner +
+  unauthenticated HTTPS, SMOKE-prefixed fixtures in the demo business, fully
+  cleaned afterwards). The REAL business row's `auto_invoice`/`venmo_handle`
+  and the walker's `payout_percent` were captured BEFORE the smoke and
+  restored + asserted after (venmo `smoketest` and 32.5% were temporary):
+  - Walker-impersonated `finish_visit` on a SMOKE in_progress visit under
+    `per_visit`: visit completed, report token minted, **INV-0002 inserted as
+    'sent'** with its own token, exactly one `visit` item at the 4500
+    snapshot, `visit_finished` + `invoice_ready` emails queued (payload
+    tokens verified), audit `invoice.create`/`invoice.send` with
+    `{"auto": true}` and the walker as actor, counter advanced 2 → 3. The
+    queued smoke email rows were deleted INSIDE the creating transaction
+    (Resend is LIVE on hosted with a per-minute cron).
+  - Unauthenticated HTTPS, **20/20 checks**: report-public 200 with EXACT
+    top-level key set and `invoice: {token}` carrying the invoice token (and
+    nothing else of the invoice); no price/full-name leak in the report body.
+    invoice-public 200 with exact key set, INV-0002, first name "SMOKE" only,
+    balance 4500, and the **venmo block** `{handle: smoketest, amountCents:
+    4500, note: INV-0002}`; unknown token → byte-exact `{"error":"not
+    found"}` 404.
+  - Payout lifecycle at a temporary 32.5%: `create_payout_statement` over the
+    SMOKE-only period picked both completed visits (1463 = round(4500×32.5%)
+    and 1083 = round(3333×32.5%) — the migration's own rounding examples),
+    `add_payout_item` +500 → total 3046, `finalize_payout`, then a
+    **walker-impersonated read saw the finalized statement** (RLS status <>
+    'draft'), `mark_payout_paid` → paid with `paid_at`. All five audit
+    actions verified with the owner as actor.
+  - `resend_invoice_email` queued a second `invoice_ready` with the SAME
+    token (deleted in-transaction, same Resend rule);
+    `uninvoiced_visit_amounts` returned exactly the un-invoiced SMOKE visit
+    at its true 3333 snapshot.
+  - Cleanup asserted counts byte-identical to the pre-smoke snapshot
+    (clients 1, visits 8, invoices 1, items 2, deposits 0, payments 1,
+    notifications 7, payout tables 0/0, reports 2, events 14, tracks 3,
+    pets 1, audit 34 — smoke audit rows deleted by entity id) and the
+    business row restored (`auto_invoice` per_visit, `venmo_handle` null,
+    `invoice_next_number` 2) — the sponsor's next real invoice stays
+    INV-0002.
+- **Advisor sweep (security): zero new findings.** The INFO (`client_access`
+  deny-all) and ERROR (`services_public` definer view) are the standing
+  recorded acceptances; every WARN is the accepted "guarded RPCs are the API"
+  pattern — Plan 6's seven new RPCs (payout five + `resend_invoice_email` +
+  `uninvoiced_visit_amounts`) are new instances of it (owner/walker `is not
+  true` gates, public/anon revoked, search_path pinned).
+  `autoflow_invoice_for_visit` does NOT appear in the executable list —
+  its revoke-from-everyone grant held. No follow-up migration.
+- Local checks all green post-deploy: 710 jest (53 suites), 552 pgTAP
+  (14 files), db:reset, typecheck, lint.
+- **Release is an EAS BUILD, not an OTA** — deviation from the plan doc's
+  "OTA" step, on the sponsor's explicit order and the icon-system entry
+  above: this release carries `react-native-svg` (native module), so an OTA
+  would crash every installed client on the missing native module. No
+  `eas update` was published; a preview iOS build was queued instead.
