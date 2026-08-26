@@ -244,6 +244,8 @@ Last updated: 2026-08-25
 - Parked for Alexandra: Stripe per-tenant (true auto-detected payment + tips), payout % model, packages, tax
 - Open (validate with Alexandra): payout model (% assumption), packages/bundles, tax lines, invoice numbering scheme
 
+- [ ] **DMARC record for stridetail.app** (TXT `_dmarc` = `v=DMARC1; p=none;` in Squarespace) — first Yahoo invoice email landed in spam 2026-08-26; Yahoo/Gmail sender rules expect DMARC. Do before real clients receive invoices. Domain warm-up also helps (mark early sends Not Spam)
+
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 
 Source: Alexandra's discovery survey (link in `docs/HANDOFF.md`). Spec §1 captures the rest.
