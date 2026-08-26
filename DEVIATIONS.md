@@ -2199,3 +2199,51 @@ deployed-but-dormant for a possible toll-free future.
   above: this release carries `react-native-svg` (native module), so an OTA
   would crash every installed client on the missing native module. No
   `eas update` was published; a preview iOS build was queued instead.
+
+## Plan 7, Tasks 2–3 — marketing site + Paw & Whisker page (2026-08-26)
+
+- **Email capture is a `mailto:` CTA, not a form** (recorded per the plan's
+  "decide, record"): the landing's "Get early access" buttons open
+  `mailto:hello@stridetail.app?subject=Early%20access`. A `waitlist` table +
+  edge function is Plan 8-adjacent; the mailto needs no backend, no spam
+  protection, and no privacy surface before the policy is finalized.
+- **Screenshots: 2 of the 5 evidence shots used**, copied to
+  `marketing/assets/` (`walker-offer.png` ← cp3-walker-offer, hero product
+  shot; `reveal-in-field.png` ← cp4-reveal-in-field, offline-GPS feature
+  block — timer, SYNCED badge, demo door code). **cp4-visit-detail.png was
+  excluded deliberately: it shows a real street address and phone number**
+  (test client data) and must not go on a public site.
+  plan3-datetime-pickers.png (glitched status bar, sponsor's name) and
+  cp2-walker-tabs.png (empty state) were not marketing-quality.
+- **Feature blocks without a suitable screenshot use small hand-built CSS
+  "illustration cards"** (gated-reveal, one-link, billing), each explicitly
+  captioned "Illustration of …" so nothing reads as a fabricated screenshot;
+  no fake data, testimonials, or metrics anywhere.
+- **Privacy/terms drafts stay indexable** (recorded per the task): both carry
+  a visible "DRAFT — under review" banner but NO robots noindex — they are
+  real (if draft) policies and App Store review will want them resolvable.
+  Sitemap lists all four pages.
+- **Paw & Whisker page carries no prices at all** — not even the
+  "+$5 per additional pet" line — pending Alexandra's sign-off; the services
+  grid says "Rates are shared at your meet & greet". No phone number is
+  published: the `tel:` CTA exists only as an HTML comment until she
+  approves one. **Draft marking is threefold** (recorded per the task): an
+  HTML comment block at the top of the file, a small muted "Draft page —
+  pending owner approval." line under the hero, and the DRAFT flag on the
+  checklist row.
+- Trust bullets use only verified claims (GPS-tracked walks, timestamped
+  report after every visit, encrypted/audited door-code handling,
+  owner-operated Houston-based). No background-check claim — never verified.
+- LocalBusiness JSON-LD: name, email, areaServed Houston TX, and
+  `makesOffer` with the 8 real catalog services, no prices, no street
+  address (her service area is public; her home address is not).
+- Palette is `src/ui/tokens.ts` verbatim in plain CSS custom properties;
+  one Google display face (Fredoka) over a system-font body stack; single
+  stylesheet `marketing/styles.css`, no framework, no build step.
+  `marketing/vercel.json` is `cleanUrls` (+ `trailingSlash: false`) only —
+  no headers needed; marketing SHOULD index (only the .app tokened pages
+  get X-Robots-Tag noindex, Task 1's config).
+- Verification: HTML nesting, JSON-LD, vercel.json, and sitemap.xml
+  machine-validated; pages eyeballed at 375px and 1280px via a throwaway
+  local `http.server` (not committed). App checks untouched and re-proven
+  green: 710 jest, typecheck, lint.
