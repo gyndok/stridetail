@@ -223,3 +223,35 @@ Screenshots → docs/evidence/cp6-*.png; fill the table.
 | Date / devices / builds | |
 | Steps passed | |
 | Result | PENDING |
+
+## Checkpoint 7 — the web is live (Plan 7)
+
+**When:** after both Vercel projects deploy and DNS moves off Squarespace parking.
+**Purpose:** prove a client with NOTHING installed can use their email link on the real
+domain, and that the public marketing surface exists for Google.
+
+### Already verified from the desk (2026-08-26)
+- DNS: stridetail.app and stridetail.com resolve to Vercel (216.150.1.1).
+- `https://stridetail.app/invoice/<INV-0001 token>` renders the real invoice live
+  (items, balance, tip chips, Pay-with-Venmo button) — browser screenshot taken.
+- `/invoice/*` and `/report/*` serve `X-Robots-Tag: noindex`; robots.txt disallows both.
+- stridetail.com landing, /privacy, /terms, /p/paw-and-whisker all 200 with brand content.
+
+### Procedure (phone, app NOT installed — use Alexandra's or airplane-mode-reinstall trick)
+1. Open the latest visit-report or invoice email → tap the link. Expect the branded page
+   to load on stridetail.app in Safari — no store redirect, no parking page.
+2. On the invoice page tap a tip chip → **Pay with Venmo** → Venmo app (or web) opens
+   prefilled with handle, amount incl. tip, and the INV-XXXX note.
+3. Load stridetail.com on the phone → landing renders fast, screenshots visible,
+   privacy/terms reachable from the footer.
+4. Paste `https://stridetail.com/p/paw-and-whisker` into Google's Rich Results test
+   (search.google.com/test/rich-results) → LocalBusiness detected, no errors.
+
+### Evidence
+Screenshots → docs/evidence/cp7-*.png; fill the table.
+
+| Field | Value |
+| --- | --- |
+| Date / phone | |
+| Steps passed | |
+| Result | PENDING |

@@ -248,14 +248,14 @@ Last updated: 2026-08-26
 
 ## Web experience (spec 2026-08-26; Plans 7–9 proposed)
 
-- [~] **Plan 7: ship the web** (`docs/superpowers/plans/2026-08-26-stridetail-plan7-ship-the-web.md`); executing
+- [x] **Plan 7: ship the web** (`docs/superpowers/plans/2026-08-26-stridetail-plan7-ship-the-web.md`); both Vercel projects live on real domains; Checkpoint 7 phone run pending
 
   | # | Plan 7 task | Status | Commit |
   |---|-------------|--------|--------|
-  | 1 | product web → Vercel + stridetail.app | [ ] | |
+  | 1 | product web → Vercel + stridetail.app | [x] live — INV-0001 verified on real domain, noindex headers | b8b71f0 |
   | 2 | marketing scaffold + landing + privacy/terms | [x] | 70e56e6 |
   | 3 | Paw & Whisker SEO page (copy DRAFT for Alexandra) | [x] DRAFT — pending Alexandra's sign-off (no prices, no phone) | 70e56e6 |
-  | 4 | SEO plumbing + Checkpoint 7 | [ ] | |
+  | 4 | SEO plumbing + Checkpoint 7 | [x] script written; phone run PENDING | |
 - [ ] Plan 8: client portal v1 — client_users + OTP login, dashboard/invoices/reports/pets, booking_requests + owner approve, Supabase auth SMTP via Resend
 - [ ] Plan 9: portal v2 — messaging threads, self-claim, per-tenant custom domains
 - Open: Vercel confirm (sponsor), P&W page copy/prices (Alexandra), request-approve vs self-book (Alexandra)
