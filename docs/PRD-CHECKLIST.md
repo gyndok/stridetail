@@ -246,6 +246,13 @@ Last updated: 2026-08-25
 
 - [x] **DMARC + parked-preset fix, 2026-08-26**: root cause of Yahoo spam-foldering was Squarespace's parked-domain preset (`@ v=spf1 -all` + `_dmarc p=reject adkim=s aspf=s` + empty DKIM) shipped with the domain; replaced via Replace Preset with `_dmarc v=DMARC1; p=none`. Verified at authoritative NS; next invoice email delivered to the Yahoo INBOX first try
 
+## Web experience (spec 2026-08-26; Plans 7–9 proposed)
+
+- [ ] **Plan 7 (URGENT): ship the web** — deploy Expo web → Vercel + stridetail.app DNS (email links currently dead-end at Squarespace parking!), stridetail.com coming-soon landing + www redirects, /p/paw-and-whisker SEO page (copy needs Alexandra), privacy/terms drafts, sitemaps/noindex, Checkpoint 7
+- [ ] Plan 8: client portal v1 — client_users + OTP login, dashboard/invoices/reports/pets, booking_requests + owner approve, Supabase auth SMTP via Resend
+- [ ] Plan 9: portal v2 — messaging threads, self-claim, per-tenant custom domains
+- Open: Vercel confirm (sponsor), P&W page copy/prices (Alexandra), request-approve vs self-book (Alexandra)
+
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 
 Source: Alexandra's discovery survey (link in `docs/HANDOFF.md`). Spec §1 captures the rest.
