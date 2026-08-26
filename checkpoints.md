@@ -255,7 +255,7 @@ docs/evidence/cp7-*.png when convenient).
 | --- | --- |
 | Date / phone | 2026-08-26, sponsor iPhone, Safari via Messages link (no app context) |
 | Step 1: link → live page | PASS — INV-0002 (PAID state: badge, $0.00 balance, Venmo hidden) and INV-0003 (unpaid: tip chips, "Pay $30.00 with Venmo", updated "Venmo preferred" instructions) both rendered on stridetail.app |
-| Step 2: Venmo opens prefilled | PENDING sponsor confirm (button rendered; tap result not yet reported) |
+| Step 2: Venmo opens prefilled | PASS — Venmo app opened from Safari: recipient Geff Klein, $40 ($30 + $10 tip chip), note "INV-0003" all prefilled (sponsor screenshot) |
 | Step 3: stridetail.com on phone | desk-verified 200s; phone load not separately captured |
 | Step 4: Rich Results test | PASS — "Local businesses: 1 valid item" + Organization valid; non-critical issues = intentionally omitted optional fields (address/phone/prices withheld pending Alexandra) |
-| Result | PASS (pending step-2 confirm) |
+| Result | **PASS** |
