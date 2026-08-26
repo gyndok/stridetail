@@ -70,7 +70,8 @@
     "typecheck": "tsc --noEmit",
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
-    "db:test": "supabase test db"
+    "db:test": "supabase test db",
+    "web:export": "./scripts/export-web.sh"
   },
   "private": true
 }

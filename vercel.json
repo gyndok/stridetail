@@ -1,0 +1,20 @@
+{
+  "installCommand": "bun install",
+  "buildCommand": "bun run web:export",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/invoice/:token", "destination": "/invoice/[token].html" },
+    { "source": "/report/:token", "destination": "/report/[token].html" }
+  ],
+  "headers": [
+    {
+      "source": "/invoice/:token",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/report/:token",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    }
+  ]
+}
