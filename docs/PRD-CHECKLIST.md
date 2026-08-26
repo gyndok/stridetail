@@ -248,7 +248,14 @@ Last updated: 2026-08-25
 
 ## Web experience (spec 2026-08-26; Plans 7–9 proposed)
 
-- [ ] **Plan 7 (URGENT): ship the web** — deploy Expo web → Vercel + stridetail.app DNS (email links currently dead-end at Squarespace parking!), stridetail.com coming-soon landing + www redirects, /p/paw-and-whisker SEO page (copy needs Alexandra), privacy/terms drafts, sitemaps/noindex, Checkpoint 7
+- [~] **Plan 7: ship the web** (`docs/superpowers/plans/2026-08-26-stridetail-plan7-ship-the-web.md`); executing
+
+  | # | Plan 7 task | Status | Commit |
+  |---|-------------|--------|--------|
+  | 1 | product web → Vercel + stridetail.app | [ ] | |
+  | 2 | marketing scaffold + landing + privacy/terms | [ ] | |
+  | 3 | Paw & Whisker SEO page (copy DRAFT for Alexandra) | [ ] | |
+  | 4 | SEO plumbing + Checkpoint 7 | [ ] | |
 - [ ] Plan 8: client portal v1 — client_users + OTP login, dashboard/invoices/reports/pets, booking_requests + owner approve, Supabase auth SMTP via Resend
 - [ ] Plan 9: portal v2 — messaging threads, self-claim, per-tenant custom domains
 - Open: Vercel confirm (sponsor), P&W page copy/prices (Alexandra), request-approve vs self-book (Alexandra)
