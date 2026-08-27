@@ -68,6 +68,17 @@ export default function PortalLogin() {
               error={error ?? undefined}
             />
             <Button title="Email me a code" onPress={sendCode} loading={busy} disabled={!email.trim()} />
+            {/* Codes arrive by email and outlive a page reload or device hop —
+                let someone holding one skip straight to entry. */}
+            <Button
+              title="I already have a code"
+              variant="ghost"
+              disabled={!email.trim()}
+              onPress={() => {
+                setError(null);
+                setPhase('code');
+              }}
+            />
           </>
         ) : (
           <>
