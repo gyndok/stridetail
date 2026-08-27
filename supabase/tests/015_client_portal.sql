@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(91);
+select plan(99);
 
 -- Plan 8 Task 1 — client portal suite: client_users links, booking_requests
 -- machine + RPCs, and the client read scope. RLS blocks run as `authenticated`
@@ -482,6 +482,63 @@ select ok((select status = 'unassigned' and walker_id is null
 select is((select price_cents_snapshot from visits where id = pg_temp.rid('v2')), 2500,
   'a one-pet request takes the bare base price');
 
+-- ===== approve with an explicit start (post-Checkpoint 8: owner picks it) =====
+-- Migration 20260827000001 replaced (uuid, uuid) with (uuid, uuid, timestamptz
+-- default null). The v1/v2 approvals above already prove the null-p_start path
+-- keeps the window_start behavior; here the explicit path and the bounds.
+select has_function('public', 'approve_booking_request',
+  array['uuid', 'uuid', 'timestamptz'],
+  'approve_booking_request carries the p_start parameter');
+select hasnt_function('public', 'approve_booking_request', array['uuid', 'uuid'],
+  'the old 2-arg signature is dropped — no ambiguous overload remains');
+
+-- A fresh pending request; superuser insert (012 pattern), owner claims stay.
+insert into booking_requests (id, business_id, client_id, service_id, pet_ids,
+                              window_start, window_end, created_by) values
+  ('00000000-0000-0000-0000-000000000f05', '00000000-0000-0000-0000-00000000aaaa',
+   '00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000e1',
+   array['00000000-0000-0000-0000-000000000a01']::uuid[],
+   '2026-09-05 16:00+00', '2026-09-05 18:00+00', '00000000-0000-0000-0000-000000000031');
+
+select throws_ok($$
+  select public.approve_booking_request('00000000-0000-0000-0000-000000000f05', null,
+                                        '2026-09-05 15:30+00')
+$$, 'P0001', 'start time is before the requested window',
+  'a start before the window is rejected');
+
+select throws_ok($$
+  select public.approve_booking_request('00000000-0000-0000-0000-000000000f05', null,
+                                        '2026-09-05 18:00+00')
+$$, 'P0001', 'start time must be before the window end',
+  'a start AT the window end is rejected (the window is half-open)');
+
+select throws_ok($$
+  select public.approve_booking_request('00000000-0000-0000-0000-000000000f05', null,
+                                        '2026-09-05 19:00+00')
+$$, 'P0001', 'start time must be before the window end',
+  'a start after the window end is rejected');
+
+insert into pg_temp.ref values ('v3', public.approve_booking_request(
+  '00000000-0000-0000-0000-000000000f05', null, '2026-09-05 17:15+00'));
+
+select ok((select scheduled_start = '2026-09-05 17:15+00'::timestamptz
+              and scheduled_end   = '2026-09-05 17:45+00'::timestamptz
+              and status = 'unassigned'
+           from visits where id = pg_temp.rid('v3')),
+  'an explicit p_start inside the window places the visit there for the service duration');
+
+select is((select count(*) from notifications
+           where channel = 'email' and template = 'booking_request_approved'
+             and payload->>'requestId' = '00000000-0000-0000-0000-000000000f05'
+             and (payload->>'scheduledStart')::timestamptz = '2026-09-05 17:15+00'::timestamptz)::int, 1,
+  'the approval email carries the CHOSEN start, not window_start');
+
+select ok((select (meta->>'scheduled_start')::timestamptz = '2026-09-05 17:15+00'::timestamptz
+           from audit_log
+           where action = 'booking_request.approve'
+             and entity_id = '00000000-0000-0000-0000-000000000f05'),
+  'the approve audit row carries the chosen start');
+
 -- ===== decline: stamps, queues with the reason, audits =====
 select throws_ok($$
   select public.decline_booking_request('00000000-0000-0000-0000-000000000f03', '  ')
@@ -593,14 +650,14 @@ set local request.jwt.claims to '{}';
 select is(
   (select bool_and(has_function_privilege('authenticated', f, 'execute'))
      from unnest(array[
-       'public.approve_booking_request(uuid, uuid)',
+       'public.approve_booking_request(uuid, uuid, timestamptz)',
        'public.decline_booking_request(uuid, text)']) f),
   true, 'authenticated can execute both booking RPCs');
 
 select is(
   (select bool_or(has_function_privilege('anon', f, 'execute'))
      from unnest(array[
-       'public.approve_booking_request(uuid, uuid)',
+       'public.approve_booking_request(uuid, uuid, timestamptz)',
        'public.decline_booking_request(uuid, text)']) f),
   false, 'anon can execute neither');
 
