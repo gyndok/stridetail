@@ -28,6 +28,15 @@ export type ReportPayload = {
    * fetches invoice-public itself; no invoice amounts ride on the report.
    */
   invoice: { token: string } | null;
+  /**
+   * Plan 7b: short-lived signed URL (1h) for the pre-rendered static route
+   * map (reports/<visit_id>/map.png). Both fields are OMITTED entirely when
+   * no map object exists — presence of the storage object is the flag; older
+   * reports fall back to the SVG route sketch.
+   */
+  mapUrl?: string;
+  /** "© Mapbox © OpenStreetMap" — must be shown alongside the map (Mapbox ToS). */
+  mapAttribution?: string;
 };
 
 /** Unknown or revoked token — the page shows the friendly gone state. */

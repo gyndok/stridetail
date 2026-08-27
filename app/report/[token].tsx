@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocalSearchParams, type Href } from 'expo-router';
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchPublicReport, ReportUnavailableError, type ReportPayload } from '@/src/features/report/api';
+import { RouteCard } from '@/src/features/report/RouteCard';
 import {
-  distanceText,
   localTime,
   petsServiceLine,
   photoUrls,
@@ -13,7 +13,6 @@ import {
   statItems,
   timelineLabel,
 } from '@/src/features/report/view';
-import { routeSvgPath } from '@/src/lib/schedule/polyline';
 import { Card } from '@/src/ui/Card';
 import { useTheme } from '@/src/ui/theme';
 
@@ -23,49 +22,9 @@ import { useTheme } from '@/src/ui/theme';
 // from the URL) and fetches report-public with a PLAIN fetch: no session, no
 // JWT (the function has verify_jwt off; the token is the credential).
 //
-// Route sketch: react-native-svg is NOT a dependency and adding a native
-// module for one sketch is not worth it, so the polyline renders as a raw DOM
-// <svg> on web only (react-native-web renders through react-dom, so plain DOM
-// elements are fine there); native gets a "Route: X mi recorded" card
-// (recorded in DEVIATIONS.md — native in-app render is text-mode).
-
-const SVG_W = 320;
-const SVG_H = 180;
-
-function RouteSketch({ report }: { report: ReportPayload }) {
-  const t = useTheme();
-  const path = Platform.OS === 'web' ? routeSvgPath(report.route, SVG_W, SVG_H, 12) : null;
-  const distance = distanceText(report.summary.distanceM);
-  if (!path && !distance) return null;
-  return (
-    <Card style={{ gap: t.space.sm }}>
-      <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Route</Text>
-      {path ? (
-        <View style={{ width: '100%', aspectRatio: SVG_W / SVG_H }}>
-          <svg
-            viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-            width="100%"
-            height="100%"
-            preserveAspectRatio="xMidYMid meet"
-            role="img"
-            aria-label="Route sketch"
-          >
-            <path
-              d={path}
-              fill="none"
-              stroke={report.business.brandColor}
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </View>
-      ) : (
-        <Text style={{ color: t.colors.ink }}>Route: {distance} recorded</Text>
-      )}
-    </Card>
-  );
-}
+// Route card: lives in src/features/report/RouteCard.tsx (Plan 7b Task 2) —
+// static map image when the payload carries mapUrl, the original SVG sketch
+// (web) / "Route: X mi recorded" text (native) otherwise.
 
 // Plan 6 Task 3: when the payload carries an invoice token, one card links to
 // the public invoice page. Nothing extra is fetched here — the report payload
@@ -139,7 +98,7 @@ function ReportBody({ report }: { report: ReportPayload }) {
           </View>
         ) : null}
 
-        <RouteSketch report={report} />
+        <RouteCard report={report} />
 
         {report.timeline.length > 0 ? (
           <Card style={{ gap: t.space.sm }}>
