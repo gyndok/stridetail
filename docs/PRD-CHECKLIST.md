@@ -280,7 +280,7 @@ Last updated: 2026-08-27
   | # | Plan 8b task | Status | Commit |
   |---|--------------|--------|--------|
   | 1 | dashboard shell + KPI row | [x] | 2874013 |
-  | 2 | operations panels: requests, attention, live walks | [ ] | |
+  | 2 | operations panels: requests, attention, live walks | [x] | 9bfa51f |
   | 3 | schedule table + month calendar | [ ] | |
   | 4 | business panels: clients, services, billing | [ ] | |
   | 5 | assembly polish + sponsor desktop pass | [ ] | |
