@@ -216,13 +216,18 @@ them).
    native module shipped in this build).
 
 ### Evidence
-Screenshots → docs/evidence/cp6-*.png; fill the table.
+Sponsor phone screenshots reviewed in-session 2026-08-26 (copies → docs/evidence/cp6-*.png
+when convenient).
 
 | Field | Value |
 | --- | --- |
-| Date / devices / builds | |
-| Steps passed | |
-| Result | PENDING |
+| Date / devices / builds | 2026-08-26 evening, sponsor iPhone (owner+walker), Plan 6 preview build |
+| Step 1: billing settings | PASS — venmo_handle `Geff-Klein` + auto_invoice `per_visit` saved (DB-verified) |
+| Step 2: real walk → auto-invoice | PASS with one finding — 6-min 0.20-mi walk (Olivia), report page shows route/timeline/photo + "Invoice & payment →"; INV-0004 auto-created "sent" at the $25 booked price; Venmo prefilled $35 ($25+$10 tip, INV-0004 note). FINDING: TWO emails queued at finish (`visit_finished` + `invoice_ready`) vs the spec's one — fixed same evening, migration `20260826000001_one_email_per_walk` (local+hosted, pgTAP flipped, 552 pass). Not re-walked; next real walk should produce one finish email. |
+| Step 3: Mark paid | PASS — INV-0003 and INV-0004 one-tap paid; public page shows PAID/$0.00. Polish item logged: tip overpayment displays as "Paid −$5.00" (should read "Paid · incl. tip") |
+| Step 4: payouts + walker visibility | PENDING sponsor run |
+| Step 5: SVG icons in build | PASS — tab bar shows the new icon set in all phone screenshots |
+| Result | PASS except step 4 (payouts) — PENDING |
 
 ## Checkpoint 7 — the web is live (Plan 7)
 
