@@ -2744,3 +2744,39 @@ polish; no PRD-CHECKLIST rows ticked):
   column, so both weeks come from a single query bounded by local
   'YYYY-MM-DD' strings (previous week start inclusive, current week end
   exclusive) and are split per week in pure math.
+
+## Plan 8b Task 3 — schedule table + month calendar (2026-08-27)
+
+- **Day tap navigates to /schedule without a date.** The Schedule tab reads no
+  route params (`app/(owner)/schedule/index.tsx` has no useLocalSearchParams;
+  its list is a fixed 14-day window and the week grid keeps its own anchor
+  state), so a date-targeted landing is impossible without touching that
+  screen — off-limits to this task. Mini-calendar day taps and "+N more this
+  week" plain-navigate; a `?date=` param on the Schedule tab is recorded as a
+  follow-up.
+- **Status vocabulary/colors mirrored, not imported.** VisitScreen's
+  STATUS_LABEL and WeekGridView's blockColors carry the app's status wording
+  and 3-way tone grouping but neither is exported, and both files are outside
+  this task's write set. `scheduleData.ts` re-states them (STATUS_LABELS /
+  statusTone) with cross-referencing comments; a later cleanup can hoist a
+  shared module.
+- **Pet names are a second batched read.** `visits.pet_ids` is an array column
+  (no FK, no embed possible — report.ts precedent), so the week query is
+  listVisits + one `pets.in('id', union)` read joined client-side. pets
+  carries no business_id column; RLS scopes the read (same as listPetNames).
+- **OwnerDashboard.test mocks the SchedulePanel slot.** The real panel is
+  query-backed and the shell test mounts no QueryClientProvider; the slot is
+  mocked to a marker `<Text>Schedule</Text>` (an additive edit, so sibling
+  Tasks 2/4 editing the same file merge cleanly) and the real body is covered
+  by SchedulePanel.test.tsx.
+- **Walker filter includes the owner.** listActiveMembers returns the owner as
+  an active member, and owners walk their own visits (Today's grouping puts
+  the owner first), so the chip row is All + every active member, owner
+  included. Unassigned visits appear under All only.
+- **Month grid pads with blanks.** Leading/trailing cells outside the month
+  render empty (no adjacent-month day numbers or counts) — keeps the query to
+  exactly one month window and matches the small-badge mockup intent.
+- **Query keys nest under `['visits', businessId]`** ('dashWeek' /
+  'dashMonth' segments), so every existing visit-mutation invalidation
+  refreshes the panel; members reuse WeekGridView's
+  `['scheduleMembers', businessId]` cache.

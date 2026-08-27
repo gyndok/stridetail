@@ -49,6 +49,14 @@ jest.mock('@/src/features/dashboard/kpis', () => ({
   useDashboardKpis: () => ({ data: mockKpis, isLoading: false }),
 }));
 
+// Task 3 replaced the SchedulePanel stub with a query-backed panel (its own
+// SchedulePanel.test.tsx covers the real body); the shell test only asserts
+// the slot exists, so mock it to its slot marker.
+jest.mock('../SchedulePanel', () => {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return { SchedulePanel: () => <Text>Schedule</Text> };
+});
+
 test('shell renders the title, KPI row, and the three panel stubs', async () => {
   const { getByText } = await render(
     <ThemeProvider>
@@ -61,8 +69,8 @@ test('shell renders the title, KPI row, and the three panel stubs', async () => 
   expect(getByText('Operations')).toBeTruthy();
   expect(getByText('Schedule')).toBeTruthy();
   expect(getByText('Business')).toBeTruthy();
-  // Stub bodies say so, until Tasks 2-4 replace them.
+  // Stub bodies say so, until Tasks 2 and 4 replace them (Task 3's slot is
+  // mocked above).
   expect(getByText('Requests, needs attention, and live walks — coming in the next task.')).toBeTruthy();
-  expect(getByText('Week table and month calendar — coming in the next task.')).toBeTruthy();
   expect(getByText('Clients, services, and billing — coming in the next task.')).toBeTruthy();
 });
