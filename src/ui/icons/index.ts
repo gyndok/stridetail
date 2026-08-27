@@ -4,6 +4,7 @@ export {
   CatIcon,
   ClientsIcon,
   DogIcon,
+  ManualIcon,
   PawIcon,
   ScheduleIcon,
   SettingsIcon,

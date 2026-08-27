@@ -28,7 +28,9 @@ export function SettingsScreen({ extra }: { extra?: ReactNode }) {
   const qc = useQueryClient();
   const { businessId, setBusinessId } = useActiveBusiness();
   const { data } = useMemberships();
-  const current = data?.find((m) => m.business_id === businessId)?.business;
+  const membership = data?.find((m) => m.business_id === businessId);
+  const current = membership?.business;
+  const role = membership?.role;
   const { walkTheme, setWalkTheme } = useWalkTheme();
   return (
     <Screen title="Settings">
@@ -75,6 +77,23 @@ export function SettingsScreen({ extra }: { extra?: ReactNode }) {
         </Card>
       </Pressable>
       {extra}
+      {/* User's manual (living document, src/features/manual): both roles get
+          the row; it routes through the group matching the role because the
+          owner group's role guard bounces walkers (unlike Earnings, whose
+          walker-group route is open to both). */}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() =>
+          router.push((role === 'owner' ? '/(owner)/manual' : '/(walker)/manual') as Href)
+        }
+      >
+        <Card>
+          <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>
+            User&apos;s manual
+          </Text>
+          <Text style={{ color: t.colors.inkMuted }}>How everything works, in plain English</Text>
+        </Card>
+      </Pressable>
       <Button
         title="Sign out"
         variant="ghost"

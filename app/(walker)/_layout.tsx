@@ -54,6 +54,9 @@ export default function WalkerTabs() {
       <Tabs.Screen name="visit/[id]/active" options={{ href: null }} />
       {/* Earnings is reached from Settings (both role groups), not the bar. */}
       <Tabs.Screen name="earnings" options={{ href: null }} />
+      {/* User's manual — same shared screen as the owner group's; reached from
+          the Settings row, never a tab here. */}
+      <Tabs.Screen name="manual" options={{ href: null }} />
     </Tabs>
   );
 }

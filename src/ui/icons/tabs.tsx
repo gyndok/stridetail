@@ -65,6 +65,20 @@ export function SettingsIcon(props: IconProps) {
   );
 }
 
+/** Open book: two facing pages over a center spine — the user's manual. */
+export function ManualIcon(props: IconProps) {
+  const { size, color } = useIconColors(props);
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M12 6.6C10.55 5.25 8.6 4.6 6.2 4.6c-1 0-1.9.12-2.7.36v13.6c.8-.24 1.7-.36 2.7-.36 2.4 0 4.35.65 5.8 1.95 1.45-1.3 3.4-1.95 5.8-1.95 1 0 1.9.12 2.7.36V4.96c-.8-.24-1.7-.36-2.7-.36-2.4 0-4.35.65-5.8 2Z"
+        {...stroke(color)}
+      />
+      <Path d="M12 6.6v13.55" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 /** Document with a folded corner and a dollar line. */
 export function BillingIcon(props: IconProps) {
   const { size, color } = useIconColors(props);

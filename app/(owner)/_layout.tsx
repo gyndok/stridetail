@@ -7,6 +7,7 @@ import { useMemberships } from '@/src/features/business/useMemberships';
 import {
   BillingIcon,
   ClientsIcon,
+  ManualIcon,
   ScheduleIcon,
   SettingsIcon,
   TeamIcon,
@@ -110,6 +111,18 @@ export default function OwnerTabs() {
         options={{
           title: 'Billing',
           tabBarIcon: ({ color, size }) => <BillingIcon color={color} size={size ?? 22} />,
+        }}
+      />
+      {/* User's manual: a rail entry above Settings on web (the rail maps this
+          registration order). On NATIVE the phone keeps its six tabs — href:
+          null hides the route from the bottom bar there, and phones reach the
+          manual via the Settings row instead (SettingsScreen). */}
+      <Tabs.Screen
+        name="manual"
+        options={{
+          href: Platform.OS === 'web' ? undefined : null,
+          title: "User's manual",
+          tabBarIcon: ({ color, size }) => <ManualIcon color={color} size={size ?? 22} />,
         }}
       />
       <Tabs.Screen
