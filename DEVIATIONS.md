@@ -2527,3 +2527,36 @@ Task 3's react-native-maps screens. Other calls:
   archive + detail).
 - Tabs stay bottom-docked on desktop web for v1 (no OwnerRail equivalent);
   the content column is capped at 720 px and centered, public-page style.
+
+## 2026-08-26 — Plan 8 Task 6: pets + access-codes self-service
+
+- **Photo upload ENABLED, not deferred**: the Plan-2 storage policies are
+  member-read / owner-write and clients are not members, so before Task 6 a
+  client could neither view nor upload their pet's photo. Migration
+  `20260826000005` adds client policies on `storage.objects` (select +
+  insert + update, no delete) scoped to `<business>/pets/<pet>/…` where the
+  pet belongs to a client the caller is linked to AND the path's business
+  prefix matches the pet's real business (walker-policy anti-spoof pattern,
+  20260824000010). Select is required anyway — signed photo URLs check RLS.
+  Gotcha fixed en route: inside the `exists (… from pets p …)` policy
+  clause an unqualified `name` binds to `p.name` (pets has a name column),
+  silently denying everything — the policies say `objects.name`.
+- **meds_md / allergies are client-READABLE and render read-only**: the pets
+  grant is table-wide for authenticated and the Task-1 client SELECT policy
+  is row-level, so both columns come back to the portal. They are
+  owner-curated walker-safety notes, so the editor shows them read-only
+  ("managed by your provider") and the update payload never carries them
+  (trigger raises server-side; petsScreens/portalPetsQueries tests pin it).
+- **`has_client_access_self` added** beyond the plan's set/reveal pair: the
+  UI mirrors the owner access screen, which needs the "codes on file"
+  boolean without decrypting (has_client_access is owner-only and raises).
+- **Audit actions**: `client_access.self_set` / `client_access.self_reveal`
+  (plan-named), distinguishable from the owner's `access.set` /
+  `access.reveal_owner`; same shared encrypted row, same Vault key.
+- **"Optimistic UI"**: the repo has no onMutate/rollback convention anywhere
+  (checked) — saves follow the services.tsx mutation pattern instead:
+  useMutation -> setQueryData with the returned row + invalidate the list,
+  busy state on the button. New portal api/hooks live in petsApi.ts /
+  petsHooks.ts / accessApi.ts because Task 5/7 siblings own api.ts/hooks.ts.
+- **Migration 20260826000005 rides Task 8 to hosted** like the other Plan 8
+  migrations (applied + green locally: pgTAP 018, 42 asserts).
