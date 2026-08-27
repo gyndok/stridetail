@@ -2360,3 +2360,61 @@ Task 3's react-native-maps screens. Other calls:
   under existing RLS (owner + walker-own-visit policies from
   20260824000009_execution.sql) — no new endpoint, works for both roles of
   the unified VisitScreen; gated off on web and non-completed statuses.
+
+## 2026-08-26 — Plan 8 Task 1: client_users + booking_requests + client read scope
+
+- **client_users has no client-role write path at all**: no insert/update
+  policy or grant for `authenticated` (only select for the owner and the
+  linked user, delete for the owner). Linking happens via Task 3's definer
+  invite/claim RPC or the service role. Multi-business linking is allowed by
+  design — the only uniqueness is (client_id, user_id).
+- **Owner email for `booking_request_received`** is resolved in SQL:
+  `queue_owner_email(business, template, payload)` (definer, client-execute
+  revoked) joins memberships(role='owner', status='active') to
+  auth.users.email and queues one notifications row per owner with an email;
+  e-mail-less owners are skipped silently (queue_client_email precedent).
+  No existing pattern queued to owners before — this is the new mechanism,
+  fired by an AFTER INSERT trigger on booking_requests (clients insert
+  directly, so no RPC exists to do the queueing).
+- **booking_requests uses text + check for status** (plan's literal spec),
+  not an enum, with a Plan-3-style transition trigger: pending→approved
+  requires visit_id stamped in the same update, pending→declined requires a
+  reason, everything else raises; who-check owner-or-elevated. So even the
+  owner's direct UPDATE cannot approve without a visit — the RPC is the path
+  that creates one. No delete policy/grant for anyone (requests are history).
+- **Approved visit slotting**: the visit is created AT window_start for the
+  service's duration_min (window_end is the client's flexibility, not the
+  visit length); price = base + extra_pet × (pets − 1), the exact
+  expand-series/app formula, stamped from the service's CURRENT price.
+  p_walker null → unassigned; p_walker given → offered after the offer_visit
+  active-membership check.
+- **Clients can read active services of their linked businesses** (new
+  SELECT policy) — the request form needs the list and the insert policy
+  validates service_id against it (subqueries in policies run under the
+  caller's RLS, so without this the with-check could never pass). This
+  exposes service base/extra prices to the paying client — deliberate; the
+  walker price-hiding (services_public view) is untouched.
+- **Client invoice scope is `status in ('sent','paid')`**: drafts are owner
+  WIP, void is retracted; invoice_items and payments chain through visible
+  invoices only.
+- **Price hiding for clients needs no new mechanism**: the Plan-3
+  column-level select grant on visits excludes price_cents_snapshot for the
+  whole `authenticated` role, and policies add rows, not columns — asserted
+  in 015 (42501 on selecting the column from the client's own visit).
+  **Known accepted exposure**: visits.owner_notes_md and decline_reason ARE
+  in the authenticated column grant, so a linked client selecting them on
+  their own visit rows succeeds. Portal UI (Tasks 4–5) must not render them;
+  revisit if owner notes ever carry sensitive content (codes live in the
+  encrypted client_access store, not owner notes).
+- **Pets self-service column set**: feeding_md, reactivity_md, vet_name,
+  vet_phone, vet_address, photo_path — the plan's "feeding/behavioral notes,
+  vet info, photo" read literally. meds_md and allergies stay owner-only
+  (walker-safety instructions the owner curates); name/species/breed/
+  birthdate stay owner-only. Enforced by a BEFORE UPDATE trigger on pets
+  (owners and elevated callers pass through untouched) because RLS is
+  row-level and the grant is table-wide.
+- **Client row stays read-only in v1**: no client UPDATE policy on clients
+  (phones/email edits would fight the Task-3 email-matching link path).
+- The three new email templates (booking_request_received / _approved /
+  _declined) do not exist in send-email until Task 7 — the worker marks such
+  rows failed; acceptable queue behavior until then.
