@@ -49,6 +49,15 @@ jest.mock('@/src/features/dashboard/kpis', () => ({
   useDashboardKpis: () => ({ data: mockKpis, isLoading: false }),
 }));
 
+// Task 2 made OperationsPanel a real data panel (queries + query client); the
+// shell test keeps to composition, so the panel is stubbed to its slot title.
+// Its own rendering is covered in OperationsPanel.test.tsx.
+jest.mock('../OperationsPanel', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return { OperationsPanel: () => React.createElement(Text, null, 'Operations') };
+});
+
 test('shell renders the title, KPI row, and the three panel stubs', async () => {
   const { getByText } = await render(
     <ThemeProvider>
@@ -61,8 +70,7 @@ test('shell renders the title, KPI row, and the three panel stubs', async () => 
   expect(getByText('Operations')).toBeTruthy();
   expect(getByText('Schedule')).toBeTruthy();
   expect(getByText('Business')).toBeTruthy();
-  // Stub bodies say so, until Tasks 2-4 replace them.
-  expect(getByText('Requests, needs attention, and live walks — coming in the next task.')).toBeTruthy();
+  // Stub bodies say so, until Tasks 3-4 replace them.
   expect(getByText('Week table and month calendar — coming in the next task.')).toBeTruthy();
   expect(getByText('Clients, services, and billing — coming in the next task.')).toBeTruthy();
 });
