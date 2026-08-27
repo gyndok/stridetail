@@ -275,7 +275,15 @@ Last updated: 2026-08-26
   | 6 | pets + access-codes self-service | [x] local only — migration 20260826000005 (self RPCs + client pet-photo storage policies) rides Task 8 | 53e85f0 |
   | 7 | booking requests end-to-end | [x] local only — send-email redeploy rides Task 8 | e860363 |
   | 8 | hosted deploy + **Checkpoint 8** | [x] deployed — migrations 0002–0005 via MCP, send-email v10, advisors clean, SQL-impersonation smoke passed w/ full cleanup, portal noindex added; Checkpoint 8 phone run PENDING | 8e4f767 |
-- [ ] **Plan 8b: owner command strip** (`docs/superpowers/plans/2026-08-26-stridetail-plan8b-owner-command-strip.md`) — after Plan 8; KPI strip + derived "on a walk now"; NO mode toggle
+- [ ] **Plan 8b (expanded): owner desktop dashboard** (`docs/superpowers/plans/2026-08-27-stridetail-plan8b-owner-desktop-dashboard.md`, supersedes the 2026-08-26 command-strip draft) — sponsor mockup 2026-08-27; desktop web Today becomes the business command center; NO mode toggle, NO manual presence
+
+  | # | Plan 8b task | Status | Commit |
+  |---|--------------|--------|--------|
+  | 1 | dashboard shell + KPI row | [ ] | |
+  | 2 | operations panels: requests, attention, live walks | [ ] | |
+  | 3 | schedule table + month calendar | [ ] | |
+  | 4 | business panels: clients, services, billing | [ ] | |
+  | 5 | assembly polish + sponsor desktop pass | [ ] | |
 - [ ] Plan 9: messaging + derived presence + urgent flag, self-claim, per-tenant custom domains — deferred until real portal clients (spec §9)
 - Open: P&W page copy/prices (Alexandra), request-approve vs self-book (Alexandra), report approve-before-send setting (Alexandra), tip splitting (Alexandra), Stripe timing (Alexandra), chat priority (Alexandra)
 
