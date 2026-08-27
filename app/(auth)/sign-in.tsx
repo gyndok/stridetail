@@ -47,6 +47,9 @@ export default function SignIn() {
       <Link href="/sign-up">
         <Text style={{ color: t.colors.primary, fontWeight: '700' }}>New here? Create an account</Text>
       </Link>
+      <Link href="/portal-login">
+        <Text style={{ color: t.colors.inkMuted, fontWeight: '700' }}>Pet parent? Sign in here</Text>
+      </Link>
     </Screen>
   );
 }

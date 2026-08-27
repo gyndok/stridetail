@@ -2418,3 +2418,43 @@ Task 3's react-native-maps screens. Other calls:
 - The three new email templates (booking_request_received / _approved /
   _declined) do not exist in send-email until Task 7 — the worker marks such
   rows failed; acceptable queue behavior until then.
+
+## 2026-08-26 — Plan 8 Task 2: OTP auth + role routing (client portal)
+
+- **Where portal login lives**: `app/(auth)/portal-login.tsx`, inside the
+  existing `(auth)` group — it inherits the group's signed-in redirect to `/`
+  for free, so the screen never navigates itself after `verifyOtp`; the auth
+  event flips the session store and the router takes over. Reached from the
+  staff sign-in screen via a muted "Pet parent? Sign in here" link (staff
+  password flow unchanged and default).
+- **Routing decision** is a pure function, `resolveEntry` in
+  `src/features/portal/resolveEntry.ts`: any membership → `resolveHome`
+  (staff logic untouched, dual-role lands on staff); else any `client_users`
+  row (via `listMyClientLinks`, filtered to the caller like
+  `listMyMemberships`) → `/(portal)/home`; else the portal-door flag decides
+  between the portal's no-account state and business onboarding.
+- **The no-account guard** is a persisted "which door did they come through"
+  flag (`src/features/auth/portalEntry.ts`, kv-store like `pendingInvite`):
+  set by `requestPortalOtp` on a successful code send, cleared by the staff
+  password `signIn`/`signUp`. Chosen over in-memory state so a web reload
+  (web is the portal's primary surface) keeps a link-less OTP user on the
+  portal's friendly "no account found — ask your provider for an invite"
+  screen instead of dumping them into business onboarding. The flag records
+  the *last* door used, so a later staff sign-in on the same browser behaves
+  normally.
+- **Portal home is `app/(portal)/home.tsx`, not `(portal)/index.tsx`** — a
+  group index would collide with the root `app/index.tsx` at `/`. Matches
+  the `(owner)/today` precedent; Task 4's tabs slot in as siblings without
+  moving files. The placeholder doubles as the no-account state (zero client
+  links) and carries sign-out; the `(portal)` layout redirects signed-out
+  users to `/portal-login` and staff to `/`.
+- **`shouldCreateUser: true`** on `signInWithOtp` is deliberate: a pet
+  parent's first login is their sign-up (plan Task 3 links them by email).
+  OTP is self-confirming, so the email-confirmation launch blocker for
+  password signups is unaffected.
+- **SMTP (Resend) is sponsor-side dashboard config** — nothing in this task
+  touches auth email templates or depends on SMTP being live; against local
+  Supabase the OTP email lands in Inbucket/Mailpit.
+- Sessions from `verifyOtp` ride the existing supabase-js client (encrypted
+  LargeSecureStore on native, auto-refresh wiring unchanged) — no new
+  session handling.
