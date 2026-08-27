@@ -2264,3 +2264,25 @@ deployed-but-dormant for a possible toll-free future.
   Venmo is recorded as an overpayment, so the invoice list shows
   "Paid −$5.00" — arithmetic is right, display should read
   "Paid · incl. $5.00 tip".
+
+## 2026-08-26 — Plan 7b Task 1: event pins have no stored coordinates
+
+- `visit_events` rows carry NO lat/lng (schema decision from Plan 4), but the
+  plan calls for pee/poop/photo pins on the static map. Chosen: a pin's
+  position is the track point NEAREST IN TIME to the event's `occurred_at`
+  (track points carry `t` epoch ms from ingest-track). Helper
+  `nearestTrackPoint` lives in `_shared/staticMap.ts` with the other pure
+  pieces; no schema change, and events logged while GPS was cold simply pin
+  to the closest fix.
+- Pin legend (letters, `pin-s`, colors from src/ui/tokens.ts): start `s`
+  green 3A7D5C, finish `f` primary E8642C, pee `p` warning B7791F, poop `w`
+  inkMuted 8A5A2B, photo `c` ink 2B1D12. Maki icons deliberately avoided —
+  a bad icon name 422s the whole render; letters cannot.
+- Map render also runs on the `skipped_no_provider` path (no Resend env):
+  the SMS channel carries the same report link, so the map should exist even
+  when no email goes out. Failure anywhere (no MAPBOX_TOKEN, Mapbox non-200,
+  storage error) logs and falls through — the notification row proceeds
+  exactly as before.
+- URL-length guard: point budget HALVES (evenly, first/last kept) until the
+  URL fits 8000 chars — deterministic and pinned in staticMap.test.ts, vs.
+  a per-point char estimate that would drift with coordinates.

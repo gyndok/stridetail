@@ -31,6 +31,9 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { downsamplePolyline, flattenTrackPoints, type TrackPoint } from './polyline.ts';
 
 const SIGNED_URL_TTL_S = 86_400; // 24 h
+// Plan 7b: the static walk map is a short-lived link — the page fetches the
+// payload fresh each view, so 1 h is plenty and limits link reuse.
+const MAP_URL_TTL_S = 3_600; // 1 h
 const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 60_000;
 const RATE_MAP_MAX = 10_000;
@@ -172,6 +175,15 @@ Deno.serve(async (req) => {
   }
   const route = downsamplePolyline(flattenTrackPoints(tracks));
 
+  // Plan 7b: signed URL (1 h) for the render-once walk map, when send-email
+  // stored one. createSignedUrl errors on a missing object, so one call is
+  // both the existence check and the sign; absent map -> no mapUrl field and
+  // the page falls back to its SVG polyline.
+  const { data: mapData } = await admin.storage
+    .from('media')
+    .createSignedUrl(`reports/${report.visit_id}/map.png`, MAP_URL_TTL_S);
+  const mapUrl = mapData?.signedUrl ?? null;
+
   return json({
     business: {
       name: biz?.name ?? 'Your pet care team',
@@ -183,5 +195,7 @@ Deno.serve(async (req) => {
     timeline,
     route,
     invoice: invoiceToken ? { token: invoiceToken } : null,
+    // Mapbox ToS requires attribution wherever the tile image renders.
+    ...(mapUrl ? { mapUrl, mapAttribution: '© Mapbox © OpenStreetMap' } : {}),
   });
 });

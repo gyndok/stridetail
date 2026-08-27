@@ -63,6 +63,7 @@
         "npm:react-native-reanimated@4.5.1",
         "npm:react-native-safe-area-context@5.7",
         "npm:react-native-screens@4.26",
+        "npm:react-native-svg@15.15.4",
         "npm:react-native-url-polyfill@4",
         "npm:react-native-web@0.21",
         "npm:react-native-worklets@0.10.1",

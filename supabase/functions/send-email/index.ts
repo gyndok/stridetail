@@ -29,6 +29,14 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 import { corsHeaders } from '../_shared/cors.ts';
 import {
+  buildStaticMapUrl,
+  flattenTrack,
+  nearestTrackPoint,
+  type EventPin,
+  type EventPinType,
+  type TimedPoint,
+} from '../_shared/staticMap.ts';
+import {
   backoffMinutes,
   invoiceNumberLabel,
   MAX_ATTEMPTS,
@@ -171,6 +179,88 @@ async function resendSend(
   }
 }
 
+// ---- Plan 7b: render-once walk map (visit_finished only) --------------------
+// Before a visit_finished email goes out, make sure the walk's static map PNG
+// exists at media:reports/<visit_id>/map.png. Render-once: the object's
+// presence IS the flag (no schema change), so the check runs first and a
+// resend/retry never re-fetches Mapbox. EVERY failure here (no MAPBOX_TOKEN,
+// Mapbox non-200, storage error) is logged and swallowed — the email must
+// still send; the report page falls back to its SVG polyline.
+const EVENT_PIN_TYPES: EventPinType[] = ['pee', 'poop', 'photo'];
+
+async function ensureReportMap(admin: SupabaseClient, visitIdRaw: unknown): Promise<void> {
+  try {
+    const visitId = typeof visitIdRaw === 'string' && visitIdRaw.length > 0 ? visitIdRaw : null;
+    if (!visitId) return;
+    const dir = `reports/${visitId}`;
+
+    // Idempotency check FIRST: if the map exists, skip the fetch entirely.
+    const { data: existing, error: listErr } = await admin.storage
+      .from('media')
+      .list(dir, { search: 'map.png' });
+    if (listErr) {
+      console.error(`report map: list ${dir} failed: ${listErr.message}`);
+      return;
+    }
+    if ((existing ?? []).some((o) => o.name === 'map.png')) return;
+
+    const mapboxToken = Deno.env.get('MAPBOX_TOKEN');
+    if (!mapboxToken) {
+      console.warn('report map: MAPBOX_TOKEN not set, skipping map render');
+      return;
+    }
+
+    const { data: trackRows, error: trackErr } = await admin
+      .from('visit_tracks')
+      .select('segment_no, points')
+      .eq('visit_id', visitId)
+      .order('segment_no', { ascending: true });
+    if (trackErr) {
+      console.error(`report map: tracks read failed for ${visitId}: ${trackErr.message}`);
+      return;
+    }
+    const track = flattenTrack((trackRows ?? []) as { points: TimedPoint[] }[]);
+    if (track.length < 2) return; // nothing to draw — not an error
+
+    // visit_events rows carry no coordinates; a pin sits on the track point
+    // nearest in time to occurred_at (point t is epoch ms).
+    const { data: eventRows, error: eventErr } = await admin
+      .from('visit_events')
+      .select('type, occurred_at')
+      .eq('visit_id', visitId)
+      .in('type', EVENT_PIN_TYPES)
+      .order('occurred_at', { ascending: true });
+    if (eventErr) {
+      console.error(`report map: events read failed for ${visitId}: ${eventErr.message}`);
+      return;
+    }
+    const events: EventPin[] = [];
+    for (const e of (eventRows ?? []) as { type: EventPinType; occurred_at: string }[]) {
+      const at = Date.parse(e.occurred_at);
+      const p = Number.isFinite(at) ? nearestTrackPoint(track, at) : null;
+      if (p) events.push({ lat: p.lat, lng: p.lng, type: e.type });
+    }
+
+    const url = buildStaticMapUrl(track, events, mapboxToken);
+    if (!url) return;
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error(`report map: mapbox http ${res.status} for visit ${visitId}`);
+      return;
+    }
+    const png = new Uint8Array(await res.arrayBuffer());
+    const { error: upErr } = await admin.storage
+      .from('media')
+      .upload(`${dir}/map.png`, png, { contentType: 'image/png', upsert: false });
+    // A concurrent claimer may have won the upsert:false race — that's success.
+    if (upErr && !/exist/i.test(upErr.message)) {
+      console.error(`report map: upload failed for ${visitId}: ${upErr.message}`);
+    }
+  } catch (e) {
+    console.error(`report map: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
 async function processRow(admin: SupabaseClient, row: NotificationRow, resend: Resend | null): Promise<SendResult> {
   const nowIso = () => new Date().toISOString();
   const ctx = await buildContext(admin, row);
@@ -183,6 +273,13 @@ async function processRow(admin: SupabaseClient, row: NotificationRow, resend: R
       .update({ status: 'failed', last_error: `unknown template: ${row.template}`, updated_at: nowIso() })
       .eq('id', row.id);
     return { id: row.id, template: row.template, to: row.to, status: 'failed', error: 'unknown template' };
+  }
+
+  // Plan 7b: render the walk map before the report email leaves (non-fatal).
+  // Also runs on the no-provider path — the SMS channel carries the same
+  // report link, so the map should exist either way.
+  if (row.template === 'visit_finished') {
+    await ensureReportMap(admin, row.payload['visitId']);
   }
 
   if (!resend) {
