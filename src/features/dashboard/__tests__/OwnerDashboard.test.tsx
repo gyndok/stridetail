@@ -56,6 +56,13 @@ jest.mock('@/src/features/dashboard/businessData', () => ({
   useBusinessServices: () => ({ data: [], error: null }),
   useBusinessBilling: () => ({ data: { invoices: [], unbilledCount: 0 }, error: null }),
 }));
+// Task 3 replaced the SchedulePanel stub with a query-backed panel (its own
+// SchedulePanel.test.tsx covers the real body); the shell test only asserts
+// the slot exists, so mock it to its slot marker.
+jest.mock('../SchedulePanel', () => {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return { SchedulePanel: () => <Text>Schedule</Text> };
+});
 
 test('shell renders the title, KPI row, and the three panel stubs', async () => {
   const { getByText } = await render(
@@ -69,7 +76,6 @@ test('shell renders the title, KPI row, and the three panel stubs', async () => 
   expect(getByText('Operations')).toBeTruthy();
   expect(getByText('Schedule')).toBeTruthy();
   expect(getByText('Clients & pets')).toBeTruthy(); // Task 4 business column
-  // Stub bodies say so, until Tasks 2-3 replace them.
+  // Operations is the one remaining stub (Task 2); Task 3's slot is mocked above.
   expect(getByText('Requests, needs attention, and live walks — coming in the next task.')).toBeTruthy();
-  expect(getByText('Week table and month calendar — coming in the next task.')).toBeTruthy();
 });
