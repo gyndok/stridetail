@@ -191,18 +191,57 @@ export async function listPendingBookingRequests(businessId: string): Promise<Ow
 /**
  * Owner approves: the RPC creates the visit at the service's current price
  * (unassigned, or offered to p_walker), stamps the request, queues the client
- * email, audits. Returns the new visit id.
+ * email, audits. Returns the new visit id. startUtc null -> the RPC schedules
+ * at window_start; given -> the RPC validates it inside [window_start,
+ * window_end) and schedules there (migration 20260827000001).
  */
 export async function approveBookingRequest(
   requestId: string,
   walkerId: string | null = null,
+  startUtc: Date | null = null,
 ): Promise<string> {
   const { data, error } = await supabase.rpc('approve_booking_request', {
     p_request: requestId,
     p_walker: walkerId,
+    p_start: startUtc ? startUtc.toISOString() : null,
   });
   if (error) throw error;
   return data as string;
+}
+
+/** Wall-clock 'HH:MM' of the window start in the business tz — the start picker's default. */
+export function windowStartHhmm(startIso: string, tz: string): string {
+  return formatInTimeZone(new Date(startIso), tz, 'HH:mm');
+}
+
+/** "2:00 PM – 4:00 PM" in the business tz — the start picker's allowed range hint. */
+export function windowTimeRangeLabel(startIso: string, endIso: string, tz: string): string {
+  const start = formatInTimeZone(new Date(startIso), tz, 'h:mm a');
+  const end = formatInTimeZone(new Date(endIso), tz, 'h:mm a');
+  return `${start} – ${end}`;
+}
+
+/**
+ * The owner's picked 'HH:MM' on the request's DATE (the window-start day in
+ * the business tz) -> UTC instant, validated inside the half-open window
+ * [window_start, window_end) — the client-side mirror of the RPC's p_start
+ * checks. Null on malformed input or a pick outside the window. The
+ * wall-clock -> zone conversion is parseLocalDateTime (date-fns-tz), the same
+ * helper the request form uses — no hand-rolled DST math.
+ */
+export function approveStartUtc(
+  windowStartIso: string,
+  windowEndIso: string,
+  hhmm: string,
+  tz: string,
+): Date | null {
+  const dateText = formatInTimeZone(new Date(windowStartIso), tz, 'yyyy-MM-dd');
+  const start = parseLocalDateTime(`${dateText} ${hhmm}`, tz);
+  if (!start) return null;
+  const windowStart = new Date(windowStartIso).getTime();
+  const windowEnd = new Date(windowEndIso).getTime();
+  if (start.getTime() < windowStart || start.getTime() >= windowEnd) return null;
+  return start;
 }
 
 /** Owner declines with a reason (required by the RPC; rides the client email). */

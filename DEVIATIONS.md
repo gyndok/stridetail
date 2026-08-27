@@ -2692,3 +2692,33 @@ Task 3's react-native-maps screens. Other calls:
 - Web spot-check: `https://stridetail.app/portal-login` → 200 text/html with the
   sign-in/email/code content (pre-noindex deploy; header check rides the next deploy).
 - Checkpoint 8 (sponsor phone run) appended to checkpoints.md — evidence PENDING.
+
+## Post-Checkpoint 8 — owner picks the approve start time (2026-08-27)
+
+Sponsor feedback from Checkpoint 8: a booking request carries a time WINDOW
+("come anytime 11–1") but the Approve card offered no way to choose the actual
+start inside it — `approve_booking_request` pinned the visit to `window_start`
+and the card said "reschedule it after". Fixed end to end (post-checkpoint
+polish; no PRD-CHECKLIST rows ticked):
+
+- Migration `20260827000001_approve_start_time.sql`: `approve_booking_request`
+  gains `p_start timestamptz default null`. Null keeps the old behavior
+  (visit at `window_start`); given, it must sit inside the HALF-OPEN window
+  `[window_start, window_end)` — `p_start = window_end` is rejected, since a
+  visit starting exactly when the client's window closes was never the ask.
+  The chosen start rides the `booking_request_approved` email payload
+  (`scheduledStart`) and the audit meta (`scheduled_start`).
+- Signature call: postgres treats `create or replace` with an added defaulted
+  parameter as an overload, so the old `(uuid, uuid)` function is DROPPED
+  first (only callers: the app RPC + pgTAP, both updated in lockstep) and the
+  public/anon revoke + authenticated grant re-applied to `(uuid, uuid,
+  timestamptz)`. pgTAP asserts exactly one signature remains.
+- Owner card: a Start time TimeField (default = window start, business-tz wall
+  clock), helper text naming the allowed range, client-side mirror of the
+  bounds (Approve disabled + inline error outside the window). The picked
+  'HH:MM' is resolved on the request's DATE (the window-start day in the
+  business tz) via the existing `parseLocalDateTime` (date-fns-tz) — no
+  hand-rolled DST math. A window that spans midnight would only accept picks
+  on the start day; acceptable for v1 (requests are same-day windows).
+- `tz` still loading (memberships query) hides the picker and sends
+  `p_start: null` — server default, never a wrong zone.

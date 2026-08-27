@@ -1,5 +1,6 @@
 import {
   approveBookingRequest,
+  approveStartUtc,
   BOOKING_REQUEST_COLUMNS,
   createBookingRequest,
   declineBookingRequest,
@@ -11,6 +12,8 @@ import {
   requestStatusChip,
   requestWindow,
   requestWindowLabel,
+  windowStartHhmm,
+  windowTimeRangeLabel,
 } from '../requestsApi';
 
 type Step = [string, unknown[]];
@@ -172,18 +175,49 @@ test('listPendingBookingRequests: business scope, pending only, oldest first', a
   expect(OWNER_REQUEST_COLUMNS).toContain('client:clients(name)');
 });
 
-test('approveBookingRequest: RPC shape with and without a walker', async () => {
+test('approveBookingRequest: RPC shape with and without a walker and start', async () => {
   mockResult = { data: 'v1', error: null };
   await approveBookingRequest('r1');
   expect(mockRpcLog[0]).toEqual({
     fn: 'approve_booking_request',
-    args: { p_request: 'r1', p_walker: null },
+    args: { p_request: 'r1', p_walker: null, p_start: null },
   });
   await approveBookingRequest('r1', 'w1');
   expect(mockRpcLog[1]).toEqual({
     fn: 'approve_booking_request',
-    args: { p_request: 'r1', p_walker: 'w1' },
+    args: { p_request: 'r1', p_walker: 'w1', p_start: null },
   });
+  await approveBookingRequest('r1', 'w1', new Date('2026-08-27T19:30:00Z'));
+  expect(mockRpcLog[2]).toEqual({
+    fn: 'approve_booking_request',
+    args: { p_request: 'r1', p_walker: 'w1', p_start: '2026-08-27T19:30:00.000Z' },
+  });
+});
+
+test('windowStartHhmm: the window start as business-tz wall clock', () => {
+  // 19:00 UTC on 2026-08-27 is 2:00 PM CDT.
+  expect(windowStartHhmm('2026-08-27T19:00:00Z', 'America/Chicago')).toBe('14:00');
+  expect(windowStartHhmm('2026-08-27T19:00:00Z', 'America/New_York')).toBe('15:00');
+});
+
+test('windowTimeRangeLabel renders the allowed range in the business zone', () => {
+  expect(
+    windowTimeRangeLabel('2026-08-27T19:00:00Z', '2026-08-27T21:00:00Z', 'America/Chicago'),
+  ).toBe('2:00 PM – 4:00 PM');
+});
+
+test('approveStartUtc: converts inside the window; outside or malformed is null', () => {
+  const ws = '2026-08-27T19:00:00Z'; // 2:00 PM CDT
+  const we = '2026-08-27T21:00:00Z'; // 4:00 PM CDT
+  const tz = 'America/Chicago';
+  // The window start itself is the default and valid.
+  expect(approveStartUtc(ws, we, '14:00', tz)?.toISOString()).toBe('2026-08-27T19:00:00.000Z');
+  expect(approveStartUtc(ws, we, '15:30', tz)?.toISOString()).toBe('2026-08-27T20:30:00.000Z');
+  // Bounds mirror the RPC: [window_start, window_end).
+  expect(approveStartUtc(ws, we, '13:59', tz)).toBeNull();
+  expect(approveStartUtc(ws, we, '16:00', tz)).toBeNull();
+  expect(approveStartUtc(ws, we, '17:00', tz)).toBeNull();
+  expect(approveStartUtc(ws, we, 'nope', tz)).toBeNull();
 });
 
 test('declineBookingRequest: RPC shape carries the trimmed reason', async () => {
