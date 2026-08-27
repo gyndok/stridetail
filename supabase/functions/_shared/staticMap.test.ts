@@ -35,30 +35,40 @@ Deno.test('encodePolyline: empty and single-point inputs', () => {
   assertEquals(encodePolyline([{ lat: 38.5, lng: -120.2 }]), '_p~iF~ps|U');
 });
 
-Deno.test('buildStaticMapUrl pins the exact URL: path, event pin, start/finish pins', () => {
+// url- markers carry the percent-encoded marker-image URL.
+const M = (name: string) => encodeURIComponent(`https://stridetail.app/markers/${name}.png`);
+
+Deno.test('buildStaticMapUrl pins the exact URL: path, event marker, start/finish markers', () => {
   const events: EventPin[] = [{ lat: 40.7, lng: -120.95, type: 'pee' }];
   const url = buildStaticMapUrl(GOOGLE_TRACK, events, 'TEST_TOKEN');
   assertEquals(
     url,
     'https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/static/' +
       'path-4+E8642C-0.9(_p~iF~ps%7CU_ulLnnqC_mqNvxq%60%40),' +
-      'pin-s-p+B7791F(-120.95,40.7),' +
-      'pin-s-s+3A7D5C(-120.2,38.5),' +
-      'pin-s-f+E8642C(-126.453,43.252)' +
+      `url-${M('pee')}(-120.95,40.7),` +
+      `url-${M('start')}(-120.2,38.5),` +
+      `url-${M('finish')}(-126.453,43.252)` +
       '/auto/700x400@2x?padding=40&access_token=TEST_TOKEN',
   );
 });
 
-Deno.test('event pin letters/colors: poop=w+8A5A2B, photo=c+2B1D12; unknown types dropped', () => {
+Deno.test('event markers: poop and photo discs placed; unknown types dropped', () => {
   const events = [
     { lat: 40.7, lng: -120.95, type: 'poop' },
     { lat: 40.7, lng: -120.95, type: 'photo' },
     { lat: 40.7, lng: -120.95, type: 'note' },
   ] as EventPin[];
   const url = buildStaticMapUrl(GOOGLE_TRACK, events, 'TEST_TOKEN')!;
-  assertStringIncludes(url, 'pin-s-w+8A5A2B(-120.95,40.7)');
-  assertStringIncludes(url, 'pin-s-c+2B1D12(-120.95,40.7)');
+  assertStringIncludes(url, `url-${M('poop')}(-120.95,40.7)`);
+  assertStringIncludes(url, `url-${M('photo')}(-120.95,40.7)`);
   assert(!url.includes('note'));
+});
+
+Deno.test('markerBaseUrl option overrides the marker host', () => {
+  const url = buildStaticMapUrl(GOOGLE_TRACK, [], 'TEST_TOKEN', {
+    markerBaseUrl: 'https://example.test/m',
+  })!;
+  assertStringIncludes(url, `url-${encodeURIComponent('https://example.test/m/start.png')}(-120.2,38.5)`);
 });
 
 Deno.test('options override size, style, padding; token is only appended, never baked in', () => {
@@ -87,9 +97,9 @@ Deno.test('long track downsamples until the URL fits under the limit', () => {
   const uncapped = buildStaticMapUrl(big, [], 'TEST_TOKEN', { maxUrlChars: 10_000_000 })!;
   assert(capped.length <= MAX_URL_CHARS, `capped url is ${capped.length} chars`);
   assert(uncapped.length > MAX_URL_CHARS, 'fixture must exceed the limit undownsampled');
-  // First/last points survive downsampling: the start/finish pins sit on them.
-  assertStringIncludes(capped, 'pin-s-s+3A7D5C(-95.4,29.7)');
-  assertStringIncludes(capped, 'pin-s-f+E8642C(-98.1993,32.4993)');
+  // First/last points survive downsampling: the start/finish markers sit on them.
+  assertStringIncludes(capped, `url-${M('start')}(-95.4,29.7)`);
+  assertStringIncludes(capped, `url-${M('finish')}(-98.1993,32.4993)`);
 });
 
 Deno.test('downsampleEvenly keeps first and last, rejects maxPoints < 2', () => {

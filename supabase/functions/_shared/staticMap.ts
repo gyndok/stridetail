@@ -7,10 +7,12 @@
 // - the track as a Mapbox `path` overlay carrying a standard Google
 //   polyline-encoded (precision 5) string, downsampled evenly when the final
 //   URL would exceed ~8k chars (Mapbox rejects longer request URLs);
-// - start/finish pins and pee/poop/photo event pins as `pin-s` markers with
-//   single letters, colored from src/ui/tokens.ts (hex, '#' stripped):
-//   start s=green 3A7D5C, finish f=primary E8642C, pee p=warning B7791F,
-//   poop w=inkMuted 8A5A2B, photo c=ink 2B1D12.
+// - start/finish pins and pee/poop/photo event pins as CUSTOM `url-` markers:
+//   64px white-disc PNGs served from the product web host's public/markers/
+//   (green flag start, chequered flag finish, droplet pee, poop, camera —
+//   built from Twemoji artwork, CC-BY 4.0 © Twitter/X contributors; generator
+//   recorded in DEVIATIONS.md). Mapbox fetches and caches marker images by
+//   URL, so the files must be publicly reachable and are versioned by path.
 // - style mapbox/outdoors-v12 (warm, streets visible), auto bbox with
 //   padding, @2x retina, default 700x400.
 //
@@ -34,6 +36,8 @@ export type StaticMapOptions = {
   style?: string;
   padding?: number;
   maxUrlChars?: number;
+  /** Base URL of the marker PNG dir (no trailing slash). */
+  markerBaseUrl?: string;
 };
 
 export const DEFAULT_WIDTH = 700;
@@ -48,13 +52,23 @@ export const MAX_ACCURACY_M = 50;
 
 // Colors from src/ui/tokens.ts with the '#' stripped — change both together.
 const PATH_COLOR = 'E8642C'; // primary
-const START_PIN = 'pin-s-s+3A7D5C'; // green
-const FINISH_PIN = 'pin-s-f+E8642C'; // primary
-const EVENT_PINS: Record<EventPinType, string> = {
-  pee: 'pin-s-p+B7791F', // warning
-  poop: 'pin-s-w+8A5A2B', // inkMuted
-  photo: 'pin-s-c+2B1D12', // ink
+
+/** Where the marker discs live: public/markers/ of the product web app. */
+export const DEFAULT_MARKER_BASE_URL = 'https://stridetail.app/markers';
+
+// Marker PNG basenames under markerBaseUrl (public/markers/<name>.png).
+const START_MARKER = 'start'; // green flag
+const FINISH_MARKER = 'finish'; // chequered flag
+const EVENT_MARKERS: Record<EventPinType, string> = {
+  pee: 'pee', // droplet
+  poop: 'poop', // pile of poo
+  photo: 'photo', // camera
 };
+
+/** Mapbox custom-marker overlay: url-<encoded image url>(lng,lat). */
+function urlMarker(base: string, name: string, at: LatLng): string {
+  return `url-${encodeURIComponent(`${base}/${name}.png`)}(${coord(at)})`;
+}
 
 /** Standard Google polyline encoding of one signed value (precision-scaled). */
 function encodeSigned(value: number, out: string[]): void {
@@ -149,16 +163,17 @@ function assembleUrl(
   height: number,
   style: string,
   padding: number,
+  markerBase: string,
 ): string {
   // Overlays draw in listed order: path underneath, pins on top,
   // start/finish above event pins.
   const overlays: string[] = [`path-4+${PATH_COLOR}-0.9(${encodeURIComponent(encodePolyline(track))})`];
   for (const e of events) {
-    const pin = EVENT_PINS[e.type];
-    if (pin) overlays.push(`${pin}(${coord(e)})`);
+    const name = EVENT_MARKERS[e.type];
+    if (name) overlays.push(urlMarker(markerBase, name, e));
   }
-  overlays.push(`${START_PIN}(${coord(track[0]!)})`);
-  overlays.push(`${FINISH_PIN}(${coord(track[track.length - 1]!)})`);
+  overlays.push(urlMarker(markerBase, START_MARKER, track[0]!));
+  overlays.push(urlMarker(markerBase, FINISH_MARKER, track[track.length - 1]!));
   return (
     `https://api.mapbox.com/styles/v1/${style}/static/${overlays.join(',')}` +
     `/auto/${width}x${height}@2x?padding=${padding}&access_token=${token}`
@@ -182,15 +197,16 @@ export function buildStaticMapUrl(
   const style = options.style ?? DEFAULT_STYLE;
   const padding = options.padding ?? DEFAULT_PADDING;
   const maxUrlChars = options.maxUrlChars ?? MAX_URL_CHARS;
+  const markerBase = options.markerBaseUrl ?? DEFAULT_MARKER_BASE_URL;
 
   let budget = track.length;
   let sampled = track;
-  let url = assembleUrl(sampled, events, token, width, height, style, padding);
+  let url = assembleUrl(sampled, events, token, width, height, style, padding, markerBase);
   // Halve the point budget (evenly, first/last kept) until the URL fits.
   while (url.length > maxUrlChars && budget > 2) {
     budget = Math.max(2, Math.ceil(budget / 2));
     sampled = downsampleEvenly(track, budget);
-    url = assembleUrl(sampled, events, token, width, height, style, padding);
+    url = assembleUrl(sampled, events, token, width, height, style, padding, markerBase);
   }
   return url;
 }

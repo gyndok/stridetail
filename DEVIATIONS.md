@@ -2307,3 +2307,22 @@ Task 3's react-native-maps screens. Other calls:
   ride the same payload, so the fallback needs no refetch.
 - Attribution renders at label size but without the uppercase transform —
   "© Mapbox © OpenStreetMap" must read verbatim per Mapbox ToS.
+
+## 2026-08-26 — Plan 7b: emoji marker discs replace letter pins (sponsor request)
+
+- Sponsor: "instead of letters can we use icons? green flag, checkered flag,
+  poop emoji, water drop emoji". Swapped Mapbox `pin-s-<letter>` markers for
+  custom `url-` markers: 64px white-disc PNGs in `public/markers/` (served by
+  the stridetail.app Vercel deploy; Mapbox fetches + caches them by URL).
+  start=green flag, finish=chequered flag, pee=droplet, poop=pile of poo,
+  photo=camera.
+- Artwork: Twemoji SVGs (CC-BY 4.0, © Twitter/X contributors), composited
+  onto white discs with sharp; the start flag is Twemoji 1F6A9 with the cloth
+  recolored #DD2E44 → token green #3A7D5C. Attribution carried here and in
+  the staticMap.ts header. Generator was a scratch script (sharp, density
+  300, 40px icon on 64px disc, 2px ink-25% ring) — rerun-from-scratch is
+  five fetches and one composite; not vendored.
+- `markerBaseUrl` option added to the builder (tests pin the default
+  stridetail.app URLs). Existing stored maps are letter-pin renders; only
+  tonight's smoke map was deleted and re-rendered — historical walk maps
+  keep whatever style they were rendered with (presence = idempotency flag).
