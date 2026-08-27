@@ -49,6 +49,14 @@ jest.mock('@/src/features/dashboard/kpis', () => ({
   useDashboardKpis: () => ({ data: mockKpis, isLoading: false }),
 }));
 
+// Task 4 replaced the BusinessPanel stub with live hooks; stub their data here.
+jest.mock('@/src/features/dashboard/businessData', () => ({
+  ...jest.requireActual('@/src/features/dashboard/businessData'),
+  useBusinessClients: () => ({ data: [], error: null }),
+  useBusinessServices: () => ({ data: [], error: null }),
+  useBusinessBilling: () => ({ data: { invoices: [], unbilledCount: 0 }, error: null }),
+}));
+
 test('shell renders the title, KPI row, and the three panel stubs', async () => {
   const { getByText } = await render(
     <ThemeProvider>
@@ -60,9 +68,8 @@ test('shell renders the title, KPI row, and the three panel stubs', async () => 
   expect(getByText('$100.00')).toBeTruthy();
   expect(getByText('Operations')).toBeTruthy();
   expect(getByText('Schedule')).toBeTruthy();
-  expect(getByText('Business')).toBeTruthy();
-  // Stub bodies say so, until Tasks 2-4 replace them.
+  expect(getByText('Clients & pets')).toBeTruthy(); // Task 4 business column
+  // Stub bodies say so, until Tasks 2-3 replace them.
   expect(getByText('Requests, needs attention, and live walks — coming in the next task.')).toBeTruthy();
   expect(getByText('Week table and month calendar — coming in the next task.')).toBeTruthy();
-  expect(getByText('Clients, services, and billing — coming in the next task.')).toBeTruthy();
 });

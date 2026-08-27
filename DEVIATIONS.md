@@ -2744,3 +2744,37 @@ polish; no PRD-CHECKLIST rows ticked):
   column, so both weeks come from a single query bounded by local
   'YYYY-MM-DD' strings (previous week start inclusive, current week end
   exclusive) and are split per week in pure math.
+
+## Plan 8b Task 4 — business panels: clients, services, billing (2026-08-27)
+
+- **Roster search is client-side fetch-all.** The business has ~11 clients, so
+  the panel fetches the whole roster once (named columns, pets embed with
+  names/species) and `filterClients` matches client OR pet names in memory —
+  no server-side ilike round-trip per keystroke. Recorded per the plan.
+- **Client flags derive from existing helpers.** "No email" =
+  `portalInviteState(...) === 'needs-email'` (clients/api — the portal-invite
+  rule, not a bare null check); "M&G pending" = `isMeetGreetPending`
+  (`mg_completed_at` null — the column exists). Both rendered with the billing
+  `StatusBadge` pill (warning / neutral tones) rather than a third bespoke
+  chip component; the clients screen's primary-colored M&G pill stays as-is.
+- **Unbilled-visits count is a business-wide variant of the existing
+  anti-join.** billing/api `listUninvoicedVisits` is per-client by design
+  (new-invoice flow), so `businessData.fetchUnbilledVisitCount` reads bare
+  visit ids (completed) + invoice_items visit_ids business-wide and counts
+  client-side — the SAME eligibility, minus the client filter. No new columns
+  touched, so no grant risk.
+- **Billing card reuses `listInvoices` wholesale.** All invoices come back
+  (small tenant), the panel shows the newest 8, and the outstanding rollup is
+  `unpaidTotalCents` over the full list — one query serves rows + rollup.
+  "View billing" is the PanelCard header action; "New invoice" is a footer
+  link (PanelCard carries one action slot).
+- **OwnerDashboard.test.tsx minimally edited.** The Task 1 shell test asserted
+  the Business stub's placeholder text and 'Business' title, both gone once
+  this task replaces the stub wholesale; the two assertions became one
+  ('Clients & pets') and the new businessData hooks are stubbed alongside the
+  existing kpis mock. Tasks 2-3 will make the same kind of edit for their
+  stub lines.
+- **No quick links column.** The plan sketch mentioned per-row profile/access
+  links; the row itself opens the client screen (where access codes live as
+  links — values are never rendered), which covers both without a cramped
+  link cluster in a panel-width table.
