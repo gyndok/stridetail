@@ -2286,3 +2286,24 @@ deployed-but-dormant for a possible toll-free future.
 - URL-length guard: point budget HALVES (evenly, first/last kept) until the
   URL fits 8000 chars — deterministic and pinned in staticMap.test.ts, vs.
   a per-point char estimate that would drift with coordinates.
+
+## 2026-08-26 — Plan 7b Task 2: no in-app report views exist yet
+
+The plan says "public report page and in-app report views" show the map, but
+no in-app owner/walker screen renders the route from the report-public
+payload — `routeSvgPath`/`fetchPublicReport` are consumed only by
+`app/report/[token].tsx` (the walker visit screen is text/timeline only).
+So Task 2 covers the public page alone; in-app route rendering arrives with
+Task 3's react-native-maps screens. Other calls:
+
+- Route card extracted to `src/features/report/RouteCard.tsx` so it is
+  testable under RNTL without mocking expo-router/react-query; the page keeps
+  identical rendering.
+- Plain react-native `Image` (the page's existing convention for logo and
+  photos), not expo-image — one image, no caching need, and `onError` is what
+  drives the fallback.
+- Image load failure (e.g. signed URL expired after 1h with the page left
+  open) flips component state to the SVG sketch; the route points already
+  ride the same payload, so the fallback needs no refetch.
+- Attribution renders at label size but without the uppercase transform —
+  "© Mapbox © OpenStreetMap" must read verbatim per Mapbox ToS.
