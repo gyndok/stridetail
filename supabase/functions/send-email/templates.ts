@@ -24,6 +24,14 @@ export type EmailContext = {
   invoiceUrl?: string;
   /** client_invite only: portal login URL from the payload. */
   portalUrl?: string;
+  /** booking_request_received only: the requesting client's name. */
+  clientName?: string;
+  /** booking_request_received only: pre-formatted window label (formatWindow). */
+  requestWindow?: string;
+  /** booking_request_approved only: pre-formatted scheduled instant (formatInstant). */
+  scheduledStart?: string;
+  /** booking_request_declined only: the owner's reason, verbatim. */
+  declineReason?: string;
 };
 
 /** client_invite fallback when the payload carries no portalUrl. */
@@ -66,6 +74,53 @@ export function centsToDollars(cents: number): string {
 /** 7 -> 'INV-0007' — copy of invoiceNumberLabel in src/features/billing/money.ts. */
 export function invoiceNumberLabel(n: number): string {
   return `INV-${String(n).padStart(4, '0')}`;
+}
+
+/** ICU's U+202F (narrow no-break space, before AM/PM) -> a plain space. */
+function normalizeSpaces(s: string): string {
+  return s.replace(/ /g, ' ');
+}
+
+/**
+ * ISO instant -> 'Thu, Aug 27, 2:00 PM' in the business zone (Plan 8 Task 7:
+ * booking-request emails carry human times, not ISO strings). Intl only — no
+ * date lib in the function dir; ICU's narrow no-break space before AM/PM is
+ * normalized to a plain space so emails and tests stay stable. Bad input
+ * (unparseable instant, unknown zone) falls back to the raw string — an
+ * ugly-but-true email beats a failed queue row.
+ */
+export function formatInstant(iso: string, tz: string): string {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return normalizeSpaces(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(d),
+    );
+  } catch {
+    return iso;
+  }
+}
+
+/** 'Thu, Aug 27, 2:00 PM – 4:00 PM' — request windows are same-day, so the end is time-only. */
+export function formatWindow(startIso: string, endIso: string, tz: string): string {
+  const start = formatInstant(startIso, tz);
+  try {
+    const e = new Date(endIso);
+    if (Number.isNaN(e.getTime())) return start;
+    const end = normalizeSpaces(
+      new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' }).format(e),
+    );
+    return `${start} – ${end}`;
+  } catch {
+    return start;
+  }
 }
 
 export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> = {
@@ -125,6 +180,51 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
       html: wrapHtml([
         `${escapeHtml(c.businessName)} invited you to their pet care portal — see your pet's visits, report cards, and invoices in one place.`,
         `<a href="${escapeHtml(url)}">Sign in with this email address</a>`,
+      ]),
+    };
+  },
+  // Plan 8 Task 7: booking-request emails. Received goes to the OWNER (queued
+  // by the Task-1 insert trigger); approved/declined go to the client (queued
+  // by the RPCs). Subject shape for received is pinned by the plan.
+  booking_request_received: (c) => {
+    const who = c.clientName && c.clientName.length > 0 ? c.clientName : null;
+    const win = c.requestWindow ? ` for ${c.requestWindow}` : '';
+    return {
+      subject: `${c.businessName}: new service request from ${who ?? 'a client'}`,
+      text:
+        `${c.businessName}: ${who ?? 'A client'} requested a ${c.serviceName} visit${win}. ` +
+        'Open Stridetail to approve or decline.',
+      html: wrapHtml([
+        `${escapeHtml(c.businessName)}: ${escapeHtml(who ?? 'A client')} requested a ${escapeHtml(c.serviceName)} visit${escapeHtml(win)}.`,
+        'Open Stridetail to approve or decline.',
+      ]),
+    };
+  },
+  booking_request_approved: (c) => {
+    const when = c.scheduledStart
+      ? `Your visit is scheduled for ${c.scheduledStart}.`
+      : 'Your visit is on the calendar.';
+    return {
+      subject: `${c.businessName}: your ${c.serviceName} request is approved`,
+      text:
+        `Good news from ${c.businessName} — your ${c.serviceName} request is approved! ` +
+        `${when} We look forward to seeing your pet.`,
+      html: wrapHtml([
+        `Good news from ${escapeHtml(c.businessName)} — your ${escapeHtml(c.serviceName)} request is approved!`,
+        `${escapeHtml(when)} We look forward to seeing your pet.`,
+      ]),
+    };
+  },
+  booking_request_declined: (c) => {
+    const reason = c.declineReason ? ` Reason: ${c.declineReason}.` : '';
+    return {
+      subject: `${c.businessName}: about your ${c.serviceName} request`,
+      text:
+        `${c.businessName} couldn't fit your ${c.serviceName} request this time.${reason} ` +
+        'Please try another day or time.',
+      html: wrapHtml([
+        `${escapeHtml(c.businessName)} couldn't fit your ${escapeHtml(c.serviceName)} request this time.${escapeHtml(reason)}`,
+        'Please try another day or time.',
       ]),
     };
   },

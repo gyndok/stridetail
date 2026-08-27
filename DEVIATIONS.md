@@ -2527,3 +2527,47 @@ Task 3's react-native-maps screens. Other calls:
   archive + detail).
 - Tabs stay bottom-docked on desktop web for v1 (no OwnerRail equivalent);
   the content column is capped at 720 px and centered, public-page style.
+
+## 2026-08-26 — Plan 8 Task 7: booking requests end-to-end
+
+- **`booking_requests.decline_reason` is the ONE client-readable decline
+  reason** — the deliberate exception to the Task-4 decline_reason ban (which
+  targets `visits.decline_reason`, a walker-internal note). The request's
+  reason is written BY the owner FOR the client (the decline_booking_request
+  RPC requires it and the decline email carries the same text), and the
+  Task-1 client SELECT policy exposes the whole row. The FORBIDDEN-column
+  test (`requestsApi.test.ts`) drops decline_reason from its pattern for the
+  booking-request selects and pins the exception explicitly.
+- **Owner request cards show a pet COUNT, not names**: `listPets` is
+  per-client and pending requests span clients — a per-request pets join was
+  not worth it for v1 (client name, service, window, and note are the
+  decision inputs; the created visit carries the pet_ids regardless).
+- **Owner surface**: `app/(owner)/requests.tsx` is a hidden route
+  (`href: null` — not a 7th tab), reached from (a) a needs-attention line on
+  Today ("N service requests awaiting review", one query + one Pressable —
+  smallest possible insertion) and (b) a ghost "Requests (N)" button under
+  "New visit" on Schedule (list and week views), rendered only when N > 0.
+  Side effect: the desktop OwnerRail's custom tabBar maps raw route state, so
+  it now filters the hidden route and keys active-state off `route.key`
+  instead of the array index.
+- **Approve keeps the visit at window_start** (RPC semantics from Task 1:
+  the window is the client's ask; scheduled_start = window_start for the
+  service's duration). The approve UI says so and points the owner at
+  reschedule; walker unpicked = unassigned visit, picked = offered (even the
+  owner themselves — the offer flow keeps the audit trail).
+- **Emails consume the migration-20260826000002 payload keys verbatim**
+  (received: requestId/clientId/clientName/serviceName/windowStart/windowEnd;
+  approved: requestId/visitId/serviceName/scheduledStart; declined:
+  requestId/reason/serviceName). Names are queue-time snapshots (trigger/RPC
+  lookups); times are formatted at send time in the BUSINESS zone via Intl
+  (no date lib in the function dir; ICU's U+202F narrow space normalized to a
+  plain space). booking_request_approved returns before the generic visitId
+  context block — its serviceName is already in the payload and the visit may
+  have been reshuffled by send time.
+  **send-email needs a hosted redeploy** — rides Task 8 (until then hosted
+  queue rows for these templates fail per the Task-1 note).
+- Portal request queries follow the Task-4 rules: `portal-*` keys stay out of
+  the offline persist whitelist; the request form reuses the shared
+  DateField/TimeField (themeVariant fix included) with wall-clock times in
+  the business zone, and `requestWindow` mirrors the schema's
+  `window_end > window_start` check client-side before the round-trip.

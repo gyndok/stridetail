@@ -38,6 +38,8 @@ import {
 } from '../_shared/staticMap.ts';
 import {
   backoffMinutes,
+  formatInstant,
+  formatWindow,
   invoiceNumberLabel,
   MAX_ATTEMPTS,
   renderEmail,
@@ -92,8 +94,19 @@ type Resend = { apiKey: string; from: string };
 async function buildContext(admin: SupabaseClient, row: NotificationRow): Promise<EmailContext> {
   const ctx: EmailContext = { businessName: 'Your pet care team', petNames: 'your pet', serviceName: 'scheduled' };
 
-  const { data: biz } = await admin.from('businesses').select('name').eq('id', row.business_id).maybeSingle();
+  const { data: biz } = await admin
+    .from('businesses')
+    .select('name, time_zone')
+    .eq('id', row.business_id)
+    .maybeSingle();
   if (biz?.name) ctx.businessName = biz.name as string;
+  // Business zone for the booking-request time labels (UTC only if the row is
+  // somehow gone — the business is the notification's own tenant).
+  const bizTz =
+    typeof (biz as { time_zone?: unknown } | null)?.time_zone === 'string' &&
+    (biz as { time_zone: string }).time_zone.length > 0
+      ? (biz as { time_zone: string }).time_zone
+      : 'UTC';
 
   if (row.template === 'client_invite') {
     // Payload from invite_client_to_portal: {clientId, businessName, portalUrl}.
@@ -139,6 +152,44 @@ async function buildContext(admin: SupabaseClient, row: NotificationRow): Promis
     const base = Deno.env.get('INVOICE_BASE_URL') ?? DEFAULT_INVOICE_BASE;
     const token = row.payload['invoiceToken'];
     ctx.invoiceUrl = typeof token === 'string' ? `${base.replace(/\/$/, '')}/${token}` : base;
+    return ctx;
+  }
+
+  // Plan 8 Task 7: booking-request emails. Payload keys come from migration
+  // 20260826000002 verbatim — the insert trigger (received: requestId/clientId/
+  // clientName/serviceName/windowStart/windowEnd) and the RPCs (approved:
+  // requestId/visitId/serviceName/scheduledStart; declined: requestId/reason/
+  // serviceName). Names/labels ride the payload (snapshotted at queue time);
+  // times are formatted here in the business zone. The approved payload's
+  // visitId must NOT fall through to the generic visit lookup below — its
+  // serviceName is already in the payload and the visit may be reshuffled by
+  // send time.
+  if (row.template === 'booking_request_received') {
+    const clientName = row.payload['clientName'];
+    if (typeof clientName === 'string' && clientName.length > 0) ctx.clientName = clientName;
+    const serviceName = row.payload['serviceName'];
+    if (typeof serviceName === 'string' && serviceName.length > 0) ctx.serviceName = serviceName;
+    const ws = row.payload['windowStart'];
+    const we = row.payload['windowEnd'];
+    if (typeof ws === 'string' && typeof we === 'string') {
+      ctx.requestWindow = formatWindow(ws, we, bizTz);
+    }
+    return ctx;
+  }
+
+  if (row.template === 'booking_request_approved') {
+    const serviceName = row.payload['serviceName'];
+    if (typeof serviceName === 'string' && serviceName.length > 0) ctx.serviceName = serviceName;
+    const ss = row.payload['scheduledStart'];
+    if (typeof ss === 'string') ctx.scheduledStart = formatInstant(ss, bizTz);
+    return ctx;
+  }
+
+  if (row.template === 'booking_request_declined') {
+    const serviceName = row.payload['serviceName'];
+    if (typeof serviceName === 'string' && serviceName.length > 0) ctx.serviceName = serviceName;
+    const reason = row.payload['reason'];
+    if (typeof reason === 'string' && reason.length > 0) ctx.declineReason = reason;
     return ctx;
   }
 

@@ -15,6 +15,7 @@ import {
   visitTimeRange,
   type Visit,
 } from '@/src/features/schedule/api';
+import { listPendingBookingRequests } from '@/src/features/portal/requestsApi';
 import { InlineNextAction, UpNextHero } from '@/src/features/schedule/UpNextHero';
 import { VisitCard } from '@/src/features/schedule/VisitCard';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
@@ -67,6 +68,12 @@ export default function Today() {
     enabled: !!businessId,
     queryFn: () => listProblemNotifications(businessId!),
   });
+  // Plan 8 Task 7: pending booking requests join the needs-attention triage.
+  const bookingRequests = useQuery({
+    queryKey: ['booking-requests', businessId, 'pending'],
+    enabled: !!businessId,
+    queryFn: () => listPendingBookingRequests(businessId!),
+  });
   useRefetchOnFocus(visits.refetch);
 
   const all = visits.data ?? [];
@@ -77,8 +84,13 @@ export default function Today() {
   // (Plan 6 Task 4 backlog item); bounded by the query's 26 h lookback.
   const missed = missedVisits(all, now);
   const notifLabel = notificationIssueLabel(notifications.data ?? []);
+  const pendingRequests = bookingRequests.data?.length ?? 0;
   const attention =
-    unassignedCount > 0 || declined.length > 0 || missed.length > 0 || !!notifLabel;
+    unassignedCount > 0 ||
+    declined.length > 0 ||
+    missed.length > 0 ||
+    !!notifLabel ||
+    pendingRequests > 0;
 
   // Hero + rest-of-day are the owner's OWN visits: the owner query is the
   // business-wide listVisits, filtered client-side to the session user.
@@ -114,6 +126,17 @@ export default function Today() {
               </Pressable>
             ) : null}
             {notifLabel ? <Text style={{ color: t.colors.warning, fontWeight: '700' }}>{notifLabel}</Text> : null}
+            {pendingRequests > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/requests' as Href)}
+                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+              >
+                <Text style={{ color: t.colors.warning, fontWeight: '700' }}>
+                  {pendingRequests} service request{pendingRequests === 1 ? '' : 's'} awaiting review
+                </Text>
+              </Pressable>
+            ) : null}
             {declined.map((v) => (
               <Pressable
                 key={v.id}
