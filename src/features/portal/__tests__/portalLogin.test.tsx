@@ -48,13 +48,13 @@ test('portal login sends the code then verifies it with the typed email and code
     }),
   );
   // phase 2: the code entry replaces the email form
-  await waitFor(() => getByLabelText('6-digit code'));
-  await fireEvent.changeText(getByLabelText('6-digit code'), '123456');
+  await waitFor(() => getByLabelText('Sign-in code'));
+  await fireEvent.changeText(getByLabelText('Sign-in code'), '92755878');
   await fireEvent.press(getByText('Sign in'));
   await waitFor(() =>
     expect(auth.verifyOtp).toHaveBeenCalledWith({
       email: 'pet.parent@example.com',
-      token: '123456',
+      token: '92755878',
       type: 'email',
     }),
   );

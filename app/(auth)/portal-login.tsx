@@ -55,8 +55,8 @@ export default function PortalLogin() {
         {phase === 'email' ? (
           <>
             <Text style={[t.type.body, { color: t.colors.inkMuted }]}>
-              Enter your email to view your pet care account. We&apos;ll send you a 6-digit
-              code — no password needed.
+              Enter your email to view your pet care account. We&apos;ll send you a
+              one-time code — no password needed.
             </Text>
             <TextField
               label="Email"
@@ -72,14 +72,16 @@ export default function PortalLogin() {
         ) : (
           <>
             <Text style={[t.type.body, { color: t.colors.inkMuted }]}>
-              We emailed a 6-digit code to {email.trim()}. Enter it below.
+              We emailed a sign-in code to {email.trim()}. Enter it below.
             </Text>
+            {/* Supabase OTP length is configurable (this project sends 8 digits);
+                cap generously and gate on the 6-digit minimum instead. */}
             <TextField
-              label="6-digit code"
+              label="Sign-in code"
               value={code}
               onChangeText={setCode}
               keyboardType="number-pad"
-              maxLength={6}
+              maxLength={10}
               textContentType="oneTimeCode"
               error={error ?? undefined}
             />
