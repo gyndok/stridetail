@@ -281,7 +281,7 @@ Last updated: 2026-08-27
   |---|--------------|--------|--------|
   | 1 | dashboard shell + KPI row | [x] | 2874013 |
   | 2 | operations panels: requests, attention, live walks | [ ] | |
-  | 3 | schedule table + month calendar | [ ] | |
+  | 3 | schedule table + month calendar | [x] | 07fdb54 |
   | 4 | business panels: clients, services, billing | [ ] | |
   | 5 | assembly polish + sponsor desktop pass | [ ] | |
 - [ ] Plan 9: messaging + derived presence + urgent flag, self-claim, per-tenant custom domains — deferred until real portal clients (spec §9)
