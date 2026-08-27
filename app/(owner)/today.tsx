@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter, type Href } from 'expo-router';
-import { Pressable, Text } from 'react-native';
+import { Platform, Pressable, Text, useWindowDimensions } from 'react-native';
 
 import { useSession } from '@/src/features/auth/session';
+import { decideTodayVariant } from '@/src/features/dashboard/gate';
+import { OwnerDashboard } from '@/src/features/dashboard/OwnerDashboard';
 import { useActiveBusiness } from '@/src/features/business/active';
 import {
   listProblemNotifications,
@@ -45,7 +47,16 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
+// Plan 8b Task 1: on desktop web the owner Today IS the dashboard. The gate
+// is live-responsive (useWindowDimensions) and pure (gate.ts); below 1024 and
+// on native, MobileToday below renders exactly as before.
 export default function Today() {
+  const { width } = useWindowDimensions();
+  if (decideTodayVariant(Platform.OS, width) === 'dashboard') return <OwnerDashboard />;
+  return <MobileToday />;
+}
+
+function MobileToday() {
   const t = useTheme();
   const router = useRouter();
   const { userId } = useSession();

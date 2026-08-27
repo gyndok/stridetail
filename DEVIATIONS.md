@@ -2722,3 +2722,25 @@ polish; no PRD-CHECKLIST rows ticked):
   on the start day; acceptable for v1 (requests are same-day windows).
 - `tz` still loading (memberships query) hides the picker and sends
   `p_start: null` — server default, never a wrong zone.
+
+## Plan 8b Task 1 — dashboard shell + KPI row (2026-08-27)
+
+- **Week definition: Sunday-based, business tz.** The plan asked to match how
+  the app defines weeks; the only existing convention is the schedule week
+  grid (`weekGrid.ts weekRange`, JS getDay() numbering, Sunday start), so the
+  KPI weeks reuse `weekRange` verbatim — "walks this week" and the Schedule
+  screen always agree, and DST weeks (167/169 h) are correct for free. The
+  sponsor mockup names no week convention; revisit only if Alexandra asks for
+  Monday weeks.
+- **Dashboard gate at 1024, its own constant.** The OwnerRail docks at 900
+  (`DESKTOP_MIN_WIDTH`); the dashboard needs more room, so `gate.ts` carries
+  `DASHBOARD_MIN_WIDTH = 1024` (plan's number). Between 900 and 1023 the rail
+  shows with the mobile Today beside it — recorded as intended behavior.
+- **Outstanding KPI semantics.** Total = `unpaidTotalCents` (money.ts): sum of
+  true balances across `sent` invoices, over-payments included as credits.
+  Count = sent invoices with balance strictly > 0 — an over-paid but
+  still-sent invoice reduces the total yet is not counted as "unpaid".
+- **Revenue window is one over-fetching read.** payments.received_on is a DATE
+  column, so both weeks come from a single query bounded by local
+  'YYYY-MM-DD' strings (previous week start inclusive, current week end
+  exclusive) and are split per week in pure math.
