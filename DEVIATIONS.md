@@ -2326,3 +2326,37 @@ Task 3's react-native-maps screens. Other calls:
   stridetail.app URLs). Existing stored maps are letter-pin renders; only
   tonight's smoke map was deleted and re-rendered — historical walk maps
   keep whatever style they were rendered with (presence = idempotency flag).
+
+## 2026-08-26 — Plan 7b Task 3: in-app Apple Maps (react-native-maps)
+
+- **OTA-before-build compatibility**: react-native-maps 1.27.2 is a native
+  module absent from every currently-installed binary; the JS reaches them
+  via OTA/Metro before the Sep 1 build. Nothing static-imports the package —
+  `src/lib/maps.ts` is the single doorway (lazy `require` in try/catch,
+  Platform web gate, cached probe). Loader null ⇒ `WalkMap` renders its
+  `fallback` (nothing — exactly the pre-task UI). Type-only imports of the
+  package are used freely (erased at compile).
+- **Android is out of scope**: Google Maps needs an API key in app.json
+  (`android.config.googleMaps.apiKey`) plus a Cloud project before ANY
+  Android build ships this screen. Not configured; iOS Apple Maps needs no
+  key and no config plugin — app.json is untouched, so this change is
+  OTA-safe (the map simply stays hidden until a binary carries the module).
+- **Web**: react-native-maps has no web build; metro WEB_STUBS redirects it
+  (same pattern as expo-sqlite) and the loader also gates on Platform.OS.
+  The public report page keeps the Task-2 static map image.
+- **Event pin positions**: visit_events carry no coordinates; pins sit on the
+  track fix nearest in time — the same correlation staticMap.ts uses server
+  side (rule change must touch both).
+- **Live-screen pins are session-local**: pee/poop/photo pins accumulate in
+  screen state as events are logged. Leaving and resuming the active screen
+  drops earlier pins from the live map (same lifetime as the existing
+  "Recent" ticker; events themselves are safely in the outbox and reappear
+  on the completed-visit map).
+- **Marker art duplicated on purpose**: `assets/markers/` is a byte-for-byte
+  copy of `public/markers/` (Twemoji discs, CC-BY 4.0 — attribution in the
+  2026-08-26 entry above). public/ ships only to web; native bundling needs
+  the files under assets/. Regenerate both together.
+- **Completed-visit map fetch**: direct `visit_tracks`/`visit_events` selects
+  under existing RLS (owner + walker-own-visit policies from
+  20260824000009_execution.sql) — no new endpoint, works for both roles of
+  the unified VisitScreen; gated off on web and non-completed statuses.

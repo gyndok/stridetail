@@ -30,9 +30,11 @@ import {
 import { getVisitReport, reportLink } from '@/src/features/schedule/report';
 import { appendVisitEvent, appendVisitFinish } from '@/src/features/visit/api';
 import { fetchVisitDetail, type VisitDetail } from '@/src/features/visit/detail';
+import { WalkMap } from '@/src/features/visit/WalkMap';
+import { isPinEventType, type WalkMapEvent } from '@/src/features/visit/walkMapData';
 import { useWalkTheme } from '@/src/features/settings/walkTheme';
 import { getLocalTrack, getLocalVisitStart, stopVisitTracking } from '@/src/lib/gps/controller';
-import { trackDistanceMeters } from '@/src/lib/gps/geo';
+import { trackDistanceMeters, type Pt } from '@/src/lib/gps/geo';
 import { getDb } from '@/src/lib/offline/db';
 import { SqliteOutbox } from '@/src/lib/offline/outbox';
 import { kickSync, type VisitEventType } from '@/src/lib/offline/sync';
@@ -106,6 +108,7 @@ function EventButton({
 
 function ActiveVisitBody() {
   const t = useTheme();
+  const { walkTheme } = useWalkTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -124,6 +127,7 @@ function ActiveVisitBody() {
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [localStartMs, setLocalStartMs] = useState<number | null>(null);
   const [distanceM, setDistanceM] = useState<number | null>(null);
+  const [track, setTrack] = useState<Pt[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
@@ -140,7 +144,11 @@ function ActiveVisitBody() {
     if (Platform.OS === 'web' || !id) return;
     const poll = async () => {
       setPendingCount(await new SqliteOutbox(getDb()).countPending(id));
-      if (requiresGps) setDistanceM(trackDistanceMeters(await getLocalTrack(id)));
+      if (requiresGps) {
+        const points = await getLocalTrack(id);
+        setTrack(points);
+        setDistanceM(trackDistanceMeters(points));
+      }
     };
     void poll();
     const timer = setInterval(() => void poll(), POLL_MS);
@@ -152,6 +160,10 @@ function ActiveVisitBody() {
   // ---- pets / events ----
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentEvent[]>([]);
+  // Map pins for pee/poop/photo logged THIS screen session (Plan 7b Task 3).
+  // Position derives at render from the nearest-in-time track fix, so a pin
+  // logged before the next GPS poll still lands correctly once fixes arrive.
+  const [pinEvents, setPinEvents] = useState<WalkMapEvent[]>([]);
   const [noteOpen, setNoteOpen] = useState(false);
   // Round 0: Ate/Drank/Meds are demoted behind this toggle, collapsed by default.
   const [moreOpen, setMoreOpen] = useState(false);
@@ -180,6 +192,10 @@ function ActiveVisitBody() {
       setRecent((r) =>
         [{ type, occurredAt: payload.occurredAt, ...(petName && { petName }) }, ...r].slice(0, 5),
       );
+      if (isPinEventType(type)) {
+        const atMs = Date.parse(payload.occurredAt);
+        if (!Number.isNaN(atMs)) setPinEvents((p) => [...p, { type, atMs }]);
+      }
     } catch (e) {
       setEventError(errorText(e));
     }
@@ -399,6 +415,13 @@ function ActiveVisitBody() {
               </View>
             </View>
           </Card>
+
+          {/* Live walk map (Plan 7b Task 3): route so far + event pins, Apple
+              Maps. On a binary without the native module (pre-Sep-1 via OTA)
+              WalkMap renders its fallback — nothing, exactly today's UI. */}
+          {requiresGps && Platform.OS !== 'web' ? (
+            <WalkMap track={track} events={pinEvents} mode="live" appearance={walkTheme} />
+          ) : null}
 
           {/* Pet chips (multi-pet only): the selected pet gets each event */}
           {pets.length > 1 ? (

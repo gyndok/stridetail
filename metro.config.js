@@ -12,6 +12,9 @@ const config = getDefaultConfig(__dirname);
 const WEB_STUBS = {
   'expo-sqlite': path.resolve(__dirname, 'src/lib/web/expoSqliteWebStub.ts'),
   'expo-sqlite/kv-store': path.resolve(__dirname, 'src/lib/web/kvStoreWebStub.ts'),
+  // Plan 7b Task 3: react-native-maps has no web support and its module graph
+  // breaks web resolution; src/lib/maps.ts also runtime-gates on Platform.OS.
+  'react-native-maps': path.resolve(__dirname, 'src/lib/web/reactNativeMapsWebStub.ts'),
 };
 
 const defaultResolveRequest = config.resolver.resolveRequest;

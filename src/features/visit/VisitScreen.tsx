@@ -3,7 +3,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Linking, Pressable, Share, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, Share, Text, View } from 'react-native';
 
 import { useSession } from '@/src/features/auth/session';
 import { isVisitInvoiced } from '@/src/features/billing/api';
@@ -38,6 +38,8 @@ import {
   type VisitDetail,
   type VisitPetInfo,
 } from '@/src/features/visit/detail';
+import { fetchVisitRoute } from '@/src/features/visit/track';
+import { WalkMap } from '@/src/features/visit/WalkMap';
 import { startVisitTracking } from '@/src/lib/gps/controller';
 import { kickSync } from '@/src/lib/offline/sync';
 import { canTransition } from '@/src/lib/schedule/machine';
@@ -313,6 +315,15 @@ export default function VisitScreen() {
     enabled: !!businessId && isOwnerRole && v?.status === 'completed',
     queryFn: () => isVisitInvoiced(businessId!, v!.id),
   });
+  // Completed-visit route map (Plan 7b Task 3): both roles' RLS can read
+  // visit_tracks/visit_events for their own visits. Native only — the maps
+  // module has no web build, so the fetch is skipped there too.
+  const route = useQuery({
+    queryKey: ['visitRoute', v?.id],
+    enabled: Platform.OS !== 'web' && !!v && v.status === 'completed' && (isAssignee || isOwnerRole),
+    staleTime: 5 * 60 * 1000, // a finished walk's track never changes
+    queryFn: () => fetchVisitRoute(v!.id),
+  });
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['visitDetail', id] });
@@ -429,6 +440,13 @@ export default function VisitScreen() {
         ) : null}
         {v.owner_notes_md ? <Text style={{ color: t.colors.ink }}>{v.owner_notes_md}</Text> : null}
       </Card>
+
+      {/* ---- Route map for completed walks (Plan 7b Task 3): interactive
+           Apple Maps with the tracked polyline + event pins. Falls back to
+           nothing — today's UI — on binaries without the native module. ---- */}
+      {v.status === 'completed' && route.data && route.data.track.length >= 2 ? (
+        <WalkMap track={route.data.track} events={route.data.events} mode="completed" />
+      ) : null}
 
       {/* ---- Execution block: the session user is this visit's walker ---- */}
       {isAssignee ? (
