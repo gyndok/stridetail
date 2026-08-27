@@ -263,14 +263,14 @@ Last updated: 2026-08-26
   | 1 | static map render-once pipeline (Mapbox, edge) | [x] | e8d7692 |
   | 2 | report surfaces show the map | [x] | b0c262e |
   | 3 | react-native-maps in-app (rides Sep 1 build) | [x] code complete — native verification pending Sep 1 build (old binaries keep today's UI via lazy loader) | b894442 |
-- [~] **Plan 8: client portal v1** (`docs/superpowers/plans/2026-08-26-stridetail-plan8-client-portal.md`) — Tasks 1–3 done (local)
+- [~] **Plan 8: client portal v1** (`docs/superpowers/plans/2026-08-26-stridetail-plan8-client-portal.md`) — Tasks 1–4 done (local)
 
   | # | Plan 8 task | Status | Commit |
   |---|-------------|--------|--------|
   | 1 | client_users + booking_requests schema/RLS/pgTAP | [x] local only — hosted deploy rides Task 8 | f664c8b |
   | 2 | OTP auth + role routing + Supabase SMTP via Resend | [x] app side done — SMTP is sponsor dashboard config (Resend), code does not depend on it | aeecaf5 |
   | 3 | invite-your-client + claim linking | [x] local only — migration + send-email redeploy ride Task 8 | ba76c6d |
-  | 4 | portal shell + dashboard | [ ] | |
+  | 4 | portal shell + dashboard | [x] local only — new branding-read migration (20260826000004) rides Task 8; report thumbnails deferred to Task 5 | ab6361f |
   | 5 | reports archive + invoices (tips) | [ ] | |
   | 6 | pets + access-codes self-service | [ ] | |
   | 7 | booking requests end-to-end | [ ] | |
