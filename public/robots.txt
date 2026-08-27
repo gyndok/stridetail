@@ -1,4 +1,12 @@
 User-agent: *
 Disallow: /report/
 Disallow: /invoice/
+Disallow: /portal-login
+Disallow: /home
+Disallow: /invoices
+Disallow: /pets
+Disallow: /pet/
+Disallow: /reports
+Disallow: /requests
+Disallow: /request/
 Allow: /
