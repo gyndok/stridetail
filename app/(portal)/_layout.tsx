@@ -5,7 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { useSession } from '@/src/features/auth/session';
 import { useMemberships } from '@/src/features/business/useMemberships';
 import { hydratePortalScope } from '@/src/features/portal/scope';
-import { BillingIcon, HomeIcon, PawIcon, ReportsIcon, RequestIcon } from '@/src/ui/icons';
+import { BillingIcon, HomeIcon, PawIcon, ReportsIcon, RequestIcon, SettingsIcon } from '@/src/ui/icons';
 import { useTheme } from '@/src/ui/theme';
 
 /**
@@ -74,6 +74,13 @@ export default function PortalLayout() {
         options={{
           title: 'Requests',
           tabBarIcon: ({ color, size }) => <RequestIcon color={color} size={size ?? 22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size }) => <SettingsIcon color={color} size={size ?? 22} />,
         }}
       />
       {/* Task 7: the request form is a sibling route, not a tab. */}

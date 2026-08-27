@@ -73,10 +73,10 @@ export default function PortalHome() {
     );
   }
 
-  return <Dashboard onSignOut={leave} busy={busy} />;
+  return <Dashboard />;
 }
 
-function Dashboard({ onSignOut, busy }: { onSignOut: () => void; busy: boolean }) {
+function Dashboard() {
   const t = useTheme();
   const { link, links, businesses, setLinkId } = usePortalScope();
   const clientId = link?.client_id ?? null;
@@ -199,7 +199,6 @@ function Dashboard({ onSignOut, busy }: { onSignOut: () => void; busy: boolean }
         </Card>
       ) : null}
 
-      <Button title="Sign out" variant="ghost" onPress={onSignOut} loading={busy} />
     </PortalScreen>
   );
 }
