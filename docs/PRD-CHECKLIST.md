@@ -260,7 +260,7 @@ Last updated: 2026-08-26
 
   | # | Plan 7b task | Status | Commit |
   |---|--------------|--------|--------|
-  | 1 | static map render-once pipeline (Mapbox, edge) | [ ] | |
+  | 1 | static map render-once pipeline (Mapbox, edge) | [x] | e8d7692 |
   | 2 | report surfaces show the map | [ ] | |
   | 3 | react-native-maps in-app (rides Sep 1 build) | [ ] | |
 - [ ] Plan 8: client portal v1 — client_users + OTP login, dashboard/invoices/reports/pets, booking_requests + owner approve, Supabase auth SMTP via Resend
