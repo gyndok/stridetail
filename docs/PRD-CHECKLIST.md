@@ -273,7 +273,7 @@ Last updated: 2026-08-26
   | 4 | portal shell + dashboard | [x] local only — new branding-read migration (20260826000004) rides Task 8; report thumbnails deferred to Task 5 | ab6361f |
   | 5 | reports archive + invoices (tips) | [ ] | |
   | 6 | pets + access-codes self-service | [ ] | |
-  | 7 | booking requests end-to-end | [ ] | |
+  | 7 | booking requests end-to-end | [x] local only — send-email redeploy rides Task 8 | e860363 |
   | 8 | hosted deploy + **Checkpoint 8** | [ ] | |
 - [ ] **Plan 8b: owner command strip** (`docs/superpowers/plans/2026-08-26-stridetail-plan8b-owner-command-strip.md`) — after Plan 8; KPI strip + derived "on a walk now"; NO mode toggle
 - [ ] Plan 9: messaging + derived presence + urgent flag, self-claim, per-tenant custom domains — deferred until real portal clients (spec §9)
