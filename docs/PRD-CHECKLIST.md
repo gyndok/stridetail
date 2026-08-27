@@ -271,7 +271,7 @@ Last updated: 2026-08-26
   | 2 | OTP auth + role routing + Supabase SMTP via Resend | [x] app side done — SMTP is sponsor dashboard config (Resend), code does not depend on it | aeecaf5 |
   | 3 | invite-your-client + claim linking | [x] local only — migration + send-email redeploy ride Task 8 | ba76c6d |
   | 4 | portal shell + dashboard | [x] local only — new branding-read migration (20260826000004) rides Task 8; report thumbnails deferred to Task 5 | ab6361f |
-  | 5 | reports archive + invoices (tips) | [ ] | |
+  | 5 | reports archive + invoices (tips) | [x] detail = public token pages via RLS-read tokens (DEVIATIONS) | 65addf7 |
   | 6 | pets + access-codes self-service | [ ] | |
   | 7 | booking requests end-to-end | [ ] | |
   | 8 | hosted deploy + **Checkpoint 8** | [ ] | |
