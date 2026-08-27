@@ -2637,3 +2637,58 @@ Task 3's react-native-maps screens. Other calls:
   petsHooks.ts / accessApi.ts because Task 5/7 siblings own api.ts/hooks.ts.
 - **Migration 20260826000005 rides Task 8 to hosted** like the other Plan 8
   migrations (applied + green locally: pgTAP 018, 42 asserts).
+
+## 2026-08-26 — Plan 8 Task 8: hosted deploy + smoke + Checkpoint 8
+
+- Migrations `20260826000002_client_portal` → `20260826000003_client_linking` →
+  `20260826000004_client_business_branding` → `20260826000005_client_access_self_service`
+  applied IN ORDER to hosted `vrxoswukuiaerhwammlh` via MCP `apply_migration`
+  (verbatim file content, name = filename stem); `list_migrations` shows all four.
+- `send-email` redeployed via MCP (**v10**, verify_jwt ON) with the Plan 8 templates
+  (`client_invite` + the three `booking_request_*`). DEVIATION from the older
+  "rewrite ../_shared to bundled ./" copy pattern: the MCP deploy accepts relative
+  file names, so `_shared/cors.ts` and `_shared/staticMap.ts` shipped verbatim as
+  `../_shared/*` with imports untouched — deploy ACTIVE, no rewrite step.
+- **Advisors: no new findings.** Security = the standing acceptances (client_access
+  deny-all INFO, services_public definer-view ERROR) plus new instances of the accepted
+  "guarded definer RPCs are the API" WARN for the Plan 8 RPCs (approve/decline booking,
+  claim/invite, client id helpers, access-code self trio); `queue_owner_email` correctly
+  absent from the executable list. Performance = pre-existing categories only; the new
+  `multiple_permissive_policies` WARNs are the designed additive client read scope, and
+  the 4 `auth_rls_initplan` WARNs are the same pre-Plan-8 policies as before. Noted
+  (not fixed, INFO-level): booking_requests FKs created_by/decided_by/service_id/visit_id
+  have no covering index — same class as the standing visits_service_id INFO.
+- **Hosted smoke: all asserts passed, SMOKE- fixtures fully cleaned.** DEVIATION from
+  the plan's synthetic-smoke-user idea: direct `auth.users`/`memberships` inserts are
+  blocked by the session's SQL permission gate, so the smoke used the two EXISTING
+  accounts with the established `request.jwt.claims` + `set local role authenticated`
+  impersonation — the owner account created a throwaway "SMOKE-P8 Portal Biz" through
+  the app's own `create_business` RPC (owner membership via the guarded path), and the
+  `walker-sim@stridetail.test` account played the portal client (smoke client A's
+  on-file email set to that address inside the throwaway business only). walker-sim has
+  no membership in the smoke business, so its reads there exercised ONLY the client
+  policies. Asserts: (a) invite stamps `portal_invited_at`, queues `client_invite`
+  with portalUrl + audits; (b) `claim_client_links` → exactly one link (via 'invite'),
+  audited, no cross-linking into the real business; (c) linked reads = own visit/pet/
+  client row/branding/9 active services and NOT client B's rows; price_cents_snapshot
+  select → 42501; (d) client inserts pending booking_request → owner
+  `booking_request_received` queued (payload clientName/serviceName verified); forged
+  request for unlinked client B → 42501 WITH CHECK; (e) `approve_booking_request` →
+  unassigned visit at window_start, 30 min, price 2500, request stamped approved,
+  `booking_request_approved` queued to the client, audited; (f) `set_client_access_self`
+  → `reveal_client_access_self` round-trips 1234/5678/notes with `self_set`/`self_reveal`
+  audit rows; (g) linked-A reveal of client B raises; an unlinked authenticated sub sees
+  zero smoke rows everywhere. Every queued smoke email row was deleted INSIDE its
+  creating transaction (live per-minute Resend cron never saw them). Cleanup deleted the
+  smoke business + children incl. the temporary owner membership; post-cleanup counts
+  byte-identical to the pre-smoke baseline (clients 1, pets 1, visits 9, invoices 4,
+  items 5, payments 4, notifications 15, audit 56, memberships 3, client_users 0,
+  booking_requests 0, client_access 1, auth users 2, profiles 2) and zero SMOKE% rows.
+- **Portal noindex implemented here** (the plan's Task 8 line; nothing shipped it in
+  1–7): vercel.json X-Robots-Tag noindex for `/portal-login`, the portal tab paths
+  (`/home|/invoices|/pets|/reports|/requests` — Expo Router strips the `(portal)` group
+  from web URLs), `/pet/:id`, `/request/new`; robots.txt disallows the same. Lands with
+  this push's Vercel deploy.
+- Web spot-check: `https://stridetail.app/portal-login` → 200 text/html with the
+  sign-in/email/code content (pre-noindex deploy; header check rides the next deploy).
+- Checkpoint 8 (sponsor phone run) appended to checkpoints.md — evidence PENDING.

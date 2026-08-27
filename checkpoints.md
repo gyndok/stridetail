@@ -264,3 +264,56 @@ docs/evidence/cp7-*.png when convenient).
 | Step 3: stridetail.com on phone | desk-verified 200s; phone load not separately captured |
 | Step 4: Rich Results test | PASS — "Local businesses: 1 valid item" + Organization valid; non-critical issues = intentionally omitted optional fields (address/phone/prices withheld pending Alexandra) |
 | Result | **PASS** |
+
+## Checkpoint 8 — client portal end-to-end on a real phone (Plan 8)
+
+**Status: PENDING.** Everything below the phone script is already proven on hosted:
+Plan 8 migrations 0002–0005 applied via MCP, `send-email` v10 carries `client_invite`
++ the booking-request templates, advisors clean (no new findings), and the whole
+invite → claim → client-scoped reads (price column denied 42501) → pets/access-code
+self-service → booking request → approve loop passed a SQL role-impersonation smoke
+with SMOKE- fixtures fully cleaned (DEVIATIONS.md, Plan 8 Task 8). Portal pages ship
+noindex (vercel.json + robots.txt) with this deploy. This run proves the same loop
+with real humans, a real inbox, and Safari — no app on the client's phone.
+
+### Already verified from the desk (2026-08-26)
+- `https://stridetail.app/portal-login` → 200 with the email/code sign-in content.
+- Hosted smoke: all asserts passed; cleanup byte-identical to the pre-smoke baseline.
+
+### Procedure (owner = sponsor's iPhone with the app; "Karla's phone" = Safari only, no app)
+1. Owner (app): open Karla Klein's client screen → **Invite to portal**. Expect the
+   invite email to land in Karla's inbox (from stridetail.app via Resend).
+2. Karla's phone (Safari): open the invite email → tap the portal link →
+   `stridetail.app/portal-login` → enter her email → **email OTP code** arrives →
+   enter code → lands on the portal dashboard.
+3. Dashboard shows **tonight's visit** and the recent **report card**; open the
+   report → the walk **map** renders.
+4. Invoices tab: **INV-0001..INV-0004 listed with correct states** (paid ones show
+   PAID/$0.00; any open one shows balance + tip chips + Pay with Venmo).
+5. Pets: edit a pet's **feeding note** → saves and reads back.
+6. Access codes: **set a lockbox code** → saves (audited server-side); reveal shows
+   it back.
+7. Requests: **request a walk for tomorrow** (service, window, pet, note) → submitted,
+   listed as pending. Owner gets the `booking_request_received` email.
+8. Owner phone: **Requests strip appears on Today** → open → **Approve** (two taps).
+   Karla gets the `booking_request_approved` email with the scheduled time.
+9. Walker (sim or Alexandra): the approved visit appears as a **new visit offer**
+   after the owner assigns/offers it (approve creates it unassigned at the requested
+   time; offer from the visit screen as usual).
+
+### Evidence
+Sponsor phone screenshots → docs/evidence/cp8-*.png; fill the table.
+
+| Field | Value |
+| --- | --- |
+| Date / phones / build | PENDING |
+| Step 1: invite email lands | PENDING |
+| Step 2: OTP login on Safari | PENDING |
+| Step 3: dashboard visit + report card w/ map | PENDING |
+| Step 4: invoices INV-0001..4 states | PENDING |
+| Step 5: pet feeding note edit | PENDING |
+| Step 6: lockbox code set/reveal | PENDING |
+| Step 7: walk request + owner email | PENDING |
+| Step 8: approve from Today strip + approved email | PENDING |
+| Step 9: walker sees the new visit offer | PENDING |
+| Result (PASS / FAIL) | PENDING |

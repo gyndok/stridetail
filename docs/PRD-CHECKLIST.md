@@ -263,7 +263,7 @@ Last updated: 2026-08-26
   | 1 | static map render-once pipeline (Mapbox, edge) | [x] | e8d7692 |
   | 2 | report surfaces show the map | [x] | b0c262e |
   | 3 | react-native-maps in-app (rides Sep 1 build) | [x] code complete — native verification pending Sep 1 build (old binaries keep today's UI via lazy loader) | b894442 |
-- [~] **Plan 8: client portal v1** (`docs/superpowers/plans/2026-08-26-stridetail-plan8-client-portal.md`) — Tasks 1–4 done (local)
+- [~] **Plan 8: client portal v1** (`docs/superpowers/plans/2026-08-26-stridetail-plan8-client-portal.md`) — Tasks 1–8 done; hosted deployed (migrations 0002–0005 + send-email v10, smoke clean); Checkpoint 8 phone run PENDING
 
   | # | Plan 8 task | Status | Commit |
   |---|-------------|--------|--------|
@@ -274,7 +274,7 @@ Last updated: 2026-08-26
   | 5 | reports archive + invoices (tips) | [x] detail = public token pages via RLS-read tokens (DEVIATIONS) | 65addf7 |
   | 6 | pets + access-codes self-service | [x] local only — migration 20260826000005 (self RPCs + client pet-photo storage policies) rides Task 8 | 53e85f0 |
   | 7 | booking requests end-to-end | [x] local only — send-email redeploy rides Task 8 | e860363 |
-  | 8 | hosted deploy + **Checkpoint 8** | [ ] | |
+  | 8 | hosted deploy + **Checkpoint 8** | [x] deployed — migrations 0002–0005 via MCP, send-email v10, advisors clean, SQL-impersonation smoke passed w/ full cleanup, portal noindex added; Checkpoint 8 phone run PENDING | 8e4f767 |
 - [ ] **Plan 8b: owner command strip** (`docs/superpowers/plans/2026-08-26-stridetail-plan8b-owner-command-strip.md`) — after Plan 8; KPI strip + derived "on a walk now"; NO mode toggle
 - [ ] Plan 9: messaging + derived presence + urgent flag, self-claim, per-tenant custom domains — deferred until real portal clients (spec §9)
 - Open: P&W page copy/prices (Alexandra), request-approve vs self-book (Alexandra), report approve-before-send setting (Alexandra), tip splitting (Alexandra), Stripe timing (Alexandra), chat priority (Alexandra)
