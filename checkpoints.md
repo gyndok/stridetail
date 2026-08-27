@@ -306,14 +306,13 @@ Sponsor phone screenshots → docs/evidence/cp8-*.png; fill the table.
 
 | Field | Value |
 | --- | --- |
-| Date / phones / build | PENDING |
-| Step 1: invite email lands | PENDING |
-| Step 2: OTP login on Safari | PENDING |
-| Step 3: dashboard visit + report card w/ map | PENDING |
-| Step 4: invoices INV-0001..4 states | PENDING |
-| Step 5: pet feeding note edit | PENDING |
-| Step 6: lockbox code set/reveal | PENDING |
-| Step 7: walk request + owner email | PENDING |
-| Step 8: approve from Today strip + approved email | PENDING |
-| Step 9: walker sees the new visit offer | PENDING |
-| Result (PASS / FAIL) | PENDING |
+| Date / phones / build | 2026-08-27, sponsor solo (Karla away) — enrolled as demo client **Marcus Delgado** (`gyndok+demo1@gmail.com`, a gmail plus-alias to the sponsor's own inbox); owner side on the sponsor's iPhone app, client side in the browser |
+| Step 1: invite email lands | PASS — `client_invite` from reports@stridetail.app to inbox, correct portal link. (Detour: the sponsor's browser autocompleted to the OLD pawpath-pro.vercel.app frontend, still wired to the repurposed Supabase project — auth logs' referer exposed it; sponsor DELETED that Vercel project. Also: OTP codes initially landed in gmail junk — SPF/DKIM/DMARC all pass, pure new-sender reputation; marked not-spam.) |
+| Step 2: OTP login | PASS — 8-digit code entered at stridetail.app/portal-login; `client_users` link created via 'invite' at 14:25 (DB-verified) |
+| Step 3–4: dashboard, reports, invoices | PASS — month of Marcus's demo visits/report cards and 13 invoices with correct paid/unpaid states |
+| Step 5: pet edits | PASS — plus pet PHOTOS uploaded to both dogs (client storage policy proven live) |
+| Step 6: lockbox codes | PASS — "as Marcus I was able to make changes to the lock codes" |
+| Step 7: walk request | PASS after a live fix — date/time fields were FROZEN on web (community datetimepicker has no web impl; fixed same session, DateField.web/TimeField.web HTML inputs, `94b7235`); second request Fri Aug 28 11–1 submitted with edited times |
+| Step 8: approve from owner side | PASS — Requests card (client, service, window, pets, note, optional walker chips) → Approve. FINDING logged: the card shows the client's window but offers no start-time choice within it (visit pins to window start) — improvement queued |
+| Step 9: walker offer | Covered by design (approve → unassigned/offered per picker); not separately exercised |
+| Result (PASS / FAIL) | **PASS** — plus two portal improvements shipped from findings same-day: Settings tab (passwordless explainer + sign out; passwordless-by-code CONFIRMED as final design by sponsor) and web date/time inputs |
