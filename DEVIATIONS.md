@@ -2492,3 +2492,38 @@ Task 3's react-native-maps screens. Other calls:
   **send-email needs a hosted redeploy** — rides Task 8 like the migration.
 - Within one pgTAP transaction `now()` is frozen, so the re-invite test pins
   the second queued email rather than a changed `portal_invited_at` value.
+
+## 2026-08-26 — Plan 8 Task 4: portal shell + dashboard
+
+- **New migration `20260826000004` — "client reads linked businesses"**: the
+  plan said branding comes "via the client's client row/business join", but
+  Task 1 left clients with NO select path on `businesses` ("members read
+  business" is staff-only), so a PostgREST embed dies on RLS. One additive
+  row policy (`id in client_business_ids_for_user()`) fixes it; the
+  businesses columns are all client-benign, and the app still selects named
+  columns only (`id, name, brand_color, time_zone`). pgTAP: `017`.
+  **Rides Task 8 to hosted** like the other Plan 8 migrations.
+- **Multi-business clients (rare), v1**: no per-business portal branding
+  juggling — when a user has more than one link, Home shows a plain
+  switcher row (pills with each business's name) and ALL portal tabs scope
+  to the selected link. The choice is a tiny kv-persisted store
+  (`portalLinkId`, `src/features/portal/scope.ts` — the `activeBusinessId`
+  pattern); fallback is the first link, so single-link users never see it.
+- **Portal queries are online-first**: `portal-*` query keys are deliberately
+  NOT added to the offline persist whitelist (`queryPersister.ts`) — the
+  portal is a web-first surface and nothing needs to survive an offline
+  relaunch; on web the persister is a no-op memory map anyway.
+- **Client-facing visit status collapses assignment states**:
+  unassigned/offered/accepted all read "Scheduled" (assignment is internal),
+  in_progress reads "Happening now". The column contract is pinned in
+  `portalQueries.test.ts`: visits selects never carry
+  `price_cents_snapshot` (the column grant errors the whole query for
+  clients), and `owner_notes_md` / `decline_reason` / `private_notes_md`
+  are never fetched or rendered even though rows are selectable.
+- **Report thumbnails deferred**: the plan sketch says "map thumbnail" on
+  recent report cards — the signed map URL lives behind the public
+  report-token function, not a client RLS read, so v1 cards show
+  date · service · pets and route to the Reports tab (Task 5 owns the real
+  archive + detail).
+- Tabs stay bottom-docked on desktop web for v1 (no OwnerRail equivalent);
+  the content column is capped at 720 px and centered, public-page style.
