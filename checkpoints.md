@@ -319,7 +319,20 @@ Sponsor phone screenshots → docs/evidence/cp8-*.png; fill the table.
 
 ## Desktop dashboard pass (Plan 8b)
 
-**2026-08-27 — desk-verified composition (Claude); SPONSOR PASS PENDING.**
+**2026-08-27 — SPONSOR PASS: PASS.** Sponsor signed in at stridetail.app/today on
+desktop (screenshots reviewed in-session; copies → docs/evidence/plan8b-desktop-*.png
+when convenient): KPI row live against the demo business (Revenue this week $365.00
+▼$10 vs last week · 11 active clients / 18 pets · Walks 17/22 completed ·
+Outstanding $640.00 / 22 unpaid), needs-attention showing the 2 real unassigned
+Sep 3 visits, week table with All/Geffrey/Simulated filter chips and status
+pills, month calendar with per-day counts and today ringed, clients & pets with
+M&G-pending flags and search, full services menu with prices, billing hub with
+INV-0060–0067 — including **INV-0066/0067, real auto-invoices from the sponsor's
+own finished walks**, mixed correctly into the list — and "New invoice" /
+"View billing" actions. Both walker-filter identities render (owner + Simulated).
+Layout matched the ≥1600 composition (table + calendar side by side).
+
+**2026-08-27 — desk-verified composition (Claude) prior to the sponsor pass:**
 
 Task 5 assembly polish landed (`7e39341`). No sign-in credentials at the desk,
 so composition was verified without live data:

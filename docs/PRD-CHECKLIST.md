@@ -275,7 +275,7 @@ Last updated: 2026-08-27
   | 6 | pets + access-codes self-service | [x] local only — migration 20260826000005 (self RPCs + client pet-photo storage policies) rides Task 8 | 53e85f0 |
   | 7 | booking requests end-to-end | [x] local only — send-email redeploy rides Task 8 | e860363 |
   | 8 | hosted deploy + **Checkpoint 8** | [x] deployed — migrations 0002–0005 via MCP, send-email v10, advisors clean, SQL-impersonation smoke passed w/ full cleanup, portal noindex added; Checkpoint 8 phone run PENDING | 8e4f767 |
-- [~] **Plan 8b (expanded): owner desktop dashboard** — code complete 2026-08-27, sponsor desktop pass pending (`docs/superpowers/plans/2026-08-27-stridetail-plan8b-owner-desktop-dashboard.md`, supersedes the 2026-08-26 command-strip draft) — sponsor mockup 2026-08-27; desktop web Today becomes the business command center; NO mode toggle, NO manual presence
+- [x] **Plan 8b (expanded): owner desktop dashboard** — COMPLETE 2026-08-27, sponsor desktop pass PASS (live KPIs/panels on the demo business, checkpoints.md) (`docs/superpowers/plans/2026-08-27-stridetail-plan8b-owner-desktop-dashboard.md`, supersedes the 2026-08-26 command-strip draft) — sponsor mockup 2026-08-27; desktop web Today becomes the business command center; NO mode toggle, NO manual presence
 
   | # | Plan 8b task | Status | Commit |
   |---|--------------|--------|--------|
