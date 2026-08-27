@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useRouter, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { canTransition } from '@/src/lib/schedule/machine';
@@ -533,14 +533,46 @@ export function WeekGrid({ businessId, tz }: { businessId: string; tz: string })
       ) : null}
 
       {selected ? (
-        <QuickPanel
-          key={selected.id}
-          businessId={businessId}
-          visit={selected}
-          walkerName={selected.walker_id ? memberName(members.data ?? [], selected.walker_id) : null}
-          tz={tz}
-          onClose={() => setSelectedId(null)}
-        />
+        // Floats over the viewport (web `position: fixed`): the grid is
+        // ~1700px tall, so a panel rendered after it sits far below the fold —
+        // clicking a card looked like nothing happened (sponsor report,
+        // Safari 2026-08-27). Bottom-docked, it appears wherever you click.
+        <View
+          style={
+            {
+              position: Platform.OS === 'web' ? ('fixed' as 'absolute') : 'absolute',
+              bottom: 16,
+              left: 16,
+              right: 16,
+              alignItems: 'center',
+              zIndex: 1000,
+            } as const
+          }
+        >
+          <View
+            style={{
+              width: '100%',
+              maxWidth: 820,
+              backgroundColor: t.colors.surfaceRaised,
+              borderRadius: t.radius.card,
+              borderWidth: 1,
+              borderColor: t.colors.line,
+              shadowColor: t.colors.ink,
+              shadowOpacity: 0.18,
+              shadowRadius: 24,
+              shadowOffset: { width: 0, height: 8 },
+            }}
+          >
+            <QuickPanel
+              key={selected.id}
+              businessId={businessId}
+              visit={selected}
+              walkerName={selected.walker_id ? memberName(members.data ?? [], selected.walker_id) : null}
+              tz={tz}
+              onClose={() => setSelectedId(null)}
+            />
+          </View>
+        </View>
       ) : null}
     </View>
   );
