@@ -50,21 +50,26 @@ export default function OwnerTabs() {
             tabBar: ({ state, descriptors, navigation }) => (
               <OwnerRail
                 businessName={businessName}
-                items={state.routes.map((route, index) => ({
-                  key: route.key,
-                  label: descriptors[route.key]?.options.title ?? route.name,
-                  active: index === state.index,
-                  onPress: () => {
-                    const event = navigation.emit({
-                      type: 'tabPress',
-                      target: route.key,
-                      canPreventDefault: true,
-                    });
-                    if (index !== state.index && !event.defaultPrevented) {
-                      navigation.navigate(route.name, route.params);
-                    }
-                  },
-                }))}
+                items={state.routes
+                  // Hidden (href: null) routes stay out of the rail too — the
+                  // custom tabBar sees the raw route state. Active state keys
+                  // off the route, not the (now filtered) array index.
+                  .filter((route) => route.name !== 'requests')
+                  .map((route) => ({
+                    key: route.key,
+                    label: descriptors[route.key]?.options.title ?? route.name,
+                    active: route.key === state.routes[state.index]?.key,
+                    onPress: () => {
+                      const event = navigation.emit({
+                        type: 'tabPress',
+                        target: route.key,
+                        canPreventDefault: true,
+                      });
+                      if (route.key !== state.routes[state.index]?.key && !event.defaultPrevented) {
+                        navigation.navigate(route.name, route.params);
+                      }
+                    },
+                  }))}
               />
             ),
           }
@@ -114,6 +119,8 @@ export default function OwnerTabs() {
           tabBarIcon: ({ color, size }) => <SettingsIcon color={color} size={size ?? 22} />,
         }}
       />
+      {/* Plan 8 Task 7: booking requests — reached from Today/Schedule, not a tab. */}
+      <Tabs.Screen name="requests" options={{ href: null }} />
     </Tabs>
   );
 }

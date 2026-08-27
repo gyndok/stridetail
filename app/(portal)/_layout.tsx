@@ -76,6 +76,8 @@ export default function PortalLayout() {
           tabBarIcon: ({ color, size }) => <RequestIcon color={color} size={size ?? 22} />,
         }}
       />
+      {/* Task 7: the request form is a sibling route, not a tab. */}
+      <Tabs.Screen name="request/new" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -6,6 +6,7 @@ import { Platform, Pressable, Text, useWindowDimensions, View } from 'react-nati
 
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
+import { listPendingBookingRequests } from '@/src/features/portal/requestsApi';
 import {
   groupVisitsByLocalDay,
   listActiveMembers,
@@ -89,16 +90,33 @@ export default function ScheduleIndex() {
     enabled: !!businessId,
     queryFn: () => listProblemNotifications(businessId!),
   });
+  // Plan 8 Task 7: pending booking requests get an entry point next to
+  // "New visit" (count > 0 only — quiet otherwise).
+  const bookingRequests = useQuery({
+    queryKey: ['booking-requests', businessId, 'pending'],
+    enabled: !!businessId,
+    queryFn: () => listPendingBookingRequests(businessId!),
+  });
   useRefetchOnFocus(visits.refetch);
 
   const filtered = applyFilter(visits.data ?? [], filter);
   const groups = groupVisitsByLocalDay(filtered);
   const problemVisits = problemVisitIds(notifications.data ?? []);
+  const pendingRequests = bookingRequests.data?.length ?? 0;
+  const requestsEntry =
+    pendingRequests > 0 ? (
+      <Button
+        title={`Requests (${pendingRequests})`}
+        variant="ghost"
+        onPress={() => router.push('/requests' as Href)}
+      />
+    ) : null;
 
   if (weekMode) {
     return (
       <Screen title="Schedule">
         <Button title="New visit" onPress={() => router.push('/schedule/new' as Href)} />
+        {requestsEntry}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
           <Chip label="List" selected={false} onPress={() => setView('list')} />
           <Chip label="Week" selected onPress={() => setView('week')} />
@@ -115,6 +133,7 @@ export default function ScheduleIndex() {
   return (
     <Screen title="Schedule">
       <Button title="New visit" onPress={() => router.push('/schedule/new' as Href)} />
+      {requestsEntry}
       {desktop ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
           <Chip label="List" selected onPress={() => setView('list')} />

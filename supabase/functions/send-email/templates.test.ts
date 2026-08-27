@@ -9,6 +9,8 @@ import {
   backoffMinutes,
   centsToDollars,
   escapeHtml,
+  formatInstant,
+  formatWindow,
   invoiceNumberLabel,
   MAX_ATTEMPTS,
   renderEmail,
@@ -115,6 +117,91 @@ Deno.test('client_invite without a payload url falls back to the hosted portal l
   const m = renderEmail('client_invite', { ...ctx, portalUrl: undefined })!;
   assertStringIncludes(m.text, 'https://stridetail.app/portal-login');
   assertStringIncludes(m.html, '<a href="https://stridetail.app/portal-login">');
+});
+
+// ===== Plan 8 Task 7: booking request emails =====
+
+Deno.test('booking_request_received subject and body carry client, service, window', () => {
+  const m = renderEmail('booking_request_received', {
+    ...ctx,
+    clientName: 'Karla',
+    requestWindow: 'Thu, Aug 27, 2:00 PM – 4:00 PM',
+  })!;
+  assertEquals(m.subject, 'Paw & Whisker: new service request from Karla');
+  assertEquals(
+    m.text,
+    'Paw & Whisker: Karla requested a Walk visit for Thu, Aug 27, 2:00 PM – 4:00 PM. ' +
+      'Open Stridetail to approve or decline.',
+  );
+  assertStringIncludes(m.html, 'Karla requested a Walk visit');
+});
+
+Deno.test('booking_request_received without a name/window degrades honestly', () => {
+  const m = renderEmail('booking_request_received', ctx)!;
+  assertEquals(m.subject, 'Paw & Whisker: new service request from a client');
+  assertEquals(
+    m.text,
+    'Paw & Whisker: A client requested a Walk visit. Open Stridetail to approve or decline.',
+  );
+});
+
+Deno.test('booking_request_approved is warm and carries the scheduled date', () => {
+  const m = renderEmail('booking_request_approved', {
+    ...ctx,
+    scheduledStart: 'Thu, Aug 27, 2:00 PM',
+  })!;
+  assertEquals(m.subject, 'Paw & Whisker: your Walk request is approved');
+  assertEquals(
+    m.text,
+    'Good news from Paw & Whisker — your Walk request is approved! ' +
+      'Your visit is scheduled for Thu, Aug 27, 2:00 PM. We look forward to seeing your pet.',
+  );
+  assertStringIncludes(m.html, 'Your visit is scheduled for Thu, Aug 27, 2:00 PM.');
+});
+
+Deno.test('booking_request_approved without a schedule label degrades honestly', () => {
+  const m = renderEmail('booking_request_approved', ctx)!;
+  assertStringIncludes(m.text, 'Your visit is on the calendar.');
+});
+
+Deno.test('booking_request_declined includes the reason', () => {
+  const m = renderEmail('booking_request_declined', {
+    ...ctx,
+    declineReason: 'Fully booked that day',
+  })!;
+  assertEquals(m.subject, 'Paw & Whisker: about your Walk request');
+  assertEquals(
+    m.text,
+    "Paw & Whisker couldn't fit your Walk request this time. " +
+      'Reason: Fully booked that day. Please try another day or time.',
+  );
+  assertStringIncludes(m.html, 'Reason: Fully booked that day.');
+});
+
+Deno.test('booking_request_declined without a reason degrades honestly', () => {
+  const m = renderEmail('booking_request_declined', ctx)!;
+  assertEquals(
+    m.text,
+    "Paw & Whisker couldn't fit your Walk request this time. Please try another day or time.",
+  );
+});
+
+Deno.test('formatInstant renders in the given zone, plain spaces only', () => {
+  assertEquals(formatInstant('2026-08-27T19:00:00Z', 'America/Chicago'), 'Thu, Aug 27, 2:00 PM');
+  // Bad input falls back to the raw string rather than lying or throwing.
+  assertEquals(formatInstant('not-a-date', 'America/Chicago'), 'not-a-date');
+  assertEquals(formatInstant('2026-08-27T19:00:00Z', 'Not/AZone'), '2026-08-27T19:00:00Z');
+});
+
+Deno.test('formatWindow renders start day + both times, end time-only', () => {
+  assertEquals(
+    formatWindow('2026-08-27T19:00:00Z', '2026-08-27T21:00:00Z', 'America/Chicago'),
+    'Thu, Aug 27, 2:00 PM – 4:00 PM',
+  );
+  assertEquals(
+    formatWindow('2026-08-27T19:00:00Z', 'bad', 'America/Chicago'),
+    'Thu, Aug 27, 2:00 PM',
+  );
 });
 
 Deno.test('multi-pet names read naturally', () => {
