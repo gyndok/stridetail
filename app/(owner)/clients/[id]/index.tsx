@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
-import { getClient, isMeetGreetPending, updateClient } from '@/src/features/clients/api';
+import {
+  getClient,
+  inviteClientToPortal,
+  isMeetGreetPending,
+  portalInviteState,
+  updateClient,
+} from '@/src/features/clients/api';
 import { ClientForm } from '@/src/features/clients/ClientForm';
 import { telUrl } from '@/src/features/clients/form';
 import { listPets } from '@/src/features/pets/api';
@@ -24,6 +30,8 @@ export default function ClientDetail() {
   const [editing, setEditing] = useState(false);
   const [mgBusy, setMgBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
 
   const client = useQuery({
     queryKey: ['client', businessId, id],
@@ -53,6 +61,21 @@ export default function ClientDetail() {
       setActionError(e instanceof Error ? e.message : String(e));
     } finally {
       setMgBusy(false);
+    }
+  }
+
+  async function sendPortalInvite() {
+    if (!id) return;
+    setInviteBusy(true);
+    setActionError(null);
+    try {
+      await inviteClientToPortal(id);
+      setInviteSent(true);
+      await client.refetch();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setInviteBusy(false);
     }
   }
 
@@ -148,6 +171,39 @@ export default function ClientDetail() {
                 onPress={() => router.push(`/clients/${id}/pets/new` as Href)}
               />
             </View>
+          </Card>
+          <Card>
+            <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Client portal</Text>
+            {portalInviteState(c) === 'needs-email' ? (
+              <>
+                <Text style={{ color: t.colors.inkMuted }}>
+                  Add an email address first — the portal invite goes to the client&apos;s
+                  email.
+                </Text>
+                <Button title="Add email" variant="secondary" onPress={() => setEditing(true)} />
+              </>
+            ) : (
+              <>
+                {c.portal_invited_at ? (
+                  <Text style={{ color: t.colors.ink }}>
+                    Invited {new Date(c.portal_invited_at).toLocaleDateString()}
+                  </Text>
+                ) : (
+                  <Text style={{ color: t.colors.inkMuted }}>
+                    Give {c.name} access to their visits, report cards, and invoices.
+                  </Text>
+                )}
+                {inviteSent ? (
+                  <Text style={{ color: t.colors.inkMuted }}>Invite sent to {c.email}</Text>
+                ) : null}
+                <Button
+                  title={c.portal_invited_at ? 'Re-send invite' : 'Invite to portal'}
+                  variant="secondary"
+                  onPress={() => void sendPortalInvite()}
+                  loading={inviteBusy}
+                />
+              </>
+            )}
           </Card>
           <Pressable
             accessibilityRole="button"

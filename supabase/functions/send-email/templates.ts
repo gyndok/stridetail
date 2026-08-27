@@ -22,7 +22,12 @@ export type EmailContext = {
   invoiceNumberLabel?: string;
   invoiceTotalCents?: number;
   invoiceUrl?: string;
+  /** client_invite only: portal login URL from the payload. */
+  portalUrl?: string;
 };
+
+/** client_invite fallback when the payload carries no portalUrl. */
+export const DEFAULT_PORTAL_URL = 'https://stridetail.app/portal-login';
 
 export type EmailMessage = {
   subject: string;
@@ -104,6 +109,22 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
         c.invoiceUrl
           ? `<a href="${escapeHtml(c.invoiceUrl)}">View and pay your invoice</a>`
           : 'The invoice link will follow separately.',
+      ]),
+    };
+  },
+  // Plan 8 Task 3: the owner's "Invite to portal" email. Warm and short; the
+  // link is the portal login (payload portalUrl, hosted-URL fallback) — the
+  // client signs in with THIS email address and the claim RPC does the rest.
+  client_invite: (c) => {
+    const url = c.portalUrl && c.portalUrl.length > 0 ? c.portalUrl : DEFAULT_PORTAL_URL;
+    return {
+      subject: `${c.businessName} invited you to their pet care portal`,
+      text:
+        `${c.businessName} invited you to their pet care portal — see your pet's visits, ` +
+        `report cards, and invoices in one place. Sign in with this email address: ${url}`,
+      html: wrapHtml([
+        `${escapeHtml(c.businessName)} invited you to their pet care portal — see your pet's visits, report cards, and invoices in one place.`,
+        `<a href="${escapeHtml(url)}">Sign in with this email address</a>`,
       ]),
     };
   },

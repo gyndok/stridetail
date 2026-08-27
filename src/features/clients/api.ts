@@ -33,6 +33,25 @@ export function firstPhone(phones: string[] | null | undefined): string | null {
   return phones?.[0] ?? null;
 }
 
+/** What the client-detail "Client portal" card should offer (Plan 8 Task 3). */
+export type PortalInviteState = 'needs-email' | 'invitable' | 'invited';
+
+export function portalInviteState(
+  client: Pick<Client, 'email' | 'portal_invited_at'>,
+): PortalInviteState {
+  if (!client.email || client.email.trim() === '') return 'needs-email';
+  return client.portal_invited_at ? 'invited' : 'invitable';
+}
+
+/**
+ * Owner-only definer RPC: stamps clients.portal_invited_at and queues the
+ * client_invite email. Re-inviting is allowed (re-stamps + re-queues).
+ */
+export async function inviteClientToPortal(clientId: string): Promise<void> {
+  const { error } = await supabase.rpc('invite_client_to_portal', { p_client: clientId });
+  if (error) throw error;
+}
+
 export async function listClients(businessId: string, search?: string): Promise<ClientListItem[]> {
   let query = supabase
     .from('clients')

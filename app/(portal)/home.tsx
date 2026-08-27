@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { signOut } from '@/src/features/auth/session';
+import { useClaimOnEmptyLinks } from '@/src/features/portal/claim';
 import { useClientLinks } from '@/src/features/portal/useClientLinks';
 import { Button } from '@/src/ui/Button';
 import { Screen } from '@/src/ui/Screen';
@@ -19,6 +20,10 @@ export default function PortalHome() {
   const qc = useQueryClient();
   const links = useClientLinks();
   const [busy, setBusy] = useState(false);
+  // Task 3: an invited-but-unlinked OTP user gets claimed right here — the
+  // ['client-links'] invalidation flips the view; everyone else keeps the
+  // no-account message below.
+  useClaimOnEmptyLinks();
 
   async function leave() {
     setBusy(true);

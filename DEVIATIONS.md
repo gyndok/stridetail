@@ -2458,3 +2458,37 @@ Task 3's react-native-maps screens. Other calls:
 - Sessions from `verifyOtp` ride the existing supabase-js client (encrypted
   LargeSecureStore on native, auto-refresh wiring unchanged) — no new
   session handling.
+
+## 2026-08-26 — Plan 8 Task 3: invite-your-client + claim linking
+
+- **TIGHTENING vs a bare email match**: `claim_client_links()` links only
+  clients whose business INVITED them — a new `clients.portal_invited_at`
+  stamp, set by owner-only `invite_client_to_portal(p_client)`, is required.
+  A random OTP user whose email merely matches a client row in a business
+  that never invited them does NOT get linked; the owner's invite is the
+  per-business consent gate. OTP to the on-file address stays the ownership
+  proof (spec §Task 3).
+- **`linked_via = 'invite'` on every v1 link**: because the invited flag is
+  required, every path through the claim RPC IS the invite path. `'claim'`
+  stays reserved for Plan 9's tokened self-claim CTA (no owner invite).
+- **Claim runs twice, both idempotent**: (1) inside `verifyPortalOtp` after
+  every portal OTP login — best-effort (errors swallowed; a claim failure
+  must never block the login) so returning users pick up newly-inviting
+  businesses; (2) from portal home via `useClaimOnEmptyLinks` when the
+  links query resolves empty — covers the auth-event/router race where
+  `resolveEntry` reads links before the login-time claim lands. Links found
+  → invalidate `['client-links']`; none → the no-account message stays.
+- **Audit rows**: invite → `client.portal_invite` (entity `client`); each
+  created link → `client_user.link` (entity `client_user`, the new link's
+  id, client/business/via in meta).
+- **Re-invite is allowed by design** (re-stamps + re-queues the email) —
+  the owner's "they lost it" button; the UI shows "Invited <date>" with a
+  "Re-send invite" action.
+- **`client_invite` email**: subject "<business> invited you to their pet
+  care portal"; portal link comes from the payload's `portalUrl`
+  (`https://stridetail.app/portal-login`), with the same hosted fallback in
+  the template when a payload lacks it. `buildContext` re-reads the business
+  name fresh at send time (payload `businessName` is a convenience copy).
+  **send-email needs a hosted redeploy** — rides Task 8 like the migration.
+- Within one pgTAP transaction `now()` is frozen, so the re-invite test pins
+  the second queued email rather than a changed `portal_invited_at` value.

@@ -12,6 +12,7 @@ jest.mock('@/src/lib/supabase', () => ({
       verifyOtp: jest.fn(async () => ({ data: {}, error: null })),
       signInWithPassword: jest.fn(async () => ({ error: null })),
     },
+    rpc: jest.fn(async () => ({ data: { linked: 0, links: [] }, error: null })),
   },
 }));
 

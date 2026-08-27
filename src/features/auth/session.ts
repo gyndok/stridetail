@@ -3,6 +3,8 @@ import { create } from 'zustand';
 
 import { supabase } from '@/src/lib/supabase';
 
+import { claimClientLinks } from '@/src/features/portal/api';
+
 import { clearPortalEntry, setPortalEntry } from './portalEntry';
 
 export type SessionStatus = 'loading' | 'signed-out' | 'signed-in';
@@ -63,6 +65,15 @@ export async function verifyPortalOtp(email: string, code: string) {
     type: 'email',
   });
   if (error) throw error;
+  // Task 3: claim invited links at every portal login — idempotent and cheap,
+  // it picks up businesses that invited this email since the last visit. Best
+  // effort: on failure, portal home's claim-on-empty retries and the login
+  // itself must never be blocked.
+  try {
+    await claimClientLinks();
+  } catch {
+    // swallowed by design — see above
+  }
 }
 
 export async function signOut() {

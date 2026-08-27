@@ -98,6 +98,25 @@ Deno.test('invite subject and link', () => {
   );
 });
 
+Deno.test('client_invite subject, warm text, and portal link from the payload', () => {
+  const m = renderEmail('client_invite', { ...ctx, portalUrl: 'https://stridetail.app/portal-login' })!;
+  assertEquals(m.subject, 'Paw & Whisker invited you to their pet care portal');
+  assertEquals(
+    m.text,
+    "Paw & Whisker invited you to their pet care portal — see your pet's visits, " +
+      'report cards, and invoices in one place. Sign in with this email address: ' +
+      'https://stridetail.app/portal-login',
+  );
+  assertStringIncludes(m.html, '<a href="https://stridetail.app/portal-login">');
+  assertStringIncludes(m.html, 'Paw &amp; Whisker invited you to their pet care portal');
+});
+
+Deno.test('client_invite without a payload url falls back to the hosted portal login', () => {
+  const m = renderEmail('client_invite', { ...ctx, portalUrl: undefined })!;
+  assertStringIncludes(m.text, 'https://stridetail.app/portal-login');
+  assertStringIncludes(m.html, '<a href="https://stridetail.app/portal-login">');
+});
+
 Deno.test('multi-pet names read naturally', () => {
   const m = renderEmail('visit_started', { ...ctx, petNames: 'Biscuit & Max' })!;
   assertEquals(m.text, "Paw & Whisker: Walker has started Biscuit & Max's Walk visit.");

@@ -95,6 +95,16 @@ async function buildContext(admin: SupabaseClient, row: NotificationRow): Promis
   const { data: biz } = await admin.from('businesses').select('name').eq('id', row.business_id).maybeSingle();
   if (biz?.name) ctx.businessName = biz.name as string;
 
+  if (row.template === 'client_invite') {
+    // Payload from invite_client_to_portal: {clientId, businessName, portalUrl}.
+    // businessName is re-read fresh above (admin lookup wins over the payload);
+    // the template itself falls back to the hosted portal login when the
+    // payload carries no url.
+    const portalUrl = row.payload['portalUrl'];
+    if (typeof portalUrl === 'string' && portalUrl.length > 0) ctx.portalUrl = portalUrl;
+    return ctx;
+  }
+
   if (row.template === 'invite') {
     const link = row.payload['link'];
     const token = row.payload['token'];

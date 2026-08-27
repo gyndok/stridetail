@@ -60,6 +60,7 @@
         "npm:jest@29.7",
         "npm:react-dom@19.2.3",
         "npm:react-native-gesture-handler@2.32",
+        "npm:react-native-maps@1.27.2",
         "npm:react-native-reanimated@4.5.1",
         "npm:react-native-safe-area-context@5.7",
         "npm:react-native-screens@4.26",

@@ -10,6 +10,8 @@ export type Client = {
   lng: number | null;
   notes_md: string | null;
   mg_completed_at: string | null;
+  /** Stamped by invite_client_to_portal (Plan 8 Task 3); null = never invited. */
+  portal_invited_at: string | null;
   created_at: string;
   updated_at: string;
 };
