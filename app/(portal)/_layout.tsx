@@ -76,6 +76,8 @@ export default function PortalLayout() {
           tabBarIcon: ({ color, size }) => <RequestIcon color={color} size={size ?? 22} />,
         }}
       />
+      {/* Task 6 pet editor: a detail route, not a tab. */}
+      <Tabs.Screen name="pet/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
