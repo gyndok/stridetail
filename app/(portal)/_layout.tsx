@@ -78,6 +78,8 @@ export default function PortalLayout() {
       />
       {/* Task 7: the request form is a sibling route, not a tab. */}
       <Tabs.Screen name="request/new" options={{ href: null }} />
+      {/* Task 6 pet editor: a detail route, not a tab. */}
+      <Tabs.Screen name="pet/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -272,7 +272,7 @@ Last updated: 2026-08-26
   | 3 | invite-your-client + claim linking | [x] local only — migration + send-email redeploy ride Task 8 | ba76c6d |
   | 4 | portal shell + dashboard | [x] local only — new branding-read migration (20260826000004) rides Task 8; report thumbnails deferred to Task 5 | ab6361f |
   | 5 | reports archive + invoices (tips) | [x] detail = public token pages via RLS-read tokens (DEVIATIONS) | 65addf7 |
-  | 6 | pets + access-codes self-service | [ ] | |
+  | 6 | pets + access-codes self-service | [x] local only — migration 20260826000005 (self RPCs + client pet-photo storage policies) rides Task 8 | 53e85f0 |
   | 7 | booking requests end-to-end | [x] local only — send-email redeploy rides Task 8 | e860363 |
   | 8 | hosted deploy + **Checkpoint 8** | [ ] | |
 - [ ] **Plan 8b: owner command strip** (`docs/superpowers/plans/2026-08-26-stridetail-plan8b-owner-command-strip.md`) — after Plan 8; KPI strip + derived "on a walk now"; NO mode toggle
