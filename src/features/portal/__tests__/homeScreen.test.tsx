@@ -4,7 +4,8 @@ import { fireEvent, render } from '@testing-library/react-native';
 import PortalHome from '@/app/(portal)/home';
 import { ThemeProvider } from '@/src/ui/theme';
 
-import type { PortalInvoice, PortalReport, PortalVisit } from '../api';
+import type { PortalInvoice, PortalVisit } from '../api';
+import type { PortalReportCard } from '../reportsApi';
 
 const mockPush = jest.fn();
 const mockSetLinkId = jest.fn(async () => {});
@@ -33,9 +34,17 @@ const mockBiz2 = { id: 'b2', name: 'Other Dogs', brand_color: '#E8642C', time_zo
 const mockState: {
   links: (typeof mockLink1)[];
   visits: PortalVisit[];
-  reports: PortalReport[];
+  reports: PortalReportCard[];
   invoices: PortalInvoice[];
 } = { links: [mockLink1], visits: [], reports: [], invoices: [] };
+
+// Task 5: home report rows read the archive query (it carries public_token).
+// Pure helpers (reportHref) stay real; supabase is stubbed for the import.
+jest.mock('@/src/lib/supabase', () => ({ supabase: {} }));
+jest.mock('@/src/features/portal/reportsApi', () => ({
+  ...jest.requireActual('@/src/features/portal/reportsApi'),
+  useReportArchive: () => ({ isSuccess: true, data: mockState.reports }),
+}));
 
 jest.mock('@/src/features/portal/useClientLinks', () => ({
   useClientLinks: () => ({ isSuccess: true, data: mockState.links }),
@@ -50,7 +59,6 @@ jest.mock('@/src/features/portal/hooks', () => ({
     setLinkId: mockSetLinkId,
   }),
   useUpcomingVisits: () => ({ isSuccess: true, data: mockState.visits }),
-  useRecentReports: () => ({ isSuccess: true, data: mockState.reports }),
   usePortalSentInvoices: () => ({ isSuccess: true, data: mockState.invoices }),
   usePortalPets: () => ({
     isSuccess: true,
@@ -84,10 +92,12 @@ const visit: PortalVisit = {
   service: { name: 'Walk' },
 };
 
-const report: PortalReport = {
+const report: PortalReportCard = {
   id: 'r1',
   visit_id: 'v0',
   created_at: '2026-08-25T20:00:00Z',
+  public_token: 'tok_r1',
+  revoked_at: null,
   visit: {
     id: 'v0',
     client_id: 'c1',
@@ -154,10 +164,17 @@ test('balance banner routes to the Invoices tab', async () => {
   expect(mockPush).toHaveBeenCalledWith('/(portal)/invoices');
 });
 
-test('a report row routes to the Reports tab', async () => {
+test('a report row deep-links to the public report page for its token', async () => {
   mockState.reports = [report];
   const { getByLabelText } = await renderHome();
-  await fireEvent.press(getByLabelText('Open reports'));
+  await fireEvent.press(getByLabelText('Open report card'));
+  expect(mockPush).toHaveBeenCalledWith('/report/tok_r1');
+});
+
+test('a revoked report row falls back to the Reports tab', async () => {
+  mockState.reports = [{ ...report, revoked_at: '2026-08-26T00:00:00Z' }];
+  const { getByLabelText } = await renderHome();
+  await fireEvent.press(getByLabelText('Open report card'));
   expect(mockPush).toHaveBeenCalledWith('/(portal)/reports');
 });
 

@@ -2527,3 +2527,38 @@ Task 3's react-native-maps screens. Other calls:
   archive + detail).
 - Tabs stay bottom-docked on desktop web for v1 (no OwnerRail equivalent);
   the content column is capped at 720 px and centered, public-page style.
+
+## 2026-08-26 — Plan 8 Task 5: reports archive + invoices
+
+- **Detail pages are the PUBLIC token pages, reached via RLS-read tokens**:
+  the plan sketch says report detail reuses the public components "through
+  the client's OWN RLS reads (not the public token path)". Both
+  `visit_reports.public_token` and `invoices.public_token` ARE client-readable
+  (whole-table select grants + the Task 1 row policies — verified in
+  20260824000009/20260825000001/20260826000002), so v1 fetches the TOKEN via
+  the client's own RLS read and routes to the already-built pages
+  `/report/<token>` and `/invoice/<token>` (map, timeline, photos; line
+  items, payment history, tip chips, Venmo button). Zero duplicated
+  rendering, works web + native. The pages themselves still fetch through
+  the public functions — acceptable v1 trade recorded here; a session-scoped
+  in-portal detail can replace it later without touching the lists.
+- **New code lives in new files** (`src/features/portal/reportsApi.ts`,
+  `invoicesApi.ts`, hooks colocated): Tasks 5–7 ran as parallel agents, so
+  Task 5 never edits `api.ts`/`hooks.ts`. Same conventions: `portal-*` query
+  keys (not persisted), named columns only, FORBIDDEN-column regex pinned in
+  `portalReportsApi.test.ts` / `portalInvoicesApi.test.ts`.
+- **Revoked/absent tokens keep their rows**: a revoked report row renders
+  with an "Unavailable" chip and no link (rather than dead-linking into the
+  public page's 404 state); an invoice with no/revoked token renders without
+  a detail link. Rows are history the client may still reconcile against.
+- **Home report rows now deep-link** to `/report/<token>`: home swaps
+  `useRecentReports` for the Task 5 archive query (limit 3, carries the
+  token); a revoked token falls back to the Reports tab.
+- **Invoice list chip renames plain 'Sent' to 'Awaiting payment'** (the
+  client is the payer); Paid/Overdue/Partially paid keep the shared
+  `statusChip` precedence. Paid date shows on the detail page, not the row
+  (business-tz rendering lives there already).
+- **Archive months group by the visit's scheduled_start in the visit's own
+  business zone** (the archive is about when the walk happened), newest
+  first; list capped at 200 rows for v1 (no pagination yet).
+

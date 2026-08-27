@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
@@ -11,7 +11,6 @@ import {
   usePortalPets,
   usePortalScope,
   usePortalSentInvoices,
-  useRecentReports,
   useUpcomingVisits,
 } from '@/src/features/portal/hooks';
 import {
@@ -20,6 +19,7 @@ import {
   portalVisitChip,
   visitWhenLabel,
 } from '@/src/features/portal/home';
+import { reportHref, useReportArchive } from '@/src/features/portal/reportsApi';
 import { useClientLinks } from '@/src/features/portal/useClientLinks';
 import { PortalScreen } from '@/src/features/portal/PortalScreen';
 import { Button } from '@/src/ui/Button';
@@ -81,7 +81,9 @@ function Dashboard({ onSignOut, busy }: { onSignOut: () => void; busy: boolean }
   const { link, links, businesses, setLinkId } = usePortalScope();
   const clientId = link?.client_id ?? null;
   const visits = useUpcomingVisits(clientId);
-  const reports = useRecentReports(clientId);
+  // Task 5: the archive query carries public_token, so home rows deep-link
+  // straight to /report/<token> instead of bouncing off the Reports tab.
+  const reports = useReportArchive(clientId, 3);
   const invoices = usePortalSentInvoices(clientId);
   const pets = usePortalPets(clientId);
   const balance = outstandingBalanceCents(invoices.data ?? []);
@@ -172,10 +174,10 @@ function Dashboard({ onSignOut, busy }: { onSignOut: () => void; busy: boolean }
           <Pressable
             key={r.id}
             accessibilityRole="button"
-            accessibilityLabel="Open reports"
-            // Task 5 builds the archive + detail; for now the row lands on the
-            // Reports tab stub.
-            onPress={() => router.push('/(portal)/reports')}
+            accessibilityLabel="Open report card"
+            // Task 5: straight to the public report page for this row's own
+            // token; a revoked token falls back to the Reports tab archive.
+            onPress={() => router.push((reportHref(r) ?? '/(portal)/reports') as Href)}
           >
             <Card style={{ gap: t.space.xs }}>
               <Text style={{ color: t.colors.ink, fontWeight: '700' }}>
