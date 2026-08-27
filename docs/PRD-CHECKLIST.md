@@ -282,7 +282,7 @@ Last updated: 2026-08-27
   | 1 | dashboard shell + KPI row | [x] | 2874013 |
   | 2 | operations panels: requests, attention, live walks | [ ] | |
   | 3 | schedule table + month calendar | [ ] | |
-  | 4 | business panels: clients, services, billing | [ ] | |
+  | 4 | business panels: clients, services, billing | [x] | 49832e7 |
   | 5 | assembly polish + sponsor desktop pass | [ ] | |
 - [ ] Plan 9: messaging + derived presence + urgent flag, self-claim, per-tenant custom domains — deferred until real portal clients (spec §9)
 - Open: P&W page copy/prices (Alexandra), request-approve vs self-book (Alexandra), report approve-before-send setting (Alexandra), tip splitting (Alexandra), Stripe timing (Alexandra), chat priority (Alexandra)
