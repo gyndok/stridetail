@@ -5,7 +5,7 @@ Living status of Slice 1 "Operate" against the spec
 same commit that completes a task. Legend: `[x]` done · `[ ]` not started · `[~]` in progress ·
 `[!]` blocked.
 
-Last updated: 2026-08-26
+Last updated: 2026-08-27
 
 ---
 
@@ -279,7 +279,7 @@ Last updated: 2026-08-26
 
   | # | Plan 8b task | Status | Commit |
   |---|--------------|--------|--------|
-  | 1 | dashboard shell + KPI row | [ ] | |
+  | 1 | dashboard shell + KPI row | [x] | 2874013 |
   | 2 | operations panels: requests, attention, live walks | [ ] | |
   | 3 | schedule table + month calendar | [ ] | |
   | 4 | business panels: clients, services, billing | [ ] | |
