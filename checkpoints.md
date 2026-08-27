@@ -316,3 +316,32 @@ Sponsor phone screenshots → docs/evidence/cp8-*.png; fill the table.
 | Step 8: approve from owner side | PASS — Requests card (client, service, window, pets, note, optional walker chips) → Approve. FINDING logged: the card shows the client's window but offers no start-time choice within it (visit pins to window start) — improvement queued |
 | Step 9: walker offer | Covered by design (approve → unassigned/offered per picker); not separately exercised |
 | Result (PASS / FAIL) | **PASS** — plus two portal improvements shipped from findings same-day: Settings tab (passwordless explainer + sign out; passwordless-by-code CONFIRMED as final design by sponsor) and web date/time inputs |
+
+## Desktop dashboard pass (Plan 8b)
+
+**2026-08-27 — desk-verified composition (Claude); SPONSOR PASS PENDING.**
+
+Task 5 assembly polish landed (`7e39341`). No sign-in credentials at the desk,
+so composition was verified without live data:
+
+- **Grid per breakpoint** (jest: `dashboardLayout` pure fn + shell renders with
+  a mocked `useWindowDimensions` at 1024/1280/1600): KPI row full width →
+  operations row (Pending requests · Needs attention · Out on walks; three
+  across ≥ 1280, two across + full-width third at 1024–1279) → main split
+  with the schedule column at ~2:1 over the business column; at ≥ 1600 the
+  week table and month calendar sit side by side inside the schedule slot.
+  `minWidth: 0` + `numberOfLines` truncation on table rows — no horizontal
+  page scroll at any band. 768/tablet web: unchanged mobile Today beside no
+  rail (gate stays ≥ 1024, rail ≥ 900) — recorded per plan.
+- **Consistency pass** across the parallel-built panels: one PanelCard header
+  anatomy everywhere; status chips are the shared billing `StatusBadge` in
+  both SchedulePanel and BusinessPanel (dashboard-local StatusPill deleted);
+  empty states unified to one sentence tone; loading is one plain
+  `PanelSkeleton` (static token-colored bars, no shimmer) in every panel.
+- **Checks**: 931 jest / 86 suites green, typecheck green, lint green
+  (2 pre-existing warnings untouched), `expo export --platform web` bundles
+  clean.
+
+**SPONSOR PASS PENDING** — Alexandra signs in at stridetail.app on desktop
+with the demo business; acceptance bar per plan: she could run Paw & Whisker
+from this one screen, every panel two clicks from its full workflow.

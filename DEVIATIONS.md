@@ -2838,3 +2838,24 @@ polish; no PRD-CHECKLIST rows ticked):
 - **Pet names are the ONE new read** (`pets` id+name by business + id set) for
   the live-walks strip — "client/pets" is in the plan and no existing query
   returns pet names for a set of visits. Named columns per the grant rule.
+
+## Plan 8b Task 5 (assembly polish, 2026-08-27)
+
+- **Table + calendar side-by-side only at >= 1600.** The plan says "schedule
+  table + month calendar side by side where width allows"; with the main
+  ~2:1 schedule|business split, the schedule column at 1280–1599 is ~600 px —
+  splitting it further would crush the table (the widest content). Below 1600
+  they stack and the table keeps the full column width.
+- **StatusBadge replaces the dashboard-local StatusPill.** SchedulePanel had
+  its own pill (filled greenSoft variant + a hand-rolled Unassigned chip)
+  while BusinessPanel used billing's StatusBadge for the same concept; the
+  consistency pass standardized on StatusBadge (outline style), a slight
+  visual change to the table's positive-status chips.
+- **Empty-state copy unified to sentence style** ("No requests waiting." etc.)
+  — Operations' period-less variants and their test assertions updated;
+  visual/copy only.
+- **PanelSkeleton is new, not repo-reused.** The repo's only loading pattern
+  is a muted "Loading…" text line; the plan asks for simple skeletons, so a
+  static token-colored-bars primitive (no shimmer, no dependency) was added
+  and used dashboard-wide only — the rest of the app keeps "Loading…".
+  KpiRow keeps its existing height-stable em-dash shells.
