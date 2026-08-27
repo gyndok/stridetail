@@ -130,11 +130,8 @@ select is((select status::text from deposits where id = '00000000-0000-0000-0000
 
 select is((select count(*) from notifications
            where channel = 'email' and template = 'invoice_ready'
-             and "to" = 'dana@test.dev'
-             and payload->>'invoiceId' = pg_temp.rid('ainv')::text
-             and payload->>'invoiceToken' = (select public_token from invoices
-                                             where id = pg_temp.rid('ainv')))::int, 1,
-  'exactly one invoice_ready email queued with the invoice id and token');
+             and "to" = 'dana@test.dev')::int, 0,
+  'no invoice_ready email from autoflow — the visit_finished report page carries the invoice (one email per walk)');
 
 select is((select count(*) from notifications
            where template = 'visit_finished'
@@ -205,8 +202,8 @@ select ok((select meta->>'error' like '%duplicate key%'
 
 select is((select count(*) from notifications
            where template = 'invoice_ready'
-             and "to" = 'dana@test.dev')::int, 1,
-  'no invoice_ready email survived the rollback — still just the first flow''s one');
+             and "to" = 'dana@test.dev')::int, 0,
+  'still no invoice_ready email after the rolled-back second flow');
 
 -- ===== per_sitting: finishes accumulate on ONE draft, never sent =====
 set local request.jwt.claims to '{}';

@@ -2247,3 +2247,20 @@ deployed-but-dormant for a possible toll-free future.
   machine-validated; pages eyeballed at 375px and 1280px via a throwaway
   local `http.server` (not committed). App checks untouched and re-proven
   green: 710 jest, typecheck, lint.
+
+## 2026-08-26 — Checkpoint 6: one email per walk (migration 20260826000001)
+
+- Checkpoint 6's live run queued TWO client emails at visit finish
+  (`visit_finished` + `invoice_ready`, same instant) — the per_visit
+  autoflow queued its own invoice email on top of the report email whose
+  page already carries the "Invoice & payment" section. Spec and sponsor
+  vision say ONE email per walk.
+- Fix: full-body replace of `autoflow_invoice_for_visit` with only that
+  `queue_client_email('invoice_ready', ...)` removed. The owner-initiated
+  `send_invoice` and `resend_invoice_email` RPCs still email — suppression
+  applies ONLY to the automatic per-visit path. Applied local + hosted;
+  two pgTAP assertions in 013_autoflow flipped to expect zero; 552 pass.
+- Also observed, deferred as UI polish (backlog): a tip paid through
+  Venmo is recorded as an overpayment, so the invoice list shows
+  "Paid −$5.00" — arithmetic is right, display should read
+  "Paid · incl. $5.00 tip".
