@@ -140,3 +140,32 @@ pages — they're unlisted, ensure `X-Robots-Tag: noindex` from the app host for
    conservative bridge)?
 4. Waitlist capture destination (Supabase table is fine).
 5. Privacy/terms: draft with a template now, legal review before App Store submission.
+
+## 9. Dashboard-brief decisions (added 2026-08-26, sponsor-approved)
+
+The sponsor supplied a three-role dashboard brief (owner command center / walker
+mobile dashboard / customer portal). Disposition, agreed in conversation:
+
+**Accepted → Plan 8 (client portal v1):** activity feed with report cards (incl. walk
+maps), booking request/reschedule/cancel, pet-profile self-service, access-code
+(lockbox) self-service through the audited encrypted store, 1-tap tips.
+**Accepted → Plan 8b (owner command strip):** business-health KPI cards (revenue
+day/week, outstanding, pending requests, walks today), "on a walk now" live status
+derived from visit state.
+
+**Rejected — management/my-walks global toggle:** re-introduces the exact mode
+confusion device testing eliminated; the unified Today (Up-next hero) stays.
+
+**Deferred → Plan 9 (messaging), triggered by real portal clients:** chat (internal +
+client threads), presence banners, urgent-bypass escalation. Presence will be DERIVED
+(in_progress visit = on a walk) — no manual status dropdown; an "urgent" flag that
+emails/pushes the owner is the v1 escalation. **Deferred pending scale:** dispatch map
+of all active walks, team status grid, staff capacity (multi-walker features; first
+tenant is currently solo), drag-and-drop reassignment (already a backlog item on the
+web week grid). **Deferred pending Alexandra:** report approve-before-send (today
+reports auto-send on finish — would become a per-business setting), per-walker tip
+splitting (rides the payout-model question), saved payment methods (= Stripe, parked),
+SOS button (solo business — the walker is the escalation target).
+
+**Alexandra's Sep 1 question list gains:** report approval setting? tip splitting?
+Stripe timing? how much does she want client chat?

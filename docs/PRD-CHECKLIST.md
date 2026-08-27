@@ -263,9 +263,21 @@ Last updated: 2026-08-26
   | 1 | static map render-once pipeline (Mapbox, edge) | [x] | e8d7692 |
   | 2 | report surfaces show the map | [x] | b0c262e |
   | 3 | react-native-maps in-app (rides Sep 1 build) | [x] code complete — native verification pending Sep 1 build (old binaries keep today's UI via lazy loader) | b894442 |
-- [ ] Plan 8: client portal v1 — client_users + OTP login, dashboard/invoices/reports/pets, booking_requests + owner approve, Supabase auth SMTP via Resend
-- [ ] Plan 9: portal v2 — messaging threads, self-claim, per-tenant custom domains
-- Open: Vercel confirm (sponsor), P&W page copy/prices (Alexandra), request-approve vs self-book (Alexandra)
+- [ ] **Plan 8: client portal v1** (`docs/superpowers/plans/2026-08-26-stridetail-plan8-client-portal.md`) — written, not started
+
+  | # | Plan 8 task | Status | Commit |
+  |---|-------------|--------|--------|
+  | 1 | client_users + booking_requests schema/RLS/pgTAP | [ ] | |
+  | 2 | OTP auth + role routing + Supabase SMTP via Resend | [ ] | |
+  | 3 | invite-your-client + claim linking | [ ] | |
+  | 4 | portal shell + dashboard | [ ] | |
+  | 5 | reports archive + invoices (tips) | [ ] | |
+  | 6 | pets + access-codes self-service | [ ] | |
+  | 7 | booking requests end-to-end | [ ] | |
+  | 8 | hosted deploy + **Checkpoint 8** | [ ] | |
+- [ ] **Plan 8b: owner command strip** (`docs/superpowers/plans/2026-08-26-stridetail-plan8b-owner-command-strip.md`) — after Plan 8; KPI strip + derived "on a walk now"; NO mode toggle
+- [ ] Plan 9: messaging + derived presence + urgent flag, self-claim, per-tenant custom domains — deferred until real portal clients (spec §9)
+- Open: P&W page copy/prices (Alexandra), request-approve vs self-book (Alexandra), report approve-before-send setting (Alexandra), tip splitting (Alexandra), Stripe timing (Alexandra), chat priority (Alexandra)
 
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 
