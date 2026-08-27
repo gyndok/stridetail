@@ -63,6 +63,14 @@ jest.mock('../SchedulePanel', () => {
   const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
   return { SchedulePanel: () => <Text>Schedule</Text> };
 });
+// Task 2 made OperationsPanel a real data panel (queries + query client); the
+// shell test keeps to composition, so the panel is stubbed to its slot title.
+// Its own rendering is covered in OperationsPanel.test.tsx.
+jest.mock('../OperationsPanel', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return { OperationsPanel: () => React.createElement(Text, null, 'Operations') };
+});
 
 test('shell renders the title, KPI row, and the three panel stubs', async () => {
   const { getByText } = await render(
@@ -76,6 +84,6 @@ test('shell renders the title, KPI row, and the three panel stubs', async () => 
   expect(getByText('Operations')).toBeTruthy();
   expect(getByText('Schedule')).toBeTruthy();
   expect(getByText('Clients & pets')).toBeTruthy(); // Task 4 business column
-  // Operations is the one remaining stub (Task 2); Task 3's slot is mocked above.
-  expect(getByText('Requests, needs attention, and live walks — coming in the next task.')).toBeTruthy();
+  // Tasks 2 and 3 are query-backed panels mocked to their slot markers above
+  // ('Operations' / 'Schedule' asserted with the other slots).
 });

@@ -2813,3 +2813,28 @@ polish; no PRD-CHECKLIST rows ticked):
   'dashMonth' segments), so every existing visit-mutation invalidation
   refreshes the panel; members reuse WeekGridView's
   `['scheduleMembers', businessId]` cache.
+## Plan 8b Task 2 — operations panels (2026-08-27)
+
+- **Expiring vaccine docs NOT in needs-attention.** The plan lists them under
+  "the existing needs-attention queries, panelized" — but no business-wide
+  expiring-docs query exists (pet_documents reads are per-pet:
+  `listDocuments(businessId, petId)`), and inventing one would be a new
+  attention category. The panel ships the mobile Today triage set exactly
+  (unassigned, declined offers, missed visits, undelivered notifications);
+  vaccine expiry stays on the pet profile until a real query exists.
+- **RequestCard extraction: per-card state moved component-local.**
+  requests.tsx kept card UI state (walker pick, start pick, declining, reason)
+  in request-id-keyed records; the shared card owns its own state under
+  `key={r.id}` — identical per-card independence, and the draft state now
+  clears when a card leaves the list (i.e. after its own approve/decline).
+  Busy/error remain host-level via the extracted `useRequestActions`, which
+  carries the exact original handlers and invalidation set — extracted rather
+  than duplicated so the dashboard host cannot fork the behavior.
+- **OwnerDashboard shell test stubs OperationsPanel.** The panel is now a data
+  panel (queries + query client); the shell test keeps to composition, stubs
+  the panel to its slot title, and the panel's own test covers its rendering.
+- **"Nothing needs attention" quiet state.** Mobile hides the strip when empty;
+  a fixed dashboard card needs a body, so the panel shows a muted line instead.
+- **Pet names are the ONE new read** (`pets` id+name by business + id set) for
+  the live-walks strip — "client/pets" is in the plan and no existing query
+  returns pet names for a set of visits. Named columns per the grant rule.
