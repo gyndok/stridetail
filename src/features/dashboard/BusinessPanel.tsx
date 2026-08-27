@@ -21,6 +21,7 @@ import {
   useBusinessServices,
 } from './businessData';
 import { PanelCard } from './PanelCard';
+import { PanelSkeleton } from './PanelSkeleton';
 
 // Plan 8b Task 4 — the business column: clients & pets roster, services
 // catalog, billing hub. Same no-props export as the Task 1 stub; all data
@@ -80,6 +81,7 @@ export function BusinessPanel() {
           autoCapitalize="none"
           autoCorrect={false}
         />
+        {clients.isLoading ? <PanelSkeleton /> : null}
         {roster.visible.map((c) => {
           const flags = clientFlags(c);
           const phone = firstPhone(c.phones);
@@ -121,6 +123,7 @@ export function BusinessPanel() {
       </PanelCard>
 
       <PanelCard title="Services">
+        {services.isLoading ? <PanelSkeleton /> : null}
         {(services.data ?? []).map((s) => (
           <Pressable
             key={s.id}
@@ -157,6 +160,7 @@ export function BusinessPanel() {
         title="Billing"
         action={{ label: 'View billing', onPress: () => router.push('/billing' as Href) }}
       >
+        {billing.isLoading ? <PanelSkeleton /> : null}
         {billing.data ? (
           <Text style={{ color: t.colors.inkMuted }}>
             Outstanding {formatCents(unpaidTotalCents(invoices))} · {billing.data.unbilledCount}{' '}

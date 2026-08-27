@@ -2,6 +2,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { StatusBadge } from '@/src/features/billing/StatusBadge';
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
 import { Chip } from '@/src/features/schedule/Chip';
@@ -9,6 +10,7 @@ import { weekDays } from '@/src/features/schedule/weekGrid';
 import { useTheme } from '@/src/ui/theme';
 
 import { PanelCard } from './PanelCard';
+import { PanelSkeleton } from './PanelSkeleton';
 import {
   capRows,
   currentYm,
@@ -60,33 +62,13 @@ function Arrow({ label, hint, onPress }: { label: string; hint: string; onPress:
   );
 }
 
-/** Status pill — WeekGridView's blockColors grouping in pill form. */
-function StatusPill({ status }: { status: ScheduleRow['status'] }) {
-  const t = useTheme();
-  const tone = statusTone(status);
-  const colors =
-    tone === 'warning'
-      ? { bg: t.colors.surfaceRaised, border: t.colors.warning, text: t.colors.warning }
-      : tone === 'muted'
-        ? { bg: t.colors.surface, border: t.colors.line, text: t.colors.inkMuted }
-        : { bg: t.colors.greenSoft, border: t.colors.green, text: t.colors.green };
-  return (
-    <View
-      style={{
-        alignSelf: 'flex-start',
-        backgroundColor: colors.bg,
-        borderColor: colors.border,
-        borderWidth: 1,
-        borderRadius: t.radius.pill,
-        paddingHorizontal: t.space.sm,
-        paddingVertical: 1,
-      }}
-    >
-      <Text style={{ color: colors.text, fontSize: 11, fontWeight: '700' }}>
-        {STATUS_LABELS[status]}
-      </Text>
-    </View>
-  );
+// Task 5 consistency: status chips are the billing StatusBadge (the same
+// component BusinessPanel's invoice rows use), tone-mapped from the week
+// grid's 3-way grouping — no dashboard-local pill variant.
+const BADGE_TONE = { warning: 'warning', muted: 'muted', positive: 'green' } as const;
+
+function statusBadge(status: ScheduleRow['status']) {
+  return <StatusBadge label={STATUS_LABELS[status]} tone={BADGE_TONE[statusTone(status)]} />;
 }
 
 function WeekRow({ row, onPress }: { row: ScheduleRow; onPress: () => void }) {
@@ -127,28 +109,18 @@ function WeekRow({ row, onPress }: { row: ScheduleRow; onPress: () => void }) {
         </Text>
       ) : (
         <View style={{ flex: 1 }}>
-          <View
-            style={{
-              alignSelf: 'flex-start',
-              borderColor: t.colors.warning,
-              borderWidth: 1,
-              borderRadius: t.radius.pill,
-              paddingHorizontal: t.space.sm,
-              paddingVertical: 1,
-            }}
-          >
-            <Text style={{ color: t.colors.warning, fontSize: 11, fontWeight: '700' }}>
-              Unassigned
-            </Text>
-          </View>
+          <StatusBadge label="Unassigned" tone="warning" />
         </View>
       )}
-      <StatusPill status={row.status} />
+      {statusBadge(row.status)}
     </Pressable>
   );
 }
 
-export function SchedulePanel() {
+// Task 5: `layout` — 'row' sits the week table beside the month calendar on
+// very wide screens (>= 1600, decided by OwnerDashboard); 'column' (default)
+// stacks them so the table keeps the full column width.
+export function SchedulePanel({ layout = 'column' }: { layout?: 'row' | 'column' }) {
   const t = useTheme();
   const router = useRouter();
   const { businessId } = useActiveBusiness();
@@ -176,9 +148,26 @@ export function SchedulePanel() {
 
   const openSchedule = () => router.push('/schedule' as Href);
 
+  // Row layout: the cards themselves are the flex items — the table gets the
+  // wider slot (it is the widest content), the calendar the narrower one;
+  // minWidth 0 lets table rows truncate instead of pushing the page sideways.
+  const row = layout === 'row';
+  const tableCard = row ? { flexGrow: 2, flexBasis: '58%' as const, minWidth: 0 } : undefined;
+  const monthCard = row ? { flexGrow: 1, flexBasis: '32%' as const, minWidth: 0 } : undefined;
+
   return (
-    <View style={{ gap: t.space.md }}>
-      <PanelCard title="This week" action={{ label: 'Open schedule', onPress: openSchedule }}>
+    <View
+      style={
+        row
+          ? { flexDirection: 'row', flexWrap: 'wrap', gap: t.space.md, alignItems: 'stretch' }
+          : { gap: t.space.md }
+      }
+    >
+      <PanelCard
+        title="This week"
+        action={{ label: 'Open schedule', onPress: openSchedule }}
+        style={tableCard}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.sm }}>
           <Arrow
             label="‹"
@@ -212,7 +201,7 @@ export function SchedulePanel() {
             {week.error instanceof Error ? week.error.message : String(week.error)}
           </Text>
         ) : null}
-        {week.isLoading ? <Text style={{ color: t.colors.inkMuted }}>Loading…</Text> : null}
+        {week.isLoading ? <PanelSkeleton rows={4} /> : null}
         {week.isSuccess && rows.length === 0 ? (
           <Text style={{ color: t.colors.inkMuted }}>No visits this week.</Text>
         ) : null}
@@ -239,7 +228,7 @@ export function SchedulePanel() {
         ) : null}
       </PanelCard>
 
-      <PanelCard title="Month">
+      <PanelCard title="Month" style={monthCard}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.sm }}>
           <Arrow
             label="‹"

@@ -3,14 +3,22 @@ import { render } from '@testing-library/react-native';
 import { ThemeProvider } from '@/src/ui/theme';
 
 import { kpiWeekWindows } from '../kpiMath';
-import { OwnerDashboard } from '../OwnerDashboard';
+import { dashboardLayout, OwnerDashboard } from '../OwnerDashboard';
 import type { DashboardKpis } from '../kpis';
 
-// Shell test: the dashboard composes the KPI row and the three stub panel
-// slots. The panels are the real (Task 1 stub) components — Tasks 2-4 replace
-// those files, and this test keeps asserting the slots exist.
+// Shell test: the dashboard composes the KPI row, the operations row, and the
+// schedule|business split, with the width -> composition decision covered as
+// a pure function (dashboardLayout) plus prop-wiring checks at mocked widths.
 
 const mockPush = jest.fn();
+
+// Task 5: the shell reads useWindowDimensions to pick the composition; give
+// the tests a dial. RN's index re-exports this module's default.
+let mockWidth = 1280;
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => ({ width: mockWidth, height: 900, scale: 2, fontScale: 1 }),
+}));
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -59,31 +67,63 @@ jest.mock('@/src/features/dashboard/businessData', () => ({
 // Task 3 replaced the SchedulePanel stub with a query-backed panel (its own
 // SchedulePanel.test.tsx covers the real body); the shell test only asserts
 // the slot exists, so mock it to its slot marker.
+// The panel stubs echo the layout props the shell hands them, so the width ->
+// composition wiring is assertable without rendering the query-backed bodies
+// (each panel's own test file covers those).
 jest.mock('../SchedulePanel', () => {
   const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
-  return { SchedulePanel: () => <Text>Schedule</Text> };
+  return {
+    SchedulePanel: ({ layout = 'column' }: { layout?: string }) => (
+      <Text>{`Schedule:${layout}`}</Text>
+    ),
+  };
 });
-// Task 2 made OperationsPanel a real data panel (queries + query client); the
-// shell test keeps to composition, so the panel is stubbed to its slot title.
-// Its own rendering is covered in OperationsPanel.test.tsx.
 jest.mock('../OperationsPanel', () => {
-  const React = jest.requireActual<typeof import('react')>('react');
   const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
-  return { OperationsPanel: () => React.createElement(Text, null, 'Operations') };
+  return {
+    OperationsPanel: ({ columns = 1 }: { columns?: number }) => (
+      <Text>{`Operations:${columns}`}</Text>
+    ),
+  };
 });
 
-test('shell renders the title, KPI row, and the three panel stubs', async () => {
-  const { getByText } = await render(
+function renderShell(width: number) {
+  mockWidth = width;
+  return render(
     <ThemeProvider>
       <OwnerDashboard />
     </ThemeProvider>,
   );
+}
+
+test('dashboardLayout: ops row and schedule split per breakpoint', () => {
+  expect(dashboardLayout(1024)).toEqual({ opsColumns: 2, schedule: 'column' });
+  expect(dashboardLayout(1279)).toEqual({ opsColumns: 2, schedule: 'column' });
+  expect(dashboardLayout(1280)).toEqual({ opsColumns: 3, schedule: 'column' });
+  expect(dashboardLayout(1600)).toEqual({ opsColumns: 3, schedule: 'row' });
+});
+
+test('shell renders title, KPI row, operations row, and the schedule|business split', async () => {
+  const { getByText, getByTestId } = await renderShell(1280);
   expect(getByText('Today')).toBeTruthy();
   expect(getByText('Revenue this week')).toBeTruthy();
   expect(getByText('$100.00')).toBeTruthy();
-  expect(getByText('Operations')).toBeTruthy();
-  expect(getByText('Schedule')).toBeTruthy();
+  expect(getByText('Operations:3')).toBeTruthy();
+  expect(getByText('Schedule:column')).toBeTruthy();
   expect(getByText('Clients & pets')).toBeTruthy(); // Task 4 business column
-  // Tasks 2 and 3 are query-backed panels mocked to their slot markers above
-  // ('Operations' / 'Schedule' asserted with the other slots).
+  // Schedule gets the wide slot of the ~2:1 main row, business the narrow one.
+  expect(getByTestId('dashboard-schedule-slot')).toHaveStyle({ flexGrow: 2, flexBasis: '58%' });
+  expect(getByTestId('dashboard-business-slot')).toHaveStyle({ flexGrow: 1, flexBasis: '32%' });
+});
+
+test('1024-1279 band: two-across operations, stacked schedule column', async () => {
+  const { getByText } = await renderShell(1024);
+  expect(getByText('Operations:2')).toBeTruthy();
+  expect(getByText('Schedule:column')).toBeTruthy();
+});
+
+test('>= 1600: table and month calendar sit side by side in the schedule slot', async () => {
+  const { getByText } = await renderShell(1600);
+  expect(getByText('Operations:3')).toBeTruthy();
+  expect(getByText('Schedule:row')).toBeTruthy();
 });

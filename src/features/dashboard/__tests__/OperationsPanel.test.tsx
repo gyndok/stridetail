@@ -211,7 +211,7 @@ test('rows tap through to their targets', async () => {
 
 test('empty states for all three cards', async () => {
   const { getByText } = await renderPanel();
-  expect(getByText('No requests waiting')).toBeTruthy();
-  expect(getByText('Nothing needs attention')).toBeTruthy();
-  expect(getByText('No one is out right now')).toBeTruthy();
+  expect(getByText('No requests waiting.')).toBeTruthy();
+  expect(getByText('Nothing needs attention.')).toBeTruthy();
+  expect(getByText('No one is out right now.')).toBeTruthy();
 });

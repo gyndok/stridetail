@@ -16,6 +16,7 @@ import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { useTheme } from '@/src/ui/theme';
 
 import { PanelCard } from './PanelCard';
+import { PanelSkeleton } from './PanelSkeleton';
 import {
   declinedOffers,
   outOnWalks,
@@ -38,8 +39,12 @@ import {
 // 3. Out on walks now — visits currently in_progress (state-derived only, no
 //    presence field): walker, client + pets, "started X min ago", refetched
 //    every minute.
+//
+// Task 5: `columns` lays the three cards out as the mockup's operations ROW
+// (three across on wide desktop, two + a full-width third in the 1024-1279
+// band); the default single column keeps the panel self-contained for tests.
 
-export function OperationsPanel() {
+export function OperationsPanel({ columns = 1 }: { columns?: 1 | 2 | 3 }) {
   const t = useTheme();
   const router = useRouter();
   const { businessId } = useActiveBusiness();
@@ -67,16 +72,31 @@ export function OperationsPanel() {
   const attentionEmpty =
     unassigned.length === 0 && declined.length === 0 && missed.length === 0 && !notifLabel;
 
+  // Row layout: the cards themselves are grow/basis flex items, so three (or
+  // two) share a row, a short last row still spans the width, and stretch
+  // keeps cards on one row the same height; minWidth 0 lets content truncate.
+  const row = columns > 1;
+  const card = row
+    ? { flexGrow: 1, flexBasis: (columns === 3 ? '31%' : '48%') as `${number}%`, minWidth: 0 }
+    : undefined;
+
   return (
-    <View style={{ gap: t.space.md }}>
+    <View
+      style={
+        row
+          ? { flexDirection: 'row', flexWrap: 'wrap', gap: t.space.md, alignItems: 'stretch' }
+          : { gap: t.space.md }
+      }
+    >
       <PanelCard
         title="Pending requests"
         action={{ label: 'View all', onPress: () => router.push('/requests' as Href) }}
+        style={card}
       >
         {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
-        {requests.isLoading ? <Text style={{ color: t.colors.inkMuted }}>Loading…</Text> : null}
+        {requests.isLoading ? <PanelSkeleton /> : null}
         {requests.isSuccess && (requests.data ?? []).length === 0 ? (
-          <Text style={{ color: t.colors.inkMuted }}>No requests waiting</Text>
+          <Text style={{ color: t.colors.inkMuted }}>No requests waiting.</Text>
         ) : null}
         {(requests.data ?? []).map((r) => (
           <RequestCard
@@ -91,9 +111,10 @@ export function OperationsPanel() {
         ))}
       </PanelCard>
 
-      <PanelCard title="Needs attention">
-        {attentionEmpty ? (
-          <Text style={{ color: t.colors.inkMuted }}>Nothing needs attention</Text>
+      <PanelCard title="Needs attention" style={card}>
+        {visits.isLoading ? <PanelSkeleton /> : null}
+        {attentionEmpty && !visits.isLoading ? (
+          <Text style={{ color: t.colors.inkMuted }}>Nothing needs attention.</Text>
         ) : null}
         {unassigned.length > 0 ? (
           <Text style={{ color: t.colors.ink, fontWeight: '700' }}>
@@ -144,9 +165,10 @@ export function OperationsPanel() {
         ))}
       </PanelCard>
 
-      <PanelCard title="Out on walks now">
-        {walks.length === 0 ? (
-          <Text style={{ color: t.colors.inkMuted }}>No one is out right now</Text>
+      <PanelCard title="Out on walks now" style={card}>
+        {visits.isLoading ? <PanelSkeleton /> : null}
+        {walks.length === 0 && !visits.isLoading ? (
+          <Text style={{ color: t.colors.inkMuted }}>No one is out right now.</Text>
         ) : null}
         {walks.map((v) => {
           const pets = petNamesLabel(v.pet_ids, petNames.data);
