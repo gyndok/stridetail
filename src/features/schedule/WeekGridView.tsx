@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useRouter, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
@@ -10,6 +10,7 @@ import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { tokens } from '@/src/ui/tokens';
 
 import {
   listActiveMembers,
@@ -23,35 +24,87 @@ import {
   type Visit,
 } from './api';
 import { WalkerPicker } from './WalkerPicker';
-import { gridPosition, visitsByDay, weekDays, weekRange } from './weekGrid';
+import {
+  assignLanes,
+  gridBounds,
+  gridPosition,
+  nowIndicator,
+  visitsByDay,
+  walkerAccentIndexes,
+  weekDays,
+  weekRange,
+} from './weekGrid';
 
 // Desktop week grid (Plan 4 Task 8). Web >= 900 px only — the mobile list is
 // untouched. All day/column math happens in the BUSINESS tz via the pure
 // helpers in weekGrid.ts.
 
 const DAY_MS = 86_400_000;
-/** Hour gutter range: 06:00–21:00 local. */
-const GRID_START_MIN = 6 * 60;
-const GRID_END_MIN = 21 * 60;
 const PX_PER_MIN = 1;
-const GRID_HEIGHT = (GRID_END_MIN - GRID_START_MIN) * PX_PER_MIN;
 const COL_WIDTH = 150;
 const GUTTER_WIDTH = 52;
 const HEADER_HEIGHT = 34;
+/** Tap-target floor: a 20-minute visit still renders (and hits) at this height. */
 const MIN_BLOCK_PX = 22;
+/** Below this card height only the compact one-line label fits without clipping. */
+const TWO_LINE_MIN_PX = 34;
+/** Width of the per-walker accent strip on the card's left edge. */
+const ACCENT_WIDTH = 4;
+/** Horizontal gap between side-by-side lanes and the column edge inset. */
+const LANE_GAP = 2;
+const CARD_INSET = 3;
 
 /** Statuses a visit may be rescheduled from (moving a running/done visit is meaningless). */
 const RESCHEDULABLE = new Set(['unassigned', 'offered', 'accepted']);
 
+/**
+ * Status-differentiated card styling, aligned with the dashboard's statusTone
+ * vocabulary (scheduleData.ts): unassigned/offered are 'warning' — they need
+ * the owner's action (dashed warning outline); in_progress is live (primary
+ * outline, bold); completed is history (desaturated, muted ink); accepted is
+ * the normal covered card (Round 0 green). Cancelled never reaches here — the
+ * grid filters it out.
+ */
 function blockColors(t: ReturnType<typeof useTheme>, status: Visit['status']) {
-  if (status === 'unassigned') {
-    return { backgroundColor: t.colors.surfaceRaised, borderColor: t.colors.warning, text: t.colors.ink };
+  if (status === 'unassigned' || status === 'offered') {
+    return {
+      backgroundColor: t.colors.surfaceRaised,
+      borderColor: t.colors.warning,
+      borderStyle: 'dashed' as const,
+      borderWidth: 1,
+      text: t.colors.ink,
+      bold: false,
+    };
   }
-  if (status === 'offered') {
-    return { backgroundColor: t.colors.surface, borderColor: t.colors.line, text: t.colors.inkMuted };
+  if (status === 'in_progress') {
+    return {
+      backgroundColor: t.colors.primarySoft,
+      borderColor: t.colors.primary,
+      borderStyle: 'solid' as const,
+      borderWidth: 2,
+      text: t.colors.ink,
+      bold: true,
+    };
   }
-  // accepted / in_progress / completed: the covered states (Round 0 green).
-  return { backgroundColor: t.colors.greenSoft, borderColor: t.colors.green, text: t.colors.ink };
+  if (status === 'completed') {
+    return {
+      backgroundColor: t.colors.surface,
+      borderColor: t.colors.line,
+      borderStyle: 'solid' as const,
+      borderWidth: 1,
+      text: t.colors.inkMuted,
+      bold: false,
+    };
+  }
+  // accepted (the normal scheduled card): the covered state (Round 0 green).
+  return {
+    backgroundColor: t.colors.greenSoft,
+    borderColor: t.colors.green,
+    borderStyle: 'solid' as const,
+    borderWidth: 1,
+    text: t.colors.ink,
+    bold: false,
+  };
 }
 
 /**
@@ -233,13 +286,31 @@ export function WeekGrid({ businessId, tz }: { businessId: string; tz: string })
   });
   useRefetchOnFocus(visits.refetch);
 
+  // Minute tick so the "now" line (and the today tint at midnight) tracks time.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
   const visible = (visits.data ?? []).filter((v) => v.status !== 'cancelled');
   const byDay = visitsByDay(visible, tz);
-  const todayYmd = formatInTimeZone(new Date(), tz, 'yyyy-MM-dd');
+  const todayYmd = formatInTimeZone(now, tz, 'yyyy-MM-dd');
   const selected = visible.find((v) => v.id === selectedId) ?? null;
 
+  // One gridPosition per visit, reused for the adaptive bounds AND the cards.
+  const posById = new Map(visible.map((v) => [v.id, gridPosition(v, tz)]));
+  // Adaptive hour range: the 06:00–21:00 default, extended so nothing clips.
+  const bounds = gridBounds([...posById.values()]);
+  const gridHeight = (bounds.endMin - bounds.startMin) * PX_PER_MIN;
+  // Per-walker accents: owner first, stable in roster order (legend + strips).
+  const accentIx = walkerAccentIndexes(members.data ?? [], tokens.walkerAccents.length);
+  const accentOf = (walkerId: string) =>
+    tokens.walkerAccents[accentIx.get(walkerId) ?? 0] ?? tokens.walkerAccents[0];
+  const nowPos = nowIndicator(now, tz, days.map((d) => d.ymd));
+
   const hourLabels: number[] = [];
-  for (let m = GRID_START_MIN; m <= GRID_END_MIN; m += 60) hourLabels.push(m);
+  for (let m = bounds.startMin; m <= bounds.endMin; m += 60) hourLabels.push(m);
 
   return (
     <View style={{ gap: t.space.md }}>
@@ -265,16 +336,37 @@ export function WeekGrid({ businessId, tz }: { businessId: string; tz: string })
         </Text>
       ) : null}
 
+      {/* Walker legend: the color IS the identification on the cards. */}
+      {(members.data ?? []).length > 0 ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.md, alignItems: 'center' }}>
+          {(members.data ?? []).map((m) => (
+            <View key={m.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.xs }}>
+              <View
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 5,
+                  backgroundColor: accentOf(m.user_id),
+                }}
+              />
+              <Text style={{ color: t.colors.inkMuted, fontSize: 12, fontWeight: '700' }}>
+                {m.display_name ?? 'Team member'}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       <ScrollView horizontal showsHorizontalScrollIndicator>
         <View style={{ flexDirection: 'row' }}>
           {/* Hour gutter */}
-          <View style={{ width: GUTTER_WIDTH, marginTop: HEADER_HEIGHT, height: GRID_HEIGHT }}>
+          <View style={{ width: GUTTER_WIDTH, marginTop: HEADER_HEIGHT, height: gridHeight }}>
             {hourLabels.map((m) => (
               <Text
                 key={m}
                 style={{
                   position: 'absolute',
-                  top: (m - GRID_START_MIN) * PX_PER_MIN - 7,
+                  top: (m - bounds.startMin) * PX_PER_MIN - 7,
                   right: t.space.sm,
                   color: t.colors.inkMuted,
                   fontSize: 11,
@@ -288,6 +380,16 @@ export function WeekGrid({ businessId, tz }: { businessId: string; tz: string })
           {days.map((day) => {
             const dayVisits = byDay.get(day.ymd) ?? [];
             const isToday = day.ymd === todayYmd;
+            // Side-by-side lanes for time-overlapping visits; minimum-height
+            // inflation so short back-to-back cards never stack on screen.
+            const positions = dayVisits.map((v) => posById.get(v.id)!);
+            const lanes = assignLanes(positions, MIN_BLOCK_PX / PX_PER_MIN);
+            const innerWidth = COL_WIDTH - 2 * CARD_INSET;
+            const showNow =
+              isToday &&
+              nowPos !== null &&
+              nowPos.minutes >= bounds.startMin &&
+              nowPos.minutes <= bounds.endMin;
             return (
               <View key={day.ymd} style={{ width: COL_WIDTH }}>
                 <View style={{ height: HEADER_HEIGHT, justifyContent: 'center', alignItems: 'center' }}>
@@ -303,10 +405,10 @@ export function WeekGrid({ businessId, tz }: { businessId: string; tz: string })
                 </View>
                 <View
                   style={{
-                    height: GRID_HEIGHT,
+                    height: gridHeight,
                     borderLeftWidth: 1,
                     borderLeftColor: t.colors.line,
-                    backgroundColor: isToday ? t.colors.surfaceRaised : 'transparent',
+                    backgroundColor: isToday ? t.colors.primarySoft : 'transparent',
                   }}
                 >
                   {hourLabels.map((m) => (
@@ -314,7 +416,7 @@ export function WeekGrid({ businessId, tz }: { businessId: string; tz: string })
                       key={m}
                       style={{
                         position: 'absolute',
-                        top: (m - GRID_START_MIN) * PX_PER_MIN,
+                        top: (m - bounds.startMin) * PX_PER_MIN,
                         left: 0,
                         right: 0,
                         height: 1,
@@ -322,46 +424,103 @@ export function WeekGrid({ businessId, tz }: { businessId: string; tz: string })
                       }}
                     />
                   ))}
-                  {dayVisits.map((v) => {
-                    const pos = gridPosition(v, tz);
-                    const top = Math.max((pos.startMinutes - GRID_START_MIN) * PX_PER_MIN, 0);
-                    const rawBottom = (pos.startMinutes - GRID_START_MIN + pos.durationMinutes) * PX_PER_MIN;
-                    const height = Math.max(Math.min(rawBottom, GRID_HEIGHT) - top, MIN_BLOCK_PX);
+                  {dayVisits.map((v, i) => {
+                    const pos = positions[i]!;
+                    const lane = lanes[i]!;
+                    const top = Math.max((pos.startMinutes - bounds.startMin) * PX_PER_MIN, 0);
+                    const rawBottom = (pos.startMinutes - bounds.startMin + pos.durationMinutes) * PX_PER_MIN;
+                    const height = Math.max(Math.min(rawBottom, gridHeight) - top, MIN_BLOCK_PX);
+                    const laneWidth = (innerWidth - (lane.laneCount - 1) * LANE_GAP) / lane.laneCount;
+                    const left = CARD_INSET + lane.lane * (laneWidth + LANE_GAP);
                     const colors = blockColors(t, v.status);
                     const walker = v.walker_id ? memberName(members.data ?? [], v.walker_id) : null;
                     const isSelected = v.id === selectedId;
+                    const clientName = v.client?.name ?? 'Client';
+                    const timeRange = visitTimeRange(v);
+                    // One compact line when the card is too short for two —
+                    // never vertical clipping mid-glyph.
+                    const twoLines = height >= TWO_LINE_MIN_PX;
+                    // The color strip is the walker signal; the initial only
+                    // rides along at full column width.
+                    const initial = walker && lane.laneCount === 1 ? ` · ${walker.slice(0, 1)}` : '';
                     return (
                       <Pressable
                         key={v.id}
                         accessibilityRole="button"
                         accessibilityState={{ selected: isSelected }}
+                        accessibilityLabel={`${clientName}, ${timeRange}, ${walker ?? 'unassigned'}`}
                         onPress={() => setSelectedId((cur) => (cur === v.id ? null : v.id))}
                         style={({ pressed }) => ({
                           position: 'absolute',
-                          top: Math.min(top, GRID_HEIGHT - MIN_BLOCK_PX),
-                          left: 3,
-                          right: 3,
+                          top: Math.min(top, gridHeight - MIN_BLOCK_PX),
+                          left,
+                          width: laneWidth,
                           height,
                           backgroundColor: colors.backgroundColor,
-                          borderWidth: isSelected ? 2 : 1,
+                          borderWidth: isSelected ? 2 : colors.borderWidth,
+                          borderStyle: colors.borderStyle,
                           borderColor: isSelected ? t.colors.primary : colors.borderColor,
                           borderRadius: 8,
-                          paddingHorizontal: 6,
-                          paddingVertical: 3,
+                          paddingLeft: 6 + (walker ? ACCENT_WIDTH : 0),
+                          paddingRight: 5,
+                          justifyContent: 'center',
                           overflow: 'hidden',
                           opacity: pressed ? 0.7 : 1,
                         })}
                       >
-                        <Text style={{ color: colors.text, fontSize: 11, fontWeight: '800' }} numberOfLines={1}>
-                          {v.client?.name ?? 'Client'}
-                          {walker ? ` · ${walker.slice(0, 1)}` : ''}
-                        </Text>
-                        <Text style={{ color: colors.text, fontSize: 10 }} numberOfLines={1}>
-                          {visitTimeRange(v)}
-                        </Text>
+                        {v.walker_id ? (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              left: 0,
+                              top: 0,
+                              bottom: 0,
+                              width: ACCENT_WIDTH,
+                              backgroundColor: accentOf(v.walker_id),
+                            }}
+                          />
+                        ) : null}
+                        {twoLines ? (
+                          <>
+                            <Text
+                              style={{ color: colors.text, fontSize: 11, fontWeight: '800' }}
+                              numberOfLines={1}
+                            >
+                              {clientName}
+                              {initial}
+                            </Text>
+                            <Text style={{ color: colors.text, fontSize: 10 }} numberOfLines={1}>
+                              {timeRange}
+                            </Text>
+                          </>
+                        ) : (
+                          <Text
+                            style={{
+                              color: colors.text,
+                              fontSize: 10,
+                              fontWeight: colors.bold ? '800' : '700',
+                            }}
+                            numberOfLines={1}
+                          >
+                            {clientName} · {timeRange.split(' ')[0]}
+                          </Text>
+                        )}
                       </Pressable>
                     );
                   })}
+                  {showNow ? (
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        top: (nowPos.minutes - bounds.startMin) * PX_PER_MIN - 1,
+                        left: 0,
+                        right: 0,
+                        height: 2,
+                        backgroundColor: t.colors.primary,
+                      }}
+                    />
+                  ) : null}
                 </View>
               </View>
             );

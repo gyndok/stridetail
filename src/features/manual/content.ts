@@ -121,6 +121,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         text:
           'Each walker has a weekly availability pattern and can have time off on file; the schedule uses these so you offer visits to people who can actually take them.',
       },
+      {
+        kind: 'p',
+        text:
+          'On a desktop web window, the Schedule tab also offers a Week view: a calendar grid of the whole week. Each person on your team has their own color — the legend above the grid shows who is who, and every assigned visit carries that color on its left edge. Visits at the same time sit side by side instead of covering each other. Today’s column is gently highlighted and an orange line marks the current time. The cards tell you status at a glance: a dashed amber outline means the visit still needs a walker (or is waiting on one to accept), an orange outline means the walk is happening right now, and finished visits fade into the background. Click any card to reassign or move that visit right there.',
+      },
     ],
   },
   {

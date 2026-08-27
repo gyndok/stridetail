@@ -20,6 +20,12 @@ export const tokens = {
     /** Soft green wash for badge fills; ink stays the text color on it. */
     greenSoft: '#E4F0E8',
     /**
+     * Soft primary wash (greenSoft's orange sibling): the week grid's today
+     * column — a deliberate warm tint, distinct from both the cream surface
+     * and the white raised surface.
+     */
+    primarySoft: '#FDEBDC',
+    /**
      * Deliberate alias of `green` (was '#2F855A'): the palette carries exactly
      * one green, and `success` stays as the semantic name for the sync badge
      * and other "it worked" states.
@@ -38,6 +44,15 @@ export const tokens = {
     inkMuted: '#C9A57E',
     line: '#3B2F22',
   },
+  /**
+   * Per-walker accent set for the schedule week grid (left-edge card strips +
+   * legend dots). Owner-first assignment (walkerAccentIndexes in
+   * features/schedule/weekGrid.ts): index 0 is the primary orange, then the
+   * existing green and warning ochre, then three additions in the same muted
+   * register for rosters up to six. Identification colors only — never
+   * surfaces, never semantic states.
+   */
+  walkerAccents: ['#E8642C', '#3A7D5C', '#B7791F', '#2F6F8F', '#7C5CBF', '#B8497A'] as const,
   radius: { card: 24, pill: 999, input: 14 },
   space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
   type: {

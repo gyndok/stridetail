@@ -2888,3 +2888,31 @@ polish; no PRD-CHECKLIST rows ticked):
 - **`WEB_BASE_URL`/`PORTAL_LOGIN_URL` added to brand.ts.** The manual mentions
   the public web address; the display-name-only-in-brand.ts rule extends
   naturally to the domain, matching the existing REPORT/INVOICE base pattern.
+
+## Week-grid polish (sponsor feedback, 2026-08-27)
+
+- **Two tokens additions.** `colors.primarySoft` (#FDEBDC, greenSoft's orange
+  sibling) tints the today column — the raised-white tint read as a rendering
+  bug against the cream grid. Top-level `walkerAccents` (6 identification
+  colors: primary orange, green, warning ochre + three additions in the same
+  muted register) drives the per-walker left-edge strips and the legend; it is
+  NOT part of `Theme` (identity colors must not be overridden by a business
+  accent), so WeekGridView imports it straight from tokens.ts — which still
+  satisfies the colors-from-tokens hard rule.
+- **No narrow-width lane degradation.** The week grid is desktop-web-only
+  (`Platform.OS === 'web' && width >= 900` in app/(owner)/schedule/index.tsx);
+  native and narrow web get the list view, so the lanes never render narrow
+  and no "+N" stacking chip is needed.
+- **Lane overlap uses VISUAL spans.** `assignLanes` inflates each interval to
+  the 22-minute minimum block height before overlap detection, so two short
+  visits whose rendered cards would collide also split into lanes (the
+  sponsor's 20:11/21:27 pair only collided visually).
+- **jest config: `\.d\.ts$` added to testPathIgnorePatterns.** The manual
+  task's `__tests__/nodeShim.d.ts` matched the `__tests__` glob and failed the
+  whole run as an empty suite — pre-existing at HEAD, fixed here because the
+  suite must be green to land this change.
+- **Status vocabulary.** Grid cards follow the dashboard `statusTone` grouping
+  with one deliberate refinement: `offered` joins `unassigned` in the dashed
+  warning treatment (both are "waiting on an action" in a planning view),
+  `in_progress` gets its own live treatment (primary outline, primarySoft
+  fill), and `completed` desaturates instead of sharing the green card.

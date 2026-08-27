@@ -133,3 +133,118 @@ export function gridPosition(
   }
   return { dayIndex: s.getDay(), startMinutes, durationMinutes };
 }
+
+export type LaneSpan = {
+  /** 0-based lane within the visit's overlap cluster. */
+  lane: number;
+  /** Lanes in the cluster — the divisor for the column width. */
+  laneCount: number;
+};
+
+/**
+ * Standard calendar side-by-side layout: visits that overlap in time split the
+ * day column into lanes. Overlap clusters are maximal runs of transitively
+ * overlapping intervals; every visit in a cluster shares the cluster's lane
+ * count, and freed lanes are reused greedily (earliest available lane).
+ *
+ * Intervals are half-open [start, end) — an end touching the next start does
+ * NOT overlap. `minDurationMinutes` inflates each interval to the visual
+ * minimum block height, so two short visits whose RENDERED blocks would
+ * collide also split into lanes.
+ *
+ * Result[i] describes items[i] (input order preserved; input need not be sorted).
+ */
+export function assignLanes(
+  items: { startMinutes: number; durationMinutes: number }[],
+  minDurationMinutes = 0,
+): LaneSpan[] {
+  const order = items
+    .map((it, i) => ({
+      i,
+      start: it.startMinutes,
+      end: it.startMinutes + Math.max(it.durationMinutes, minDurationMinutes),
+    }))
+    .sort((a, b) => a.start - b.start || b.end - a.end);
+  const result: LaneSpan[] = new Array(items.length);
+  let cluster: { i: number; lane: number }[] = [];
+  let laneEnds: number[] = [];
+  let clusterEnd = -Infinity;
+  const flush = () => {
+    for (const c of cluster) result[c.i] = { lane: c.lane, laneCount: laneEnds.length };
+    cluster = [];
+    laneEnds = [];
+  };
+  for (const it of order) {
+    if (cluster.length > 0 && it.start >= clusterEnd) flush();
+    let lane = laneEnds.findIndex((end) => end <= it.start);
+    if (lane === -1) {
+      lane = laneEnds.length;
+      laneEnds.push(it.end);
+    } else {
+      laneEnds[lane] = it.end;
+    }
+    cluster.push({ i: it.i, lane });
+    clusterEnd = Math.max(clusterEnd, it.end);
+  }
+  flush();
+  return result;
+}
+
+/** Default hour gutter range: 06:00–21:00 local. */
+export const DEFAULT_GRID_START_MIN = 6 * 60;
+export const DEFAULT_GRID_END_MIN = 21 * 60;
+
+/**
+ * Adaptive hour range: the 06:00–21:00 default, extended to whole hours so
+ * every rendered visit fits (a 21:27 visit used to clip at the bottom edge),
+ * clamped to the [00:00, 24:00) day.
+ */
+export function gridBounds(
+  positions: { startMinutes: number; durationMinutes: number }[],
+  defaults: { startMin: number; endMin: number } = {
+    startMin: DEFAULT_GRID_START_MIN,
+    endMin: DEFAULT_GRID_END_MIN,
+  },
+): { startMin: number; endMin: number } {
+  let startMin = defaults.startMin;
+  let endMin = defaults.endMin;
+  for (const p of positions) {
+    startMin = Math.min(startMin, Math.floor(p.startMinutes / 60) * 60);
+    endMin = Math.max(endMin, Math.ceil((p.startMinutes + p.durationMinutes) / 60) * 60);
+  }
+  return { startMin: Math.max(startMin, 0), endMin: Math.min(endMin, 1440) };
+}
+
+/**
+ * Stable per-member accent assignment for the week grid: the owner always gets
+ * accent 0, walkers follow in member-list order (listActiveMembers orders by
+ * created_at, so a walker's color never changes as the roster grows at the
+ * end), cycling modulo `accentCount`.
+ */
+export function walkerAccentIndexes(
+  members: { user_id: string; role: 'owner' | 'walker' }[],
+  accentCount: number,
+): Map<string, number> {
+  // Array.prototype.sort is stable: owner first, walkers keep relative order.
+  const ordered = [...members].sort(
+    (a, b) => (a.role === 'owner' ? 0 : 1) - (b.role === 'owner' ? 0 : 1),
+  );
+  return new Map(ordered.map((m, i) => [m.user_id, i % accentCount]));
+}
+
+/**
+ * "Now" line position for the viewed week: local wall minutes in tz, or null
+ * when today's local day is not one of `dayYmds`. The caller also drops it
+ * when the minute falls outside the rendered hour range.
+ */
+export function nowIndicator(
+  nowUtc: Date,
+  tz: string,
+  dayYmds: string[],
+): { dayIndex: number; minutes: number } | null {
+  const z = toZonedTime(nowUtc, tz);
+  const ymd = `${z.getFullYear()}-${pad(z.getMonth() + 1)}-${pad(z.getDate())}`;
+  const dayIndex = dayYmds.indexOf(ymd);
+  if (dayIndex === -1) return null;
+  return { dayIndex, minutes: z.getHours() * 60 + z.getMinutes() };
+}
