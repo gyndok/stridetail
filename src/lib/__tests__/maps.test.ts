@@ -1,6 +1,15 @@
-import { Platform } from 'react-native';
+import { Platform, UIManager } from 'react-native';
 
 import { loadMaps, resetMapsCacheForTests } from '../maps';
+
+// The loader now interrogates the NATIVE view registry before requiring at
+// all (sponsor's phone crashed at MapView mount: the JS require succeeds on
+// module-less binaries because requireNativeComponent resolves lazily).
+// Simulate a binary that HAS the views by default; individual tests flip it.
+const hasViewManagerConfig = jest.fn((name: string) => name === 'RNMapsMapView');
+beforeAll(() => {
+  (UIManager as { hasViewManagerConfig?: unknown }).hasViewManagerConfig = hasViewManagerConfig;
+});
 
 // Plan 7b Task 3: react-native-maps is a NATIVE module that does not exist in
 // any binary cut before Sep 1. The JS ships OTA to those binaries first, so
@@ -73,4 +82,11 @@ test('caches a null result too (a binary does not grow the module mid-session)',
   const req = jest.fn(() => fakeModule);
   expect(loadMaps(req)).toBeNull();
   expect(req).not.toHaveBeenCalled();
+});
+
+test('returns null WITHOUT requiring when the native views are absent (crash regression)', () => {
+  hasViewManagerConfig.mockReturnValueOnce(false).mockReturnValueOnce(false);
+  const requireMaps = jest.fn(() => fakeModule);
+  expect(loadMaps(requireMaps)).toBeNull();
+  expect(requireMaps).not.toHaveBeenCalled();
 });

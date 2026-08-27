@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, UIManager } from 'react-native';
 
 /**
  * Safe loader for react-native-maps (Plan 7b Task 3).
@@ -37,9 +37,32 @@ let cache: { value: MapsModule | null } | null = null;
 const defaultRequire: RequireMaps = () => require('react-native-maps');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
+/**
+ * Does THIS BINARY actually contain react-native-maps' native views?
+ * Found the hard way (2026-08-27, sponsor's phone crashed on Resume visit):
+ * the JS `require` succeeds on module-less binaries — requireNativeComponent
+ * ('AIRMap') resolves LAZILY, so the shape probe below passes and the crash
+ * only fires when React MOUNTS the unregistered native view. So ask the
+ * native view registry first: the new-arch Fabric component registers as
+ * 'RNMapsMapView' (specs/NativeComponentMapView.ts), the legacy one as
+ * 'AIRMap'; a binary without the pod has neither.
+ */
+function nativeViewsPresent(): boolean {
+  try {
+    const has = (name: string) =>
+      typeof UIManager.hasViewManagerConfig === 'function'
+        ? UIManager.hasViewManagerConfig(name)
+        : UIManager.getViewManagerConfig?.(name) != null;
+    return has('RNMapsMapView') || has('AIRMap');
+  } catch {
+    return false;
+  }
+}
+
 function probe(requireMaps: RequireMaps): MapsModule | null {
   if (Platform.OS === 'web') return null;
   try {
+    if (!nativeViewsPresent()) return null;
     const mod = requireMaps() as
       | { default?: unknown; Marker?: unknown; Polyline?: unknown }
       | null
