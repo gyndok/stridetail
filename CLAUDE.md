@@ -27,6 +27,9 @@ derivable from the code.
 - Checkpoint evidence (device, screenshots, numbers) goes in `checkpoints.md`; screenshots under `docs/evidence/`.
 - Status tracker: `docs/PRD-CHECKLIST.md`. Tick the task row (status + commit hash) and any spec items it
   completes in the same commit that finishes the task; bump "Last updated".
+- User's manual: `src/features/manual/content.ts` documents shipped user-facing behavior. Any task that
+  changes user-facing behavior updates the manual in the same commit (and bumps its last-updated
+  constant), exactly like the PRD-checklist rule.
 - Checks: `bun run test` · `bun run typecheck` · `bun run lint` · `bun run db:test` (needs Docker + Supabase CLI).
 
 ## Feedback loop with the first tenant

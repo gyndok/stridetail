@@ -7,6 +7,10 @@ same commit that completes a task. Legend: `[x]` done · `[ ]` not started · `[
 
 Last updated: 2026-08-27
 
+In-app user's manual: `src/features/manual/content.ts` is a living document of shipped user-facing
+behavior — any task that changes user-facing behavior updates it in the same commit and bumps its
+last-updated constant (same rule as this checklist; see CLAUDE.md Workflow).
+
 ---
 
 ## Plan 1 — Foundation, GPS/offline spike, auth & tenancy

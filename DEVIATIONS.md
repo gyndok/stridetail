@@ -2859,3 +2859,32 @@ polish; no PRD-CHECKLIST rows ticked):
   static token-colored-bars primitive (no shimmer, no dependency) was added
   and used dashboard-wide only — the rest of the app keeps "Loading…".
   KpiRow keeps its existing height-stable em-dash shells.
+
+## User's manual (sponsor request, 2026-08-27)
+
+- **Content as typed TS (`src/features/manual/content.ts`), not markdown.** No
+  markdown dependency exists in the repo and none is worth adding for one
+  screen; typed paragraph/steps/tip blocks render through tokens like every
+  other screen, and the structure is jest-testable (unique ids, valid
+  audiences, non-empty blocks) — which is what makes the living-document rule
+  enforceable.
+- **Nav hiding: platform-conditional `href` on the owner tab, not a filter.**
+  `href: Platform.OS === 'web' ? undefined : null` keeps native at six bottom
+  tabs while the desktop rail (which maps Tabs.Screen registration order)
+  shows Manual above Settings. Trade-off accepted: a narrow WEB window's
+  bottom bar shows a seventh "User's manual" tab — consistent with "the rail
+  is web-only, native unchanged", and hiding it there would need a
+  width-reactive href that flips during resize.
+- **Settings row routes by role.** Unlike the Earnings precedent (one
+  walker-group route open to both roles), the owner group's role guard
+  bounces walkers, so the shared SettingsScreen row targets
+  `/(owner)/manual` or `/(walker)/manual` from the membership role; the
+  walker group carries a hidden (`href: null`) route rendering the same
+  shared screen.
+- **Nav-order test reads layout source.** Rendering the Tabs navigators under
+  jest is not worth the mocking; the rail order IS the registration order, so
+  `navRegistration.test.ts` pins source order with `fs` (plus a scoped
+  `nodeShim.d.ts` because tsconfig limits ambient types to jest).
+- **`WEB_BASE_URL`/`PORTAL_LOGIN_URL` added to brand.ts.** The manual mentions
+  the public web address; the display-name-only-in-brand.ts rule extends
+  naturally to the domain, matching the existing REPORT/INVOICE base pattern.
