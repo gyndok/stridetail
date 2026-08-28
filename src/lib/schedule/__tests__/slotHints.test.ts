@@ -196,6 +196,125 @@ describe('walkerSlotHints', () => {
   });
 });
 
+describe('walkerSlotHints: tight transfer', () => {
+  // Two homes ~5.56 km apart -> ~21 min drive estimate (travel.ts heuristic).
+  const HOME_A = { lat: 29.75, lng: -95.36 };
+  const HOME_B = { lat: 29.8, lng: -95.36 };
+  const slotClient = { id: 'client-a', ...HOME_A };
+
+  // Prev visit at HOME_B ending 8:48 AM Chicago -> 12 min gap before NINE_AM.
+  const prevAtB = {
+    id: 'prev',
+    walker_id: 'w1',
+    scheduled_start: '2026-06-10T13:18:00Z',
+    scheduled_end: '2026-06-10T13:48:00Z',
+    client_id: 'client-b',
+    client: HOME_B,
+  };
+  // Next visit at HOME_B starting 9:40 AM -> 10 min gap after the 30-min slot.
+  const nextAtB = {
+    id: 'next',
+    walker_id: 'w1',
+    scheduled_start: '2026-06-10T14:40:00Z',
+    scheduled_end: '2026-06-10T15:10:00Z',
+    client_id: 'client-b',
+    client: HOME_B,
+  };
+
+  test('tight from the preceding visit, detail carries drive and gap', () => {
+    const d = data({ availability: [wedAllDay('w1')], visits: [prevAtB], slotClient });
+    expect(walkerSlotHints('w1', NINE_AM, 30, d, tz)).toEqual({
+      kind: 'tight',
+      detail: '~21 min drive from previous, 12 min gap',
+    });
+  });
+
+  test('tight toward the following visit', () => {
+    const d = data({ availability: [wedAllDay('w1')], visits: [nextAtB], slotClient });
+    expect(walkerSlotHints('w1', NINE_AM, 30, d, tz)).toEqual({
+      kind: 'tight',
+      detail: '~21 min drive to next, 10 min gap',
+    });
+  });
+
+  test('same client back-to-back is free — zero travel between the same home', () => {
+    const d = data({
+      availability: [wedAllDay('w1')],
+      visits: [{ ...prevAtB, client_id: 'client-a', client: HOME_A, scheduled_end: '2026-06-10T14:00:00Z' }],
+      slotClient,
+    });
+    expect(walkerSlotHints('w1', NINE_AM, 30, d, tz)).toEqual({ kind: 'free' });
+  });
+
+  test('missing coordinates skip silently: neighbour without coords, and slotClient absent', () => {
+    const noCoords = data({
+      availability: [wedAllDay('w1')],
+      visits: [{ ...prevAtB, client: { lat: null, lng: null } }],
+      slotClient,
+    });
+    expect(walkerSlotHints('w1', NINE_AM, 30, noCoords, tz)).toEqual({ kind: 'free' });
+
+    const noSlotClient = data({ availability: [wedAllDay('w1')], visits: [prevAtB] });
+    expect(walkerSlotHints('w1', NINE_AM, 30, noSlotClient, tz)).toEqual({ kind: 'free' });
+  });
+
+  test('a comfortable gap is free', () => {
+    const d = data({
+      availability: [wedAllDay('w1')],
+      // Ends 8:00 AM -> 60 min gap, well over the ~21 min drive.
+      visits: [{ ...prevAtB, scheduled_start: '2026-06-10T12:30:00Z', scheduled_end: '2026-06-10T13:00:00Z' }],
+      slotClient,
+    });
+    expect(walkerSlotHints('w1', NINE_AM, 30, d, tz)).toEqual({ kind: 'free' });
+  });
+
+  test('precedence: outside_hours outranks tight; busy outranks both', () => {
+    // Tight prev visit AND no availability rules -> outside_hours wins.
+    const outside = data({ visits: [prevAtB], slotClient });
+    expect(walkerSlotHints('w1', NINE_AM, 30, outside, tz)).toEqual({ kind: 'outside_hours' });
+
+    // Add an overlapping visit -> busy wins over everything below it.
+    const busy = data({
+      visits: [
+        prevAtB,
+        {
+          id: 'v-overlap',
+          walker_id: 'w1',
+          scheduled_start: '2026-06-10T14:15:00Z',
+          scheduled_end: '2026-06-10T14:45:00Z',
+          client_id: 'client-c',
+          client: HOME_B,
+        },
+      ],
+      slotClient,
+    });
+    expect(walkerSlotHints('w1', NINE_AM, 30, busy, tz)).toEqual({ kind: 'busy', detail: '9:15 AM' });
+  });
+
+  test("tz/day boundary: gap math is UTC instants, so a late-evening local slot still warns", () => {
+    // Wed Jun 10 2026 10:00 PM Chicago = Thu Jun 11 03:00Z; prev ends 9:48 PM.
+    const lateWed = iso('2026-06-11T03:00:00Z');
+    const d = data({
+      availability: [{ user_id: 'w1', weekday: 3, start_local: '08:00', end_local: '23:00' }],
+      visits: [
+        {
+          id: 'prev-late',
+          walker_id: 'w1',
+          scheduled_start: '2026-06-11T02:18:00Z',
+          scheduled_end: '2026-06-11T02:48:00Z',
+          client_id: 'client-b',
+          client: HOME_B,
+        },
+      ],
+      slotClient,
+    });
+    expect(walkerSlotHints('w1', lateWed, 30, d, tz)).toEqual({
+      kind: 'tight',
+      detail: '~21 min drive from previous, 12 min gap',
+    });
+  });
+});
+
 describe('localDayWindowUtc', () => {
   test('brackets the local calendar day of the instant, in the business tz', () => {
     // Thu Jun 11 03:00Z is still WEDNESDAY Jun 10, 10 PM in Chicago.
@@ -217,6 +336,9 @@ describe('slotHintLabel', () => {
     expect(slotHintLabel({ kind: 'off' })).toBe('off');
     expect(slotHintLabel({ kind: 'busy', detail: '2:00 PM' })).toBe('busy 2:00 PM');
     expect(slotHintLabel({ kind: 'outside_hours' })).toBe('outside hours');
+    expect(slotHintLabel({ kind: 'tight', detail: '~18 min drive from previous, 12 min gap' })).toBe(
+      'tight transfer',
+    );
     expect(slotHintLabel({ kind: 'free' })).toBeNull();
   });
 });

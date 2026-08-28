@@ -7,22 +7,30 @@ import {
   type AvailabilityRule,
   type TimeOffBlock,
 } from './conflicts';
+import { tightTransfer, tightTransferDetail, type SlotClient, type TravelVisit } from './travel';
 
 // Advisory slot hints for the booking-request approve card's walker chips.
 // Same rules as the Plan 3 Task 7 walker picker (walkerFlags in
 // features/schedule/api.ts), reduced to ONE verdict per walker with a fixed
-// precedence: time off beats busy beats outside-hours. Notably, a walker with
-// NO availability rows is outside hours (withinAvailability: empty rules mean
-// never available) — exactly the semantics the picker already shows as
-// "Outside availability".
+// precedence: time off beats busy beats outside-hours beats tight-transfer.
+// Notably, a walker with NO availability rows is outside hours
+// (withinAvailability: empty rules mean never available) — exactly the
+// semantics the picker already shows as "Outside availability".
 
 export type SlotHintData = {
   /** Every availability rule in the business (per-user rows). */
   availability: (AvailabilityRule & { user_id: string })[];
   /** Time-off blocks overlapping the fetched window (per-user rows). */
   timeOff: (TimeOffBlock & { user_id: string })[];
-  /** Assigned, non-cancelled visits overlapping the fetched window. */
-  visits: { id: string; walker_id: string; scheduled_start: string; scheduled_end: string }[];
+  /**
+   * Assigned, non-cancelled visits overlapping the fetched window — the whole
+   * LOCAL DAY (localDayWindowUtc), so tight-transfer sees the walker's
+   * neighbouring visits, not just direct overlaps. client_id/client feed the
+   * travel estimate and are optional (missing coords skip the check).
+   */
+  visits: TravelVisit[];
+  /** The client the slot is AT (home coordinates); omit to skip tight checks. */
+  slotClient?: SlotClient | null;
 };
 
 export type SlotHint =
@@ -30,13 +38,18 @@ export type SlotHint =
   /** detail is the conflicting visit's start in the business tz, e.g. '2:00 PM'. */
   | { kind: 'busy'; detail: string }
   | { kind: 'outside_hours' }
+  /** detail e.g. '~18 min drive from previous, 12 min gap' (travel.ts heuristic). */
+  | { kind: 'tight'; detail: string }
   | { kind: 'free' };
 
 /**
  * One advisory verdict for scheduling `walkerId` at `slotStartUtc` for
- * `durationMin` minutes. Precedence: off > busy > outside_hours > free.
- * All weekday/wall-clock math happens in the business `tz` via the shared
- * conflicts helpers — no hand-rolled zone math.
+ * `durationMin` minutes. Precedence: off > busy > outside_hours > tight > free
+ * — outside-hours outranks tight because a walker outside availability is the
+ * stronger warning (DEVIATIONS, travel-time Phase 1). All weekday/wall-clock
+ * math happens in the business `tz` via the shared conflicts helpers — no
+ * hand-rolled zone math; the tight check is plain UTC gap math over the
+ * day-scoped visits.
  */
 export function walkerSlotHints(
   walkerId: string,
@@ -67,6 +80,9 @@ export function walkerSlotHints(
 
   const rules = data.availability.filter((r) => r.user_id === walkerId);
   if (!withinAvailability(slotStartUtc, slotEndUtc, rules, tz)) return { kind: 'outside_hours' };
+
+  const tight = tightTransfer(walkerId, slotStartUtc, slotEndUtc, data.slotClient, data.visits);
+  if (tight) return { kind: 'tight', detail: tightTransferDetail(tight) };
 
   return { kind: 'free' };
 }
@@ -100,6 +116,8 @@ export function slotHintLabel(hint: SlotHint): string | null {
       return `busy ${hint.detail}`;
     case 'outside_hours':
       return 'outside hours';
+    case 'tight':
+      return 'tight transfer';
     case 'free':
       return null;
   }

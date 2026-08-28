@@ -13,6 +13,7 @@ import {
   walkerFlags,
   type PickerContext,
 } from '../api';
+import { flagLabel } from '../WalkerPicker';
 
 // ---- supabase mock (queries + rpc + auth) ----
 
@@ -136,19 +137,72 @@ const ctx: PickerContext = {
 };
 
 test('walkerFlags: inside an availability rule, no time off, no overlaps', () => {
-  expect(walkerFlags('u1', ctx, win, CHI)).toEqual({ available: true, onTimeOff: false, overlaps: 0 });
+  expect(walkerFlags('u1', ctx, win, CHI)).toEqual({
+    available: true,
+    onTimeOff: false,
+    overlaps: 0,
+    tight: null,
+  });
 });
 
 test('walkerFlags: time off blocks the window; no rules means unavailable', () => {
-  expect(walkerFlags('u2', ctx, win, CHI)).toEqual({ available: false, onTimeOff: true, overlaps: 0 });
+  expect(walkerFlags('u2', ctx, win, CHI)).toEqual({
+    available: false,
+    onTimeOff: true,
+    overlaps: 0,
+    tight: null,
+  });
 });
 
 test('walkerFlags: counts overlapping visits for that walker only', () => {
-  expect(walkerFlags('u3', ctx, win, CHI)).toEqual({ available: true, onTimeOff: false, overlaps: 1 });
+  expect(walkerFlags('u3', ctx, win, CHI)).toEqual({
+    available: true,
+    onTimeOff: false,
+    overlaps: 1,
+    tight: null,
+  });
 });
 
 test('walkerFlags: an excluded visit id (rescheduling that visit) does not count', () => {
   expect(walkerFlags('u3', ctx, win, CHI, { excludeVisitId: 'v-existing' }).overlaps).toBe(0);
+});
+
+test('walkerFlags: tight transfer against a neighbouring visit at a far-away client', () => {
+  // u1's previous visit ends 12 min before the window, ~5.56 km away (~21 min).
+  const travelCtx: PickerContext = {
+    ...ctx,
+    visits: [
+      {
+        id: 'v-prev',
+        walker_id: 'u1',
+        scheduled_start: '2026-08-31T14:18:00Z',
+        scheduled_end: '2026-08-31T14:48:00Z',
+        client_id: 'client-b',
+        client: { lat: 29.8, lng: -95.36 },
+      },
+    ],
+  };
+  const slotClient = { id: 'client-a', lat: 29.75, lng: -95.36 };
+  expect(walkerFlags('u1', travelCtx, win, CHI, { slotClient })).toEqual({
+    available: true,
+    onTimeOff: false,
+    overlaps: 0,
+    tight: { direction: 'from_prev', driveMin: 21, gapMin: 12 },
+  });
+  // Without slotClient (callers that predate the travel work) the flag is off.
+  expect(walkerFlags('u1', travelCtx, win, CHI).tight).toBeNull();
+});
+
+test('flagLabel renders the tight-transfer warning in the picker flag style', () => {
+  expect(
+    flagLabel({
+      available: true,
+      onTimeOff: false,
+      overlaps: 0,
+      tight: { direction: 'from_prev', driveMin: 18, gapMin: 12 },
+    }),
+  ).toBe('Tight transfer (~18 min drive, 12 min gap)');
+  expect(flagLabel({ available: true, onTimeOff: false, overlaps: 0, tight: null })).toBe('Available');
 });
 
 // ---- memberName ----
@@ -270,6 +324,9 @@ test('pickerContext fetches business rules, window time off, and overlapping ass
   const select = visitsQ.steps.find(([n]) => n === 'select')![1][0] as string;
   expect(select).not.toContain('*');
   expect(select).not.toContain('price');
+  // Client home coordinates ride along for the tight-transfer check.
+  expect(select).toContain('client_id');
+  expect(select).toContain('client:clients(lat, lng)');
   // Assigned only, cancelled excluded, half-open overlap on the window.
   const names = visitsQ.steps.map(([n]) => n);
   expect(names).toContain('not');

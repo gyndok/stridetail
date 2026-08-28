@@ -8,6 +8,12 @@ import {
   type AvailabilityRule as ConflictRule,
 } from '@/src/lib/schedule/conflicts';
 import type { VisitStatus } from '@/src/lib/schedule/machine';
+import {
+  tightTransfer,
+  type SlotClient,
+  type TightTransfer,
+  type TravelVisit,
+} from '@/src/lib/schedule/travel';
 import { supabase } from '@/src/lib/supabase';
 
 // Visit series API (Plan 3 Task 4). Series rows only — visit rows are
@@ -440,25 +446,37 @@ export function memberName(members: ScheduleMember[], userId: string): string {
   return members.find((m) => m.user_id === userId)?.display_name ?? 'Team member';
 }
 
-export type WalkerFlags = { available: boolean; onTimeOff: boolean; overlaps: number };
+export type WalkerFlags = {
+  available: boolean;
+  onTimeOff: boolean;
+  overlaps: number;
+  /** Advisory travel warning (travel.ts heuristic); null when not applicable. */
+  tight: TightTransfer | null;
+};
 
 export type PickerContext = {
   rules: (ConflictRule & { user_id: string })[];
   timeOff: { user_id: string; starts_at: string; ends_at: string }[];
-  visits: { id: string; walker_id: string; scheduled_start: string; scheduled_end: string }[];
+  /** client_id/client (home coords) feed the tight-transfer check; optional so
+      fixtures that predate the travel work still typecheck. */
+  visits: TravelVisit[];
 };
 
 /**
  * Availability flags for one picker row. Weekday/wall-time math happens in the
  * business tz (src/lib/schedule/conflicts.ts). Pass `excludeVisitId` when the
- * window belongs to an existing visit so it does not count itself as an overlap.
+ * window belongs to an existing visit so it does not count itself as an overlap;
+ * pass `slotClient` (the visit's client with home coordinates) to enable the
+ * advisory tight-transfer check against the walker's neighbouring visits —
+ * callers must then fetch the context over the slot's whole LOCAL DAY
+ * (localDayWindowUtc) so the neighbours are actually in `ctx.visits`.
  */
 export function walkerFlags(
   userId: string,
   ctx: PickerContext,
   window: { startUtc: Date; endUtc: Date },
   tz: string,
-  opts?: { excludeVisitId?: string },
+  opts?: { excludeVisitId?: string; slotClient?: SlotClient | null },
 ): WalkerFlags {
   const rules = ctx.rules.filter((r) => r.user_id === userId);
   const timeOff = ctx.timeOff.filter((t) => t.user_id === userId);
@@ -472,6 +490,9 @@ export function walkerFlags(
     available: withinAvailability(window.startUtc, window.endUtc, rules, tz),
     onTimeOff: inTimeOff(window.startUtc, window.endUtc, timeOff),
     overlaps: overlapCount,
+    tight: tightTransfer(userId, window.startUtc, window.endUtc, opts?.slotClient, ctx.visits, {
+      excludeVisitId: opts?.excludeVisitId,
+    }),
   };
 }
 
@@ -703,7 +724,11 @@ export async function declineVisit(visitId: string, reason: string): Promise<voi
  * Everything the walker picker needs for one window: ALL availability rules and
  * time off in the business (the owner select policies allow cross-member reads;
  * the user-pinned list functions in features/availability are deliberately not
- * reused), plus assigned, non-cancelled visits overlapping the window.
+ * reused), plus assigned, non-cancelled visits overlapping the window. Each
+ * visit carries its client's home coordinates (clients.lat/lng — ordinary
+ * columns under the whole-table clients grant; owner RLS reads them, and a
+ * walker-RLS caller just gets a null embed) so the tight-transfer check can
+ * estimate travel between back-to-back visits.
  */
 export async function pickerContext(
   businessId: string,
@@ -722,7 +747,7 @@ export async function pickerContext(
     .gt('ends_at', windowStartUtc.toISOString());
   const visitsQ = supabase
     .from('visits')
-    .select('id, walker_id, scheduled_start, scheduled_end')
+    .select('id, walker_id, scheduled_start, scheduled_end, client_id, client:clients(lat, lng)')
     .eq('business_id', businessId)
     .not('walker_id', 'is', null)
     .neq('status', 'cancelled')
@@ -735,6 +760,8 @@ export async function pickerContext(
   return {
     rules: (rules.data ?? []) as PickerContext['rules'],
     timeOff: (timeOff.data ?? []) as PickerContext['timeOff'],
-    visits: (visits.data ?? []) as PickerContext['visits'],
+    // unknown-cast: supabase types the many-to-one clients embed as an array
+    // (no generated FK types); at runtime it is a single object or null.
+    visits: (visits.data ?? []) as unknown as PickerContext['visits'],
   };
 }
