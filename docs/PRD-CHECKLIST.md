@@ -289,7 +289,7 @@ last-updated constant (same rule as this checklist; see CLAUDE.md Workflow).
   | 4 | business panels: clients, services, billing | [x] | 49832e7 |
   | 5 | assembly polish + sponsor desktop pass | [x] code complete — sponsor pass pending | 7e39341 |
 - [ ] Plan 9: messaging + derived presence + urgent flag, self-claim, per-tenant custom domains — deferred until real portal clients (spec §9)
-- Open: P&W page copy/prices (Alexandra), request-approve vs self-book (Alexandra), report approve-before-send setting (Alexandra), tip splitting (Alexandra), Stripe timing (Alexandra), chat priority (Alexandra)
+- Open: P&W page copy/prices (Alexandra — page now sourced from her own site + Thumbtack; Round 1 = final blessing), request-approve vs self-book (Alexandra — her site implies request-approve), report approve-before-send setting (Alexandra — her "real-time updates" promise implies auto-send), tip splitting (Alexandra), Stripe timing (Alexandra — Thumbtack says no cards today), chat priority (Alexandra), preferred-walker on client requests? (Alexandra — clients currently request service+window only; owner assigns)
 
 ## Survey items not yet in the spec (from the discovery sheet, 2026-08-23)
 

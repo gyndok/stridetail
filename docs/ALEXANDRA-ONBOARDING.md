@@ -117,3 +117,12 @@ the prerequisite for the first device build; App Store Connect record exists —
   edit rather than rewriting history now.
 - Old SEO-page draft — fixed 2026-08-28.
 - Nothing in app code carries the tenant name (display name comes from the business record).
+
+## 6. One more question for Round 1: preferred walker on requests?
+
+Clients currently request a service + time window only; the owner assigns the walker at
+approval (the approve card now shows availability hints — off / busy / outside hours — per
+walker before you pick). Question for Alexandra: should clients be able to REQUEST a
+specific walker (advisory preference on the request), or does she prefer keeping
+assignment fully owner-side? Some owners dislike clients picking staff; some clients have
+a favorite. Schema-wise it is a small addition when wanted.
