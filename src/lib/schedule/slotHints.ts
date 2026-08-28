@@ -57,10 +57,11 @@ export function walkerSlotHints(
         overlaps(slotStartUtc, slotEndUtc, new Date(v.scheduled_start), new Date(v.scheduled_end)),
     )
     .sort((a, b) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime());
-  if (conflicting.length > 0) {
+  const firstConflict = conflicting[0];
+  if (firstConflict) {
     return {
       kind: 'busy',
-      detail: formatInTimeZone(new Date(conflicting[0].scheduled_start), tz, 'h:mm a'),
+      detail: formatInTimeZone(new Date(firstConflict.scheduled_start), tz, 'h:mm a'),
     };
   }
 

@@ -173,6 +173,9 @@ test('listPendingBookingRequests: business scope, pending only, oldest first', a
     ['order', ['created_at', { ascending: true }]],
   ]);
   expect(OWNER_REQUEST_COLUMNS).toContain('client:clients(name)');
+  // duration_min rides on the service embed so the approve card can compute
+  // the slot end for the walker-chip availability hints.
+  expect(OWNER_REQUEST_COLUMNS).toContain('service:services(name, duration_min)');
 });
 
 test('approveBookingRequest: RPC shape with and without a walker and start', async () => {

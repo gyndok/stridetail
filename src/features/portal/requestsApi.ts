@@ -159,7 +159,7 @@ export function requestWindowLabel(startIso: string, endIso: string, tz: string)
 
 export const OWNER_REQUEST_COLUMNS =
   'id, business_id, client_id, service_id, pet_ids, window_start, window_end, note_md, ' +
-  'status, created_at, client:clients(name), service:services(name)';
+  'status, created_at, client:clients(name), service:services(name, duration_min)';
 
 export type OwnerBookingRequest = {
   id: string;
@@ -173,7 +173,8 @@ export type OwnerBookingRequest = {
   status: BookingRequestStatus;
   created_at: string;
   client: { name: string } | null;
-  service: { name: string } | null;
+  /** duration_min feeds the approve card's walker-chip slot hints. */
+  service: { name: string; duration_min: number } | null;
 };
 
 /** The business's pending requests, oldest first (owner-select RLS). */

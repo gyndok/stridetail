@@ -95,7 +95,7 @@ const REQUEST: OwnerBookingRequest = {
   status: 'pending',
   created_at: iso(-HOUR),
   client: { name: 'Dana' },
-  service: { name: '30-min walk' },
+  service: { name: '30-min walk', duration_min: 30 },
 };
 
 const V_UNASSIGNED = visit({ id: 'v1' });
