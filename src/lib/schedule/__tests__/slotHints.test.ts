@@ -1,4 +1,4 @@
-import { slotHintLabel, walkerSlotHints, type SlotHintData } from '../slotHints';
+import { localDayWindowUtc, slotHintLabel, walkerSlotHints, type SlotHintData } from '../slotHints';
 
 const tz = 'America/Chicago';
 const iso = (s: string) => new Date(s);
@@ -193,6 +193,22 @@ describe('walkerSlotHints', () => {
       ],
     });
     expect(walkerSlotHints('w1', lateWed, 30, d, tz)).toEqual({ kind: 'busy', detail: '10:00 PM' });
+  });
+});
+
+describe('localDayWindowUtc', () => {
+  test('brackets the local calendar day of the instant, in the business tz', () => {
+    // Thu Jun 11 03:00Z is still WEDNESDAY Jun 10, 10 PM in Chicago.
+    const { dayKey, startUtc, endUtc } = localDayWindowUtc('2026-06-11T03:00:00Z', tz);
+    expect(dayKey).toBe('2026-06-10');
+    expect(startUtc.toISOString()).toBe('2026-06-10T05:00:00.000Z'); // local midnight, CDT
+    expect(endUtc.toISOString()).toBe('2026-06-11T05:00:00.000Z');
+  });
+
+  test('rolls month and year boundaries with plain calendar math', () => {
+    const { dayKey, endUtc } = localDayWindowUtc('2026-12-31T18:00:00Z', tz);
+    expect(dayKey).toBe('2026-12-31');
+    expect(endUtc.toISOString()).toBe('2027-01-01T06:00:00.000Z'); // next local midnight, CST
   });
 });
 

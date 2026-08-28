@@ -1,4 +1,4 @@
-import { formatInTimeZone } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 import {
   inTimeOff,
@@ -69,6 +69,26 @@ export function walkerSlotHints(
   if (!withinAvailability(slotStartUtc, slotEndUtc, rules, tz)) return { kind: 'outside_hours' };
 
   return { kind: 'free' };
+}
+
+/**
+ * The UTC bounds of the local calendar day (in `tz`) containing `instantIso` —
+ * the approve card's fetch window, so one pickerContext query covers every
+ * start time the owner can pick that day. dayKey ('yyyy-MM-dd') doubles as the
+ * cache key. date-fns-tz does the zone math; the +1 is plain calendar math.
+ */
+export function localDayWindowUtc(
+  instantIso: string,
+  tz: string,
+): { dayKey: string; startUtc: Date; endUtc: Date } {
+  const dayKey = formatInTimeZone(new Date(instantIso), tz, 'yyyy-MM-dd');
+  const [y, m, d] = dayKey.split('-').map(Number);
+  const nextKey = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, (d ?? 0) + 1)).toISOString().slice(0, 10);
+  return {
+    dayKey,
+    startUtc: fromZonedTime(`${dayKey}T00:00:00`, tz),
+    endUtc: fromZonedTime(`${nextKey}T00:00:00`, tz),
+  };
 }
 
 /** Compact chip suffix for a hint — null for 'free' (free chips stay unchanged). */

@@ -17,7 +17,7 @@
 import { APP_NAME, PORTAL_LOGIN_URL, SUPPORT_EMAIL, WEB_BASE_URL } from '@/src/lib/brand';
 
 export const MANUAL_VERSION = '1.0';
-export const MANUAL_UPDATED = '2026-08-27';
+export const MANUAL_UPDATED = '2026-08-28';
 
 export type ManualAudience = 'owner' | 'walker' | 'client' | 'all';
 
@@ -262,6 +262,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           'To approve: optionally pick a walker (leave it empty to schedule the visit unassigned; picking one sends them the offer), pick the exact start time inside the client’s window, and approve. The visit is created at that time.',
           'To decline: write a reason. The client reads it word for word, in their portal and in the email.',
         ],
+      },
+      {
+        kind: 'p',
+        text:
+          'The walker chips warn you before you assign: a chip notes when that walker is off, already busy at the chosen time (with the conflicting visit’s start), or outside their working hours — and the warnings update as you change the start time. They’re advisory only: you can still pick that walker, and they can still decline the offer.',
       },
     ],
   },

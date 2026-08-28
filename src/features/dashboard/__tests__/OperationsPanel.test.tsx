@@ -38,6 +38,13 @@ jest.mock('@/src/features/business/useMemberships', () => ({
 // untested per project precedent; the card around it is what matters here).
 jest.mock('@/src/ui/TimeField', () => ({ TimeField: () => null }));
 
+// The card's chip-hint context query stays pending here (its behavior is
+// covered by RequestCard.test.tsx); pending means hint-free chips, as before.
+jest.mock('@/src/features/schedule/api', () => ({
+  ...jest.requireActual('@/src/features/schedule/api'),
+  pickerContext: jest.fn(() => new Promise(() => {})),
+}));
+
 let mockOpsData: {
   visits: { data: Visit[] | undefined };
   notifications: { data: { channel: string; status: string }[] | undefined };

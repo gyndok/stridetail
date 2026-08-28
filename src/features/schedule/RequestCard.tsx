@@ -1,7 +1,12 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
+import {
+  localDayWindowUtc,
+  slotHintLabel,
+  walkerSlotHints,
+} from '@/src/lib/schedule/slotHints';
 import {
   approveBookingRequest,
   approveStartUtc,
@@ -18,7 +23,7 @@ import { TimeField } from '@/src/ui/TimeField';
 import { useTheme } from '@/src/ui/theme';
 
 import { Chip } from './Chip';
-import type { ScheduleMember } from './api';
+import { pickerContext, type ScheduleMember } from './api';
 
 /**
  * The owner approve/decline card for one pending booking request — extracted
@@ -26,6 +31,9 @@ import type { ScheduleMember } from './api';
  * dashboard's "Pending requests" panel and the Requests screen render the SAME
  * card: walker chips (none selected = approve as unassigned), the start-time
  * picker constrained to the client's window, and the decline-with-reason flow.
+ * Chips carry ADVISORY availability hints ("off", "busy 2:00 PM", "outside
+ * hours") recomputed live from the picked start time — never blocking: the
+ * owner may override deliberately, and the walker can still decline.
  *
  * Per-card UI state (walker pick, start pick, declining, reason draft) lives
  * here — the screens kept it keyed by request id, so component-local state
@@ -63,6 +71,34 @@ export function RequestCard({
     tz && startHhmm != null ? approveStartUtc(r.window_start, r.window_end, startHhmm, tz) : null;
   const startInvalid = startHhmm != null && startUtc === null;
 
+  // Advisory availability hints on the walker chips: one pickerContext fetch
+  // for the request's local DAY (cached by day, so every card on that day
+  // shares it), then walkerSlotHints per chip against the picked start + the
+  // service duration. Loading/error/no-duration -> no hints, chips as today.
+  const day = tz ? localDayWindowUtc(r.window_start, tz) : null;
+  const durationMin = r.service?.duration_min ?? null;
+  const slotCtx = useQuery({
+    queryKey: ['request-slot-context', r.business_id, day?.dayKey],
+    queryFn: () => pickerContext(r.business_id, day!.startUtc, day!.endUtc),
+    enabled: day != null && durationMin != null,
+    staleTime: 60_000,
+  });
+  const chipHint = (userId: string): string | null => {
+    if (!tz || !slotCtx.data || durationMin == null || !startUtc) return null;
+    const hint = walkerSlotHints(
+      userId,
+      startUtc,
+      durationMin,
+      {
+        availability: slotCtx.data.rules,
+        timeOff: slotCtx.data.timeOff,
+        visits: slotCtx.data.visits,
+      },
+      tz,
+    );
+    return slotHintLabel(hint);
+  };
+
   const chipRow = { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: t.space.sm };
 
   return (
@@ -92,6 +128,7 @@ export function RequestCard({
             key={m.user_id}
             label={m.display_name ?? 'Team member'}
             selected={walker === m.user_id}
+            hint={chipHint(m.user_id)}
             onPress={() => setWalker((cur) => (cur === m.user_id ? null : m.user_id))}
           />
         ))}
