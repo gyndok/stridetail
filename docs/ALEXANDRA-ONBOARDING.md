@@ -8,11 +8,25 @@ Sep 1 build day. Sources: her published website paw-and-whisker.com (fetched 202
 ## 0. Name correction
 
 Her site brands the business **"Paw & Whisker Pet Services"** — not "Pet Care".
-`docs/HANDOFF.md` and the old SEO-page draft recorded "Paw & Whisker Pet Care Services LLC".
-The SEO page (`marketing/p/paw-and-whisker/index.html`) is fixed as of 2026-08-28; use
-"Paw & Whisker Pet Services" as the display name everywhere (business record, report sender
-label, invites). **Verify the exact legal LLC name with Alexandra on onboarding day** before
-it lands on invoices; the display name is settled regardless.
+**Legal entity CONFIRMED 2026-08-28: "Paw & Whisker Pet Care Services LLC"** — her public
+Thumbtack listing (thumbtack.com/tx/houston/dog-walking/paw-whisker-pet-care-services-llc/…,
+"Credentials: Background Check — Alexandra Klein", 5.0 · 4 reviews, hired 3×) matches the
+HANDOFF record. So: display name = "Paw & Whisker Pet Services" everywhere client-facing
+(business record, report sender label, invites); legal name = "Paw & Whisker Pet Care
+Services LLC" if/where invoices ever need the legal entity. Nothing left to verify here.
+
+### Thumbtack facts worth folding in (fetched 2026-08-28)
+- **Payments she accepts today: Apple Pay, Cash, Venmo, Zelle — no cards.** Billing config:
+  set her Venmo handle; payment_instructions_md should mention Zelle/Apple Pay/cash as the
+  alternates. This effectively pre-answers the **Stripe question: not needed today** — revisit
+  only if she wants card payments later.
+- Additional services she lists there (not on her own site's rate card): **Aquarium Services,
+  House Sitting, Dog Grooming, Cat Grooming** — ask whether to add them to her Stridetail
+  catalog (with her prices) on onboarding day.
+- Species range: dogs, cats, fish, birds +3 more — the pets model's species field already
+  handles this.
+- The SEO page now cites the Thumbtack background check + 5.0 rating (with link) and quotes
+  two of its reviews (Jenny L., Austin C.).
 
 ## 1. Service catalog (seed her real business)
 
@@ -95,7 +109,7 @@ the prerequisite for the first device build; App Store Connect record exists —
 8. Collect Round 1 feedback (execution screens + the rebuilt SEO page copy — she signs off on
    prices/phone/bio/testimonials at Round 1) on the round's GitHub issue in
    `gyndok/stridetail-mockups`.
-9. Confirm the legal entity name for invoices (§0).
+9. Legal entity name CONFIRMED via Thumbtack (§0) — nothing to ask.
 
 ## 5. Where "Pet Care" still appears
 
