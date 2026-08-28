@@ -5,7 +5,7 @@ Living status of Slice 1 "Operate" against the spec
 same commit that completes a task. Legend: `[x]` done · `[ ]` not started · `[~]` in progress ·
 `[!]` blocked.
 
-Last updated: 2026-08-27
+Last updated: 2026-08-28
 
 In-app user's manual: `src/features/manual/content.ts` is a living document of shipped user-facing
 behavior — any task that changes user-facing behavior updates it in the same commit and bumps its
@@ -258,7 +258,7 @@ last-updated constant (same rule as this checklist; see CLAUDE.md Workflow).
   |---|-------------|--------|--------|
   | 1 | product web → Vercel + stridetail.app | [x] live — INV-0001 verified on real domain, noindex headers | b8b71f0 |
   | 2 | marketing scaffold + landing + privacy/terms | [x] | 70e56e6 |
-  | 3 | Paw & Whisker SEO page (copy DRAFT for Alexandra) | [x] DRAFT — pending Alexandra's sign-off (no prices, no phone) | 70e56e6 |
+  | 3 | Paw & Whisker SEO page (copy DRAFT for Alexandra) | [x] rebuilt 2026-08-28 from her published site (correct name "Pet Services", real prices, phone, bio, policies, Wag! reviews) — Alexandra signs off at Round 1 | 93a2dbe |
   | 4 | SEO plumbing + Checkpoint 7 | [x] script written; phone run PENDING | |
 - [~] **Plan 7b: walk report maps** (`docs/superpowers/plans/2026-08-26-stridetail-plan7b-walk-report-maps.md`); code complete — Task 3 native verification pending the Sep 1 build
 
