@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import type { SlotClient } from '@/src/lib/schedule/travel';
 import { useTheme } from '@/src/ui/theme';
 
 import { walkerFlags, type PickerContext, type ScheduleMember, type WalkerFlags } from './api';
@@ -11,6 +12,8 @@ export function flagLabel(flags: WalkerFlags): string {
   if (flags.overlaps > 0)
     problems.push(`${flags.overlaps} overlapping`);
   if (!flags.available) problems.push('Outside availability');
+  if (flags.tight)
+    problems.push(`Tight transfer (~${flags.tight.driveMin} min drive, ${flags.tight.gapMin} min gap)`);
   return problems.length === 0 ? 'Available' : problems.join(' · ');
 }
 
@@ -24,21 +27,28 @@ type Props = {
   onSelect: (userId: string | null) => void;
   /** Set when the window belongs to an existing visit (reassign) so it does not count itself. */
   excludeVisitId?: string;
+  /** The visit's client (home coordinates) — enables the advisory tight-transfer
+      flag; callers passing it must fetch `ctx` over the slot's whole local day. */
+  slotClient?: SlotClient | null;
 };
 
 /**
  * Walker rows (every active member, owner included) with availability flags
  * from walkerFlags. Tapping a selected row deselects back to unassigned.
  */
-export function WalkerPicker({ members, ctx, window, tz, selectedId, onSelect, excludeVisitId }: Props) {
+export function WalkerPicker({ members, ctx, window, tz, selectedId, onSelect, excludeVisitId, slotClient }: Props) {
   const t = useTheme();
   return (
     <View style={{ gap: t.space.sm }}>
       {members.map((m) => {
         const selected = selectedId === m.user_id;
         const flags =
-          ctx && window && tz ? walkerFlags(m.user_id, ctx, window, tz, { excludeVisitId }) : null;
-        const good = flags ? flags.available && !flags.onTimeOff && flags.overlaps === 0 : null;
+          ctx && window && tz
+            ? walkerFlags(m.user_id, ctx, window, tz, { excludeVisitId, slotClient })
+            : null;
+        const good = flags
+          ? flags.available && !flags.onTimeOff && flags.overlaps === 0 && !flags.tight
+          : null;
         return (
           <Pressable
             key={m.user_id}

@@ -172,7 +172,8 @@ test('listPendingBookingRequests: business scope, pending only, oldest first', a
     ['eq', ['status', 'pending']],
     ['order', ['created_at', { ascending: true }]],
   ]);
-  expect(OWNER_REQUEST_COLUMNS).toContain('client:clients(name)');
+  // lat/lng feed the approve card's tight-transfer hint (client home coords).
+  expect(OWNER_REQUEST_COLUMNS).toContain('client:clients(name, lat, lng)');
   // duration_min rides on the service embed so the approve card can compute
   // the slot end for the walker-chip availability hints.
   expect(OWNER_REQUEST_COLUMNS).toContain('service:services(name, duration_min)');

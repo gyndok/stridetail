@@ -119,7 +119,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Each walker has a weekly availability pattern and can have time off on file; the schedule uses these so you offer visits to people who can actually take them.',
+          'Each walker has a weekly availability pattern and can have time off on file; the schedule uses these so you offer visits to people who can actually take them. The walker list also flags tight transfers when there isn’t enough drive time from the walker’s previous visit — an estimate from home locations, not live traffic.',
       },
       {
         kind: 'p',
@@ -266,7 +266,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'The walker chips warn you before you assign: a chip notes when that walker is off, already busy at the chosen time (with the conflicting visit’s start), or outside their working hours — and the warnings update as you change the start time. They’re advisory only: you can still pick that walker, and they can still decline the offer.',
+          'The walker chips warn you before you assign: a chip notes when that walker is off, already busy at the chosen time (with the conflicting visit’s start), or outside their working hours — and the warnings update as you change the start time. Chips also flag tight transfers when there isn’t enough drive time from the walker’s previous visit — an estimate from home locations, not live traffic. They’re advisory only: you can still pick that walker, and they can still decline the offer.',
       },
     ],
   },

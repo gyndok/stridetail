@@ -160,6 +160,36 @@ test('while the context is loading, chips render as today with no hints', async 
   expect(queryByText(/· (off|busy|outside)/)).toBeNull();
 });
 
+test('tight-transfer chip: warns at the default start, clears when the start moves', async () => {
+  // Dana's home gets coordinates; Fred's previous visit is ~5.56 km away
+  // (~21 min drive) and ends 8:48 AM — a 12 min gap before the 9:00 default.
+  mockPickerContext.mockResolvedValue({
+    ...CTX,
+    visits: [
+      ...CTX.visits,
+      {
+        id: 'v-prev',
+        walker_id: 'u-free',
+        scheduled_start: '2026-06-10T13:18:00Z',
+        scheduled_end: '2026-06-10T13:48:00Z',
+        client_id: 'c-other',
+        client: { lat: 29.8, lng: -95.36 },
+      },
+    ],
+  });
+  const { findByText, getByTestId, getByText, queryByText } = await renderCard({
+    request: { ...REQUEST, client: { name: 'Dana', lat: 29.75, lng: -95.36 } },
+  });
+
+  expect(await findByText('Fred · tight transfer')).toBeTruthy();
+
+  // At 11:00 the gap is over two hours — the chip clears without a refetch.
+  await fireEvent.press(getByTestId('time-field'));
+  await waitFor(() => expect(queryByText('Fred · tight transfer')).toBeNull());
+  expect(getByText('Fred')).toBeTruthy();
+  expect(mockPickerContext).toHaveBeenCalledTimes(1);
+});
+
 test('a request whose service was deactivated (no duration) never fetches and shows no hints', async () => {
   const { getByText, queryByText } = await renderCard({
     request: { ...REQUEST, service: null },

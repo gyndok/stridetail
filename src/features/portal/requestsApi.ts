@@ -159,7 +159,7 @@ export function requestWindowLabel(startIso: string, endIso: string, tz: string)
 
 export const OWNER_REQUEST_COLUMNS =
   'id, business_id, client_id, service_id, pet_ids, window_start, window_end, note_md, ' +
-  'status, created_at, client:clients(name), service:services(name, duration_min)';
+  'status, created_at, client:clients(name, lat, lng), service:services(name, duration_min)';
 
 export type OwnerBookingRequest = {
   id: string;
@@ -172,7 +172,9 @@ export type OwnerBookingRequest = {
   note_md: string | null;
   status: BookingRequestStatus;
   created_at: string;
-  client: { name: string } | null;
+  /** lat/lng (geocoded home, may be null) feed the tight-transfer slot hint;
+      optional so pre-travel fixtures still typecheck. */
+  client: { name: string; lat?: number | null; lng?: number | null } | null;
   /** duration_min feeds the approve card's walker-chip slot hints. */
   service: { name: string; duration_min: number } | null;
 };

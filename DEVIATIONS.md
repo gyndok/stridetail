@@ -2916,3 +2916,39 @@ polish; no PRD-CHECKLIST rows ticked):
   warning treatment (both are "waiting on an action" in a planning view),
   `in_progress` gets its own live treatment (primary outline, primarySoft
   fill), and `completed` desaturates instead of sharing the green card.
+
+## Travel-time Phase 1 — tight-transfer advisory (sponsor task, 2026-08-28)
+
+- **Precedence decision: off > busy > outside_hours > tight > free.** The task
+  left tight-vs-outside_hours open; outside_hours outranks tight because a
+  walker outside their availability is the stronger warning — travel pressure
+  is moot if they should not be working at all. Encoded in walkerSlotHints and
+  tested.
+- **Heuristic constants (src/lib/schedule/travel.ts).** Straight-line
+  haversine x 1.4 road factor at an effective 30 km/h, +5 min parking/leash-up
+  constant, rounded to whole minutes; homes under 250 m apart (or the same
+  client_id) are "the same place" (0 min); beyond that radius the estimate
+  never drops under 5 min. Conservative urban guesses, documented in the
+  module — Phase 2 can swap in a routing API behind the same signature.
+- **Tight compares against the NEAREST neighbour only** (latest preceding /
+  earliest following visit); when both sides are tight the worse shortfall
+  (drive minus gap) is reported. Visits overlapping the slot are excluded —
+  overlap is "busy"/"overlapping", already a stronger verdict.
+- **pickerContext select extended, no schema change:** visits now carry
+  `client_id, client:clients(lat, lng)` — ordinary client columns under the
+  whole-table clients grant (owner RLS reads them; a walker-RLS caller would
+  just get a null embed, which skips the check silently).
+- **New-visit screen now fetches the picker context over the visit's whole
+  LOCAL DAY** (localDayWindowUtc, cached by day key) instead of just the visit
+  window, so neighbouring visits are actually present for the travel check —
+  same pattern the approve card already used. Overlap/time-off/availability
+  math is unchanged (it still evaluates the visit window; the wider fetch is a
+  superset).
+- **Scope: the two named consumers only.** RequestCard chips ("· tight
+  transfer" suffix, existing warning tint) and the new-visit WalkerPicker
+  ("Tight transfer (~N min drive, M min gap)" in the flag line). The reassign
+  pickers (VisitScreen, WeekGridView) pass no slotClient and fetch only the
+  visit window, so they simply never show the flag — wiring them is follow-up,
+  not silently half-done here.
+- **listClients now selects `lat, lng`** (ClientListItem gains the fields) so
+  the new-visit screen knows the picked client's home without a second query.

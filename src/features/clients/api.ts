@@ -55,7 +55,7 @@ export async function inviteClientToPortal(clientId: string): Promise<void> {
 export async function listClients(businessId: string, search?: string): Promise<ClientListItem[]> {
   let query = supabase
     .from('clients')
-    .select('id, name, phones, mg_completed_at, pets(count)')
+    .select('id, name, phones, mg_completed_at, lat, lng, pets(count)')
     .eq('business_id', businessId);
   const pattern = buildNameSearch(search);
   if (pattern) query = query.ilike('name', pattern);

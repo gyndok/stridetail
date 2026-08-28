@@ -17,6 +17,7 @@ import {
 } from '@/src/features/schedule/api';
 import { Chip } from '@/src/features/schedule/Chip';
 import { WalkerPicker } from '@/src/features/schedule/WalkerPicker';
+import { localDayWindowUtc } from '@/src/lib/schedule/slotHints';
 import { centsToDollarsString } from '@/src/features/services/form';
 import { listServices } from '@/src/features/services/api';
 import { WEEKDAY_LABELS } from '@/src/features/availability/api';
@@ -91,11 +92,20 @@ export default function NewVisit() {
   // useMemo over `service` (possibly-mutated dependency).
   const window = service && tz ? visitInstants(dateText, timeText, service.duration_min, tz) : null;
 
+  // Fetched over the visit's whole LOCAL DAY (not just the window) so the
+  // picker's tight-transfer flag sees the walker's neighbouring visits; day key
+  // doubles as the cache key, so time edits within a day are pure recompute.
+  const day = window && tz ? localDayWindowUtc(window.startUtc.toISOString(), tz) : null;
   const ctx = useQuery({
-    queryKey: ['pickerCtx', businessId, window?.startUtc.toISOString(), window?.endUtc.toISOString()],
-    enabled: !!businessId && !!window,
-    queryFn: () => pickerContext(businessId!, window!.startUtc, window!.endUtc),
+    queryKey: ['pickerCtx', businessId, day?.dayKey],
+    enabled: !!businessId && !!day,
+    queryFn: () => pickerContext(businessId!, day!.startUtc, day!.endUtc),
   });
+
+  const slotClientRow = (clients.data ?? []).find((c) => c.id === clientId) ?? null;
+  const slotClient = slotClientRow
+    ? { id: slotClientRow.id, lat: slotClientRow.lat ?? null, lng: slotClientRow.lng ?? null }
+    : null;
 
   const price = service && petIds.length > 0 ? priceSnapshotCents(service, petIds.length) : null;
 
@@ -260,6 +270,7 @@ export default function NewVisit() {
         tz={tz}
         selectedId={walkerId}
         onSelect={setWalkerId}
+        slotClient={slotClient}
       />
 
       {price != null ? (

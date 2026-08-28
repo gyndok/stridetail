@@ -19,8 +19,9 @@ export type Client = {
 /** Shape of a `pets(count)` embed: supabase returns one row holding the count. */
 export type CountEmbed = { count: number }[];
 
-/** Row shape returned by listClients (list screen needs only these columns). */
-export type ClientListItem = Pick<Client, 'id' | 'name' | 'phones' | 'mg_completed_at'> & {
+/** Row shape returned by listClients (list screen needs only these columns;
+    lat/lng feed the new-visit picker's tight-transfer flag). */
+export type ClientListItem = Pick<Client, 'id' | 'name' | 'phones' | 'mg_completed_at' | 'lat' | 'lng'> & {
   pets: CountEmbed;
 };
 

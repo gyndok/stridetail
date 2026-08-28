@@ -32,8 +32,9 @@ import { pickerContext, type ScheduleMember } from './api';
  * card: walker chips (none selected = approve as unassigned), the start-time
  * picker constrained to the client's window, and the decline-with-reason flow.
  * Chips carry ADVISORY availability hints ("off", "busy 2:00 PM", "outside
- * hours") recomputed live from the picked start time — never blocking: the
- * owner may override deliberately, and the walker can still decline.
+ * hours", "tight transfer") recomputed live from the picked start time — never
+ * blocking: the owner may override deliberately, and the walker can still
+ * decline.
  *
  * Per-card UI state (walker pick, start pick, declining, reason draft) lives
  * here — the screens kept it keyed by request id, so component-local state
@@ -75,6 +76,8 @@ export function RequestCard({
   // for the request's local DAY (cached by day, so every card on that day
   // shares it), then walkerSlotHints per chip against the picked start + the
   // service duration. Loading/error/no-duration -> no hints, chips as today.
+  // slotClient (the requesting client's geocoded home) enables the tight-
+  // transfer hint; a client without coordinates just skips that check.
   const day = tz ? localDayWindowUtc(r.window_start, tz) : null;
   const durationMin = r.service?.duration_min ?? null;
   const slotCtx = useQuery({
@@ -93,6 +96,7 @@ export function RequestCard({
         availability: slotCtx.data.rules,
         timeOff: slotCtx.data.timeOff,
         visits: slotCtx.data.visits,
+        slotClient: { id: r.client_id, lat: r.client?.lat ?? null, lng: r.client?.lng ?? null },
       },
       tz,
     );
