@@ -141,6 +141,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
+          'Each client row also shows their money at a glance: a green "$50.00 credit" means you hold their deposit, a red "Owes $30.00" means unpaid invoices, and a settled client shows nothing. The same balance sits at the top of their profile (tap it to jump to Billing) and on the desktop dashboard roster.',
+      },
+      {
+        kind: 'p',
+        text:
           'Access codes — door, lockbox, gate, alarm, key location — live on the client, encrypted. They are never stored on your screen: every time someone reveals them, it happens fresh and is written to an audit log with who looked and when.',
       },
       {

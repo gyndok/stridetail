@@ -2,6 +2,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { balanceView, useClientBalances } from '@/src/features/billing/clientBalances';
 import { formatCents, unpaidTotalCents } from '@/src/features/billing/money';
 import { StatusBadge } from '@/src/features/billing/StatusBadge';
 import { useActiveBusiness } from '@/src/features/business/active';
@@ -58,6 +59,7 @@ export function BusinessPanel() {
   const clients = useBusinessClients(businessId);
   const services = useBusinessServices(businessId);
   const billing = useBusinessBilling(businessId);
+  const balances = useClientBalances(businessId);
 
   const term = search.trim();
   const filtered = filterClients(clients.data ?? [], term);
@@ -85,6 +87,7 @@ export function BusinessPanel() {
         {roster.visible.map((c) => {
           const flags = clientFlags(c);
           const phone = firstPhone(c.phones);
+          const balance = balanceView(balances.data?.get(c.id));
           return (
             <Pressable
               key={c.id}
@@ -96,6 +99,18 @@ export function BusinessPanel() {
                 <Text style={[t.type.body, { color: t.colors.ink, flexShrink: 1 }]}>{c.name}</Text>
                 {flags.noEmail ? <StatusBadge label="No email" tone="warning" /> : null}
                 {flags.meetGreetPending ? <StatusBadge label="M&G pending" tone="neutral" /> : null}
+                {balance ? (
+                  <Text
+                    style={{
+                      color: balance.tone === 'green' ? t.colors.green : t.colors.danger,
+                      fontWeight: '700',
+                      fontSize: 13,
+                      marginLeft: 'auto',
+                    }}
+                  >
+                    {balance.text}
+                  </Text>
+                ) : null}
               </View>
               <Text style={{ color: t.colors.inkMuted, fontSize: 13 }}>
                 {petsSummary(c.pets)}

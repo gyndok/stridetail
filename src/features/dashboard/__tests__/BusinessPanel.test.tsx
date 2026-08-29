@@ -105,6 +105,8 @@ const invoices: InvoiceListItem[] = [
   },
 ];
 
+const mockBalances: { current: Map<string, number> | undefined } = { current: undefined };
+
 const hookState = {
   clients: { data: clients as BusinessClientRow[] | undefined, error: null as unknown },
   services: { data: services as Service[] | undefined, error: null as unknown },
@@ -123,8 +125,16 @@ jest.mock('../businessData', () => ({
   useBusinessBilling: () => hookState.billing,
 }));
 
+// The balance glance query needs a QueryClient; the panel tests render bare,
+// so mock the hook like the businessData ones (pure helpers stay real).
+jest.mock('@/src/features/billing/clientBalances', () => ({
+  ...jest.requireActual('@/src/features/billing/clientBalances'),
+  useClientBalances: () => ({ data: mockBalances.current }),
+}));
+
 beforeEach(() => {
   mockPush.mockClear();
+  mockBalances.current = new Map([['c1', -5000]]);
   hookState.clients = { data: clients, error: null };
   hookState.services = { data: services, error: null };
   hookState.billing = { data: { invoices, unbilledCount: 3 }, error: null };
@@ -146,6 +156,8 @@ test('renders the three cards with rows from the mocked data', async () => {
   expect(getByText(/555-0100/)).toBeTruthy();
   expect(getByText('No email')).toBeTruthy();
   expect(getByText('M&G pending')).toBeTruthy();
+  // Balance glance: Dana owes; Lee is settled so no balance text renders.
+  expect(getByText('Owes $50.00')).toBeTruthy();
   // Services
   expect(getByText('Services')).toBeTruthy();
   expect(getByText('30-min walk')).toBeTruthy();

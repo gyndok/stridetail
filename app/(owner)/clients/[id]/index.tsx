@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 
+import { balanceView, useClientBalances } from '@/src/features/billing/clientBalances';
 import { useActiveBusiness } from '@/src/features/business/active';
 import {
   getClient,
@@ -46,6 +47,9 @@ export default function ClientDetail() {
     queryFn: () => listPets(businessId!, id!),
   });
   useRefetchOnFocus(pets.refetch);
+
+  const balances = useClientBalances(businessId);
+  useRefetchOnFocus(balances.refetch);
 
   const c = client.data;
 
@@ -106,6 +110,35 @@ export default function ClientDetail() {
       ) : null}
       {c ? (
         <>
+          {balances.isSuccess ? (
+            <Pressable accessibilityRole="button" onPress={() => router.push('/billing' as Href)}>
+              <Card
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: t.space.sm,
+                }}
+              >
+                <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Balance</Text>
+                {(() => {
+                  const balance = balanceView(balances.data.get(c.id));
+                  return balance ? (
+                    <Text
+                      style={{
+                        color: balance.tone === 'green' ? t.colors.green : t.colors.danger,
+                        fontWeight: '700',
+                      }}
+                    >
+                      {balance.text}
+                    </Text>
+                  ) : (
+                    <Text style={{ color: t.colors.inkMuted }}>All settled</Text>
+                  );
+                })()}
+              </Card>
+            </Pressable>
+          ) : null}
           <Card>
             <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Contact</Text>
             {c.phones.map((phone) => (

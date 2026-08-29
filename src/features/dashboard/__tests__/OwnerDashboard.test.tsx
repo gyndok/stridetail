@@ -64,6 +64,10 @@ jest.mock('@/src/features/dashboard/businessData', () => ({
   useBusinessServices: () => ({ data: [], error: null }),
   useBusinessBilling: () => ({ data: { invoices: [], unbilledCount: 0 }, error: null }),
 }));
+jest.mock('@/src/features/billing/clientBalances', () => ({
+  ...jest.requireActual('@/src/features/billing/clientBalances'),
+  useClientBalances: () => ({ data: new Map() }),
+}));
 // Task 3 replaced the SchedulePanel stub with a query-backed panel (its own
 // SchedulePanel.test.tsx covers the real body); the shell test only asserts
 // the slot exists, so mock it to its slot marker.

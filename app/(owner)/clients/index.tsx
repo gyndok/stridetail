@@ -3,6 +3,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { balanceView, useClientBalances } from '@/src/features/billing/clientBalances';
 import { useActiveBusiness } from '@/src/features/business/active';
 import {
   embeddedCount,
@@ -31,6 +32,8 @@ export default function Clients() {
     queryFn: () => listClients(businessId!, term),
   });
   useRefetchOnFocus(clients.refetch);
+  const balances = useClientBalances(businessId);
+  useRefetchOnFocus(balances.refetch);
 
   return (
     <Screen title="Clients">
@@ -49,6 +52,7 @@ export default function Clients() {
       ) : null}
       {(clients.data ?? []).map((c) => {
         const phone = firstPhone(c.phones);
+        const balance = balanceView(balances.data?.get(c.id));
         return (
           // Task 5 adds app/(owner)/clients/[id].tsx; until then this push 404s.
           <Pressable key={c.id} onPress={() => router.push(`/clients/${c.id}` as Href)}>
@@ -67,6 +71,17 @@ export default function Clients() {
                       Meet & greet pending
                     </Text>
                   </View>
+                ) : null}
+                {balance ? (
+                  <Text
+                    style={{
+                      color: balance.tone === 'green' ? t.colors.green : t.colors.danger,
+                      fontWeight: '700',
+                      marginLeft: 'auto',
+                    }}
+                  >
+                    {balance.text}
+                  </Text>
                 ) : null}
               </View>
               {phone ? <Text style={{ color: t.colors.inkMuted }}>{phone}</Text> : null}
