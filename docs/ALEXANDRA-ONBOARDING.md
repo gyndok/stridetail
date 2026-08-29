@@ -104,14 +104,17 @@ the prerequisite for the first device build; App Store Connect record exists —
 5. **Invite her as owner** (`create_invite`, role `owner`) to
    pawandwhiskerpetservices@gmail.com; her personal Klein.alexandraaerin@gmail.com is the
    backup contact.
-6. Enter her vaccination checklist expectations (§2) as she adds her first pets; confirm the
+6. Ask where her client details live today (§6) and pick the roster path: enter clients
+   together in-app, or hand her the `docs/templates/client-roster.csv` template to fill for
+   a one-off scripted import.
+7. Enter her vaccination checklist expectations (§2) as she adds her first pets; confirm the
    20% deposit workflow against a real upcoming booking.
-7. Walk her through: Today screen, starting a visit (GPS + code reveal on start), finishing a
+8. Walk her through: Today screen, starting a visit (GPS + code reveal on start), finishing a
    report, the report link a client sees, and the invoice + deposit ledger.
-8. Collect Round 1 feedback (execution screens + the rebuilt SEO page copy — she signs off on
+9. Collect Round 1 feedback (execution screens + the rebuilt SEO page copy — she signs off on
    prices/phone/bio/testimonials at Round 1) on the round's GitHub issue in
    `gyndok/stridetail-mockups`.
-9. Legal entity name CONFIRMED via Thumbtack (§0) — nothing to ask.
+10. Legal entity name CONFIRMED via Thumbtack (§0) — nothing to ask.
 
 ## 5. Where "Pet Care" still appears
 
@@ -120,7 +123,37 @@ the prerequisite for the first device build; App Store Connect record exists —
 - Old SEO-page draft — fixed 2026-08-28.
 - Nothing in app code carries the tenant name (display name comes from the business record).
 
-## 6. One more question for Round 1: preferred walker on requests?
+## 6. Getting her current client list in
+
+Her client details most likely live in her phone contacts and Thumbtack/text threads
+(Thumbtack offers no client export), so the first onboarding question is: **"where do your
+client details live today?"** The answer picks one of two paths:
+
+- **Small roster / unstructured (the likely case, ~10–20 clients):** enter them together
+  in the app during the walkthrough or testing week. Two–three minutes per client via Add
+  Client; it doubles as training on the exact flow she'll use for every future client, and
+  the form geocodes addresses as she types (client lat/lng feed the travel-time hints on
+  booking requests). Active clients only — skip dormant ones.
+- **Structured data (spreadsheet, Google Contacts, notes):** she fills
+  `docs/templates/client-roster.csv` — one row per PET, client columns repeated on each
+  row (client_name is the join key; rows with the same client_name merge into one client).
+  Then a one-off import script seeds her tenant: insert clients (geocode addresses with
+  the existing geocoding code), insert pets, drop the script afterward. This is an evening
+  of scripting, NOT an in-app CSV importer — one tenant doesn't justify a feature.
+
+Template notes:
+- The two EXAMPLE rows in the CSV show the format; delete them before filling.
+- `birthdate` is YYYY-MM-DD; an approximate year is fine (age drives the pet profile).
+- `rabies_expires` / `vaccine_notes` are text for now — the actual vaccine documents get
+  uploaded to each pet's profile later, where expiry badges track them.
+
+Stays manual regardless of path:
+- **Access codes** (door/lockbox/alarm): NEVER in a spreadsheet. She enters them in-app
+  per client, where they're encrypted with audited reveals.
+- **Portal invites**: import creates client records only. She invites one or two friendly
+  clients to the portal first (finish-line plan), not the whole roster on day one.
+
+## 7. One more question for Round 1: preferred walker on requests?
 
 Clients currently request a service + time window only; the owner assigns the walker at
 approval (the approve card now shows availability hints — off / busy / outside hours — per
