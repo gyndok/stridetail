@@ -17,9 +17,11 @@ Services LLC" if/where invoices ever need the legal entity. Nothing left to veri
 
 ### Thumbtack facts worth folding in (fetched 2026-08-28)
 - **Payments she accepts today: Apple Pay, Cash, Venmo, Zelle — no cards.** Billing config:
-  set her Venmo handle; payment_instructions_md should mention Zelle/Apple Pay/cash as the
-  alternates. This effectively pre-answers the **Stripe question: not needed today** — revisit
-  only if she wants card payments later.
+  Venmo handle, Zelle (email/phone), and Apple Pay destination are all first-class fields in
+  Billing settings as of 2026-08-29 — set all three on onboarding day; the invoice page shows
+  a Venmo pay button plus "More ways to pay" send-to rows. Mention cash in
+  payment_instructions_md. This effectively pre-answers the **Stripe question: not needed
+  today** — revisit only if she wants card payments later.
 - Additional services she lists there (not on her own site's rate card): **Aquarium Services,
   House Sitting, Dog Grooming, Cat Grooming** — ask whether to add them to her Stridetail
   catalog (with her prices) on onboarding day.

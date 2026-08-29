@@ -22,7 +22,8 @@
 // client's FIRST name only, invoice number label/dates/status/paidAt, line
 // items (description, amount, kind), payment totals, the business's
 // payment-instructions text, and — Plan 6 — the Venmo pay primitives
-// (handle, balance, note) while the invoice is sent and unpaid. NEVER: client full/last name, address, phones,
+// (handle, balance, note) plus the Zelle / Apple Pay send-to handles, all
+// only while the invoice is sent and unpaid. NEVER: client full/last name, address, phones,
 // emails, access codes, walker anything, visit ids. Every field below is an
 // explicit allow-list pick — nothing is spread from a row.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
@@ -128,7 +129,9 @@ Deno.serve(async (req) => {
   const [bizRes, clientRes, itemsRes, paymentsRes] = await Promise.all([
     admin
       .from('businesses')
-      .select('name, brand_color, logo_path, payment_instructions_md, time_zone, venmo_handle')
+      .select(
+        'name, brand_color, logo_path, payment_instructions_md, time_zone, venmo_handle, zelle_handle, apple_pay_handle',
+      )
       .eq('id', inv.business_id)
       .maybeSingle(),
     admin.from('clients').select('name').eq('id', inv.client_id).maybeSingle(),
@@ -150,6 +153,8 @@ Deno.serve(async (req) => {
     payment_instructions_md: string | null;
     time_zone: string;
     venmo_handle: string | null;
+    zelle_handle: string | null;
+    apple_pay_handle: string | null;
   } | null;
   const client = clientRes.data as { name: string } | null;
   const items = (itemsRes.data ?? []) as { description: string; amount_cents: number; kind: string }[];
@@ -165,11 +170,17 @@ Deno.serve(async (req) => {
   // PAID stamp instead), and a positive balance. The page builds the link
   // (src/lib/venmo.ts) and adjusts for tips client-side; this function never
   // constructs a URL.
+  const payable = inv.status === 'sent' && balanceCents > 0;
   const venmoHandle = biz?.venmo_handle?.trim() || null;
   const venmo =
-    venmoHandle && inv.status === 'sent' && balanceCents > 0
+    venmoHandle && payable
       ? { handle: venmoHandle, amountCents: balanceCents, note: numberLabel(inv.number) }
       : null;
+  // Zelle / Apple Pay (2026-08-29): display-only "send to" destinations —
+  // neither has a Venmo-style deep-link convention, so no amount or URL ships;
+  // the page shows the handle next to the balance. Same payable gate as Venmo.
+  const zelleHandle = payable ? biz?.zelle_handle?.trim() || null : null;
+  const applePayHandle = payable ? biz?.apple_pay_handle?.trim() || null : null;
 
   return json({
     business: {
@@ -195,5 +206,7 @@ Deno.serve(async (req) => {
     balanceCents,
     paymentInstructionsMd: biz?.payment_instructions_md ?? null,
     venmo,
+    zelleHandle,
+    applePayHandle,
   });
 });

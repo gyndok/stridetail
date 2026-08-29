@@ -17,7 +17,7 @@
 import { APP_NAME, PORTAL_LOGIN_URL, SUPPORT_EMAIL, WEB_BASE_URL } from '@/src/lib/brand';
 
 export const MANUAL_VERSION = '1.0';
-export const MANUAL_UPDATED = '2026-08-28';
+export const MANUAL_UPDATED = '2026-08-29';
 
 export type ManualAudience = 'owner' | 'walker' | 'client' | 'all';
 
@@ -230,7 +230,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           'Manual invoices: pick the client and a date range — every completed, un-invoiced visit in the range becomes a line item. Add manual lines for extras or discounts.',
           'Deposits you’ve received get recorded as held, and apply themselves to invoices oldest-first.',
           'When a client pays, open the invoice and Mark paid: method, amount, date, optional memo. If they paid extra as a tip, record the full amount — overpayment is welcome and noted.',
-          'On the client’s side, the public invoice page shows a Venmo button (when your handle is set) with an optional tip that adjusts the amount.',
+          'On the client’s side, the public invoice page shows a Venmo button (when your handle is set) with an optional tip that adjusts the amount. If you set a Zelle or Apple Pay destination, a "More ways to pay" section lists them with the amount to send.',
         ],
       },
       {
@@ -241,7 +241,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'tip',
         text:
-          'Set your Venmo handle and payment instructions in Billing settings — both appear on the invoice page your clients see.',
+          'Set your Venmo handle, Zelle (email or phone), Apple Pay destination, and payment instructions in Billing settings — everything you fill in appears on the invoice page your clients see; anything you leave blank stays hidden.',
       },
     ],
   },

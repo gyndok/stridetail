@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(60);
+select plan(62);
 
 -- fixtures: owner A + two walkers in business A, owner B in business B. Fixed uuids so
 -- cross-walker/cross-business failure tests can target real row ids (002/003/005/007 style).
@@ -73,13 +73,18 @@ select enum_has_labels('public', 'invoice_status', array['draft', 'sent', 'paid'
 select enum_has_labels('public', 'deposit_status',
   array['requested', 'held', 'applied', 'refunded', 'forfeited'],
   'deposit_status carries the five ledger states');
-select enum_has_labels('public', 'payment_method', array['venmo', 'zelle', 'cash', 'check', 'other'],
-  'payment_method carries the five manual methods');
+select enum_has_labels('public', 'payment_method',
+  array['venmo', 'zelle', 'apple_pay', 'cash', 'check', 'other'],
+  'payment_method carries the six manual methods (apple_pay added 20260829000001)');
 select enum_has_labels('public', 'payout_status', array['draft', 'finalized', 'paid'],
   'payout_status carries draft/finalized/paid');
 
 select has_column('public', 'businesses', 'payment_instructions_md',
   'businesses.payment_instructions_md exists (public invoice page copy)');
+select has_column('public', 'businesses', 'zelle_handle',
+  'businesses.zelle_handle exists (invoice send-to row, 20260829000001)');
+select has_column('public', 'businesses', 'apple_pay_handle',
+  'businesses.apple_pay_handle exists (invoice send-to row, 20260829000001)');
 
 select is((select invoice_next_number from businesses
            where id = '00000000-0000-0000-0000-00000000aaaa'), 1,

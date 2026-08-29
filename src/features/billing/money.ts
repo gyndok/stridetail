@@ -125,6 +125,7 @@ export function formatCents(cents: number): string {
 export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'venmo', label: 'Venmo' },
   { value: 'zelle', label: 'Zelle' },
+  { value: 'apple_pay', label: 'Apple Pay' },
   { value: 'cash', label: 'Cash' },
   { value: 'check', label: 'Check' },
   { value: 'other', label: 'Other' },

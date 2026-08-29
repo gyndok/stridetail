@@ -36,6 +36,13 @@ export type InvoicePayload = {
    * amount client-side); the function never ships a URL.
    */
   venmo: { handle: string; amountCents: number; note: string } | null;
+  /**
+   * Zelle / Apple Pay send-to destinations (2026-08-29) — display-only (no
+   * deep-link convention exists for either), present under the same gate as
+   * venmo: sent, unpaid, positive balance, handle on file.
+   */
+  zelleHandle: string | null;
+  applePayHandle: string | null;
 };
 
 /** Unknown, revoked, or voided token — the page shows the friendly gone state. */

@@ -7,6 +7,7 @@ import { listHeldDeposits, listInvoices, type InvoiceListItem } from '@/src/feat
 import {
   AUTO_INVOICE_MODES,
   getBusinessBilling,
+  normalizeContactHandle,
   normalizeVenmoHandle,
   updateBusinessBilling,
   type AutoInvoiceMode,
@@ -163,7 +164,7 @@ export default function BillingIndex() {
 /**
  * Billing settings (Plan 6 Task 2), on the Billing tab — closest to use, not
  * global settings. Local edits overlay the server values (null = untouched);
- * one Save writes all three columns via the businesses owner-update RLS
+ * one Save writes all the settings columns via the businesses owner-update RLS
  * policy. The memberships business embed does NOT carry these columns, so
  * only the dedicated query is invalidated.
  */
@@ -172,6 +173,8 @@ function BillingSettingsCard({ businessId }: { businessId: string }) {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<AutoInvoiceMode | null>(null);
   const [venmoText, setVenmoText] = useState<string | null>(null);
+  const [zelleText, setZelleText] = useState<string | null>(null);
+  const [applePayText, setApplePayText] = useState<string | null>(null);
   const [instructionsText, setInstructionsText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -183,19 +186,30 @@ function BillingSettingsCard({ businessId }: { businessId: string }) {
 
   const shownMode = mode ?? billing.data?.auto_invoice ?? 'per_visit';
   const shownVenmo = venmoText ?? billing.data?.venmo_handle ?? '';
+  const shownZelle = zelleText ?? billing.data?.zelle_handle ?? '';
+  const shownApplePay = applePayText ?? billing.data?.apple_pay_handle ?? '';
   const shownInstructions = instructionsText ?? billing.data?.payment_instructions_md ?? '';
-  const dirty = mode !== null || venmoText !== null || instructionsText !== null;
+  const dirty =
+    mode !== null ||
+    venmoText !== null ||
+    zelleText !== null ||
+    applePayText !== null ||
+    instructionsText !== null;
 
   const saveMut = useMutation({
     mutationFn: () =>
       updateBusinessBilling(businessId, {
         auto_invoice: shownMode,
         venmo_handle: normalizeVenmoHandle(shownVenmo),
+        zelle_handle: normalizeContactHandle(shownZelle),
+        apple_pay_handle: normalizeContactHandle(shownApplePay),
         payment_instructions_md: shownInstructions.trim() || null,
       }),
     onSuccess: () => {
       setMode(null);
       setVenmoText(null);
+      setZelleText(null);
+      setApplePayText(null);
       setInstructionsText(null);
       setError(null);
       setSaved(true);
@@ -235,6 +249,28 @@ function BillingSettingsCard({ businessId }: { businessId: string }) {
           setVenmoText(v);
         }}
         placeholder="@your-handle"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      <TextField
+        label="Zelle (email or phone)"
+        value={shownZelle}
+        onChangeText={(v) => {
+          setSaved(false);
+          setZelleText(v);
+        }}
+        placeholder="you@example.com or 555-010-0100"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      <TextField
+        label="Apple Pay (phone or email)"
+        value={shownApplePay}
+        onChangeText={(v) => {
+          setSaved(false);
+          setApplePayText(v);
+        }}
+        placeholder="555-010-0100"
         autoCapitalize="none"
         autoCorrect={false}
       />

@@ -28,12 +28,16 @@ export const AUTO_INVOICE_MODES: { value: AutoInvoiceMode; label: string; hint: 
 ];
 
 export const BUSINESS_BILLING_COLUMNS =
-  'id, auto_invoice, venmo_handle, payment_instructions_md';
+  'id, auto_invoice, venmo_handle, zelle_handle, apple_pay_handle, payment_instructions_md';
 
 export type BusinessBilling = {
   id: string;
   auto_invoice: AutoInvoiceMode;
   venmo_handle: string | null;
+  /** Zelle enrollment (email or US phone) — null hides the invoice row. */
+  zelle_handle: string | null;
+  /** Apple Cash destination (phone or email) — null hides the invoice row. */
+  apple_pay_handle: string | null;
   payment_instructions_md: string | null;
 };
 
@@ -57,11 +61,23 @@ export function normalizeVenmoHandle(text: string): string | null {
   return trimmed === '' ? null : trimmed;
 }
 
+/**
+ * Zelle / Apple Pay destinations are an email or phone number shown verbatim
+ * on the invoice page — no deep link is built, so only whitespace is noise.
+ * Blank -> null, which hides that payment row.
+ */
+export function normalizeContactHandle(text: string): string | null {
+  const trimmed = text.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
 export async function updateBusinessBilling(
   businessId: string,
   patch: {
     auto_invoice: AutoInvoiceMode;
     venmo_handle: string | null;
+    zelle_handle: string | null;
+    apple_pay_handle: string | null;
     payment_instructions_md: string | null;
   },
 ): Promise<void> {

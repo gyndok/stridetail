@@ -2,6 +2,7 @@ import {
   AUTO_INVOICE_MODES,
   BUSINESS_BILLING_COLUMNS,
   getBusinessBilling,
+  normalizeContactHandle,
   normalizeVenmoHandle,
   updateBusinessBilling,
 } from '../settings';
@@ -63,11 +64,13 @@ describe('getBusinessBilling', () => {
 });
 
 describe('updateBusinessBilling', () => {
-  test('updates exactly the three settings columns, scoped to the id', async () => {
+  test('updates exactly the settings columns, scoped to the id', async () => {
     await updateBusinessBilling('biz-1', {
       auto_invoice: 'per_sitting',
       venmo_handle: 'alex',
-      payment_instructions_md: 'Zelle to 555-0100',
+      zelle_handle: '555-010-0100',
+      apple_pay_handle: 'alex@example.com',
+      payment_instructions_md: 'Checks payable to Alex',
     });
     expect(mockLog[0]!.table).toBe('businesses');
     expect(argsOf('update')).toEqual([
@@ -75,7 +78,9 @@ describe('updateBusinessBilling', () => {
         {
           auto_invoice: 'per_sitting',
           venmo_handle: 'alex',
-          payment_instructions_md: 'Zelle to 555-0100',
+          zelle_handle: '555-010-0100',
+          apple_pay_handle: 'alex@example.com',
+          payment_instructions_md: 'Checks payable to Alex',
         },
       ],
     ]);
@@ -88,6 +93,8 @@ describe('updateBusinessBilling', () => {
       updateBusinessBilling('biz-1', {
         auto_invoice: 'manual',
         venmo_handle: null,
+        zelle_handle: null,
+        apple_pay_handle: null,
         payment_instructions_md: null,
       }),
     ).rejects.toThrow('denied');
@@ -110,5 +117,17 @@ describe('normalizeVenmoHandle', () => {
 
   test('interior @ survives (only the prefix is user noise)', () => {
     expect(normalizeVenmoHandle('a@b')).toBe('a@b');
+  });
+});
+
+describe('normalizeContactHandle (Zelle / Apple Pay)', () => {
+  test('trims whitespace but keeps the text verbatim — emails and phones both', () => {
+    expect(normalizeContactHandle(' alex@example.com ')).toBe('alex@example.com');
+    expect(normalizeContactHandle('555-010-0100')).toBe('555-010-0100');
+  });
+
+  test('blank is null — hides that payment row on the invoice', () => {
+    expect(normalizeContactHandle('')).toBeNull();
+    expect(normalizeContactHandle('   ')).toBeNull();
   });
 });

@@ -197,6 +197,7 @@ describe('labels and formatting', () => {
 
   test('methodLabel maps methods, em-dash for none', () => {
     expect(methodLabel('venmo')).toBe('Venmo');
+    expect(methodLabel('apple_pay')).toBe('Apple Pay');
     expect(methodLabel('check')).toBe('Check');
     expect(methodLabel(null)).toBe('—');
   });

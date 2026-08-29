@@ -6,7 +6,7 @@
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
 export type DepositStatus = 'requested' | 'held' | 'applied' | 'refunded' | 'forfeited';
-export type PaymentMethod = 'venmo' | 'zelle' | 'cash' | 'check' | 'other';
+export type PaymentMethod = 'venmo' | 'zelle' | 'apple_pay' | 'cash' | 'check' | 'other';
 export type InvoiceItemKind = 'visit' | 'manual' | 'deposit_credit';
 
 export type Invoice = {

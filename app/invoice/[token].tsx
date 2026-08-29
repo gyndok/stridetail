@@ -71,10 +71,11 @@ const TIP_PRESETS = [
 
 function VenmoPayCard({
   venmo,
-  hasInstructions,
+  hasMoreOptions,
 }: {
   venmo: NonNullable<InvoicePayload['venmo']>;
-  hasInstructions: boolean;
+  /** Zelle/Apple Pay rows or free-text instructions render below this card. */
+  hasMoreOptions: boolean;
 }) {
   const t = useTheme();
   const [choice, setChoice] = useState<'none' | 'five' | 'ten' | 'custom'>('none');
@@ -118,11 +119,46 @@ function VenmoPayCard({
           )
         }
       />
-      {hasInstructions ? (
+      {hasMoreOptions ? (
         <Text style={{ color: t.colors.inkMuted, fontSize: 13 }}>
-          Paying by Zelle or another way? See instructions below.
+          Prefer another way to pay? See the options below.
         </Text>
       ) : null}
+    </Card>
+  );
+}
+
+// Zelle / Apple Pay (2026-08-29): display-only send-to rows — neither has a
+// Venmo-style deep-link convention, so the page shows the destination next to
+// the balance and the client pays from their own banking/Wallet app. The
+// handle text is selectable for easy copying.
+function OtherPaymentsCard({
+  zelleHandle,
+  applePayHandle,
+  balanceText,
+}: {
+  zelleHandle: string | null;
+  applePayHandle: string | null;
+  balanceText: string;
+}) {
+  const t = useTheme();
+  const rows = [
+    zelleHandle ? { key: 'zelle', label: 'Zelle', handle: zelleHandle } : null,
+    applePayHandle
+      ? { key: 'apple_pay', label: 'Apple Pay (Apple Cash)', handle: applePayHandle }
+      : null,
+  ].filter((r): r is { key: string; label: string; handle: string } => r !== null);
+  return (
+    <Card style={{ gap: t.space.sm }}>
+      <Text style={[t.type.label, { color: t.colors.inkMuted }]}>More ways to pay</Text>
+      {rows.map((r) => (
+        <View key={r.key} style={{ gap: 2 }}>
+          <Text style={{ color: t.colors.ink, fontWeight: '700' }}>{r.label}</Text>
+          <Text selectable style={{ color: t.colors.ink }}>
+            Send {balanceText} to {r.handle}
+          </Text>
+        </View>
+      ))}
     </Card>
   );
 }
@@ -195,7 +231,20 @@ function InvoiceBody({ payload }: { payload: InvoicePayload }) {
         </Card>
 
         {payload.venmo && !vm.paid ? (
-          <VenmoPayCard venmo={payload.venmo} hasInstructions={!!payload.paymentInstructionsMd} />
+          <VenmoPayCard
+            venmo={payload.venmo}
+            hasMoreOptions={
+              !!payload.paymentInstructionsMd || !!payload.zelleHandle || !!payload.applePayHandle
+            }
+          />
+        ) : null}
+
+        {!vm.paid && (payload.zelleHandle || payload.applePayHandle) ? (
+          <OtherPaymentsCard
+            zelleHandle={payload.zelleHandle}
+            applePayHandle={payload.applePayHandle}
+            balanceText={vm.balanceText}
+          />
         ) : null}
 
         {payload.paymentInstructionsMd ? (
