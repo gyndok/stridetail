@@ -46,7 +46,8 @@ select decrypted_secret from vault.decrypted_secrets where name = 'client_access
 
 Copy the 64-hex-character value into the password manager as
 **"Stridetail client_access_key (Supabase Vault)"**, then clear the SQL editor result.
-Record the escrow date here: escrowed on ____.
+Record the escrow date here: **escrowed 2026-08-29** (Apple Passwords, entry
+"Stridetail client_access_key", sponsor's account).
 
 ## 3. If codes fail to decrypt after a restore ("client_access_key missing from vault")
 
