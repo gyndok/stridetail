@@ -9,9 +9,11 @@ Sep 1; this documents what protects them and what to do when something goes wron
   daily snapshots (Aug 22–29, ~13:38 UTC). Pro retention ≈ 7 days. Each has a one-click
   **Restore** — that is a WHOLE-PROJECT rollback to that snapshot (it also rolls back the
   "Geff Dog Walker Demo" business and anything else that changed since).
-- **PITR** is a separate add-on (its own tab on the same page) — status not yet
-  confirmed; check the "Point in time" tab and note it here. Daily backups are adequate
-  for launch; PITR (~$100/mo tier pricing) becomes worth it with real tenants.
+- **PITR: confirmed NOT enabled, and deliberately skipped for now (sponsor decision
+  2026-08-29)** — it is a $100/mo add-on. Exposure accepted: up to ~24h of changes
+  between daily snapshots. Mitigations in place: escrowed Vault key (§2) + backup.sh
+  dumps before/after risky days (§4). Revisit when real paying tenants exist (already a
+  Phase-B line in docs/SAAS-PLAN.md — subscription revenue funds it).
 - **Storage objects are NOT in database backups** (banner on the page): pet photos, walk
   report images, the render-once walk MAPS, and logos live in the `media`/`marketing`
   buckets. A DB restore does not resurrect deleted storage files. Storage loss risk today
