@@ -178,7 +178,23 @@ invoice creation, oldest first.
    Stridetail starts clean; only money still in motion crosses over. Old records stay
    wherever they live today as the archive.
 
-## 7. One more question for Round 1: preferred walker on requests?
+## 7. Round 1 question: leads / new-client inquiries
+
+Today a prospective client's inquiry lands in her GMAIL (her page's "Book a meet &
+greet" is mailto/tel; her own site's Book-now form goes to the same inbox). Stridetail
+first learns of a lead when she does Add Client — and a client with the meet & greet
+not yet completed wears the "Meet & greet pending" badge on the Clients tab and the
+desktop roster, which is the de-facto lead status. The portal request flow is
+invite-gated by design, so strangers cannot inject bookings.
+
+Ask her: how do inquiries reach you today (email/text/Thumbtack), and do you want them
+to land ON the dashboard as a "New inquiries" card (public inquiry form → lead row →
+needs-attention surface)? That feature is sketched in docs/SAAS-PLAN.md (website
+product / lead gen) and is code-frozen until her beta — her answer shapes it. Until
+then the working procedure is: inquiry arrives → Add Client immediately (that IS the
+lead record) → the pending-M&G badge tracks it → mark M&G done → invite to portal.
+
+## 8. One more question for Round 1: preferred walker on requests?
 
 Clients currently request a service + time window only; the owner assigns the walker at
 approval (the approve card now shows availability hints — off / busy / outside hours — per
