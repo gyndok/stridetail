@@ -153,6 +153,31 @@ Stays manual regardless of path:
 - **Portal invites**: import creates client records only. She invites one or two friendly
   clients to the portal first (finish-line plan), not the whole roster on day one.
 
+### Opening balances (deposits held, money owed)
+
+Existing primitives cover this — it's a procedure, not a feature. The one mechanic that
+dictates the order: `create_invoice` auto-applies EVERY held deposit for that client at
+invoice creation, oldest first.
+
+1. **Carry-over invoices FIRST.** For each client who owes her: one manual invoice with a
+   single line item — "Balance carried over from before Stridetail" + a short description —
+   for the amount owed. Sending it gives the client a payable page (Venmo button + send-to
+   options) and lights the red "Owes" glance; a draft deliberately does NOT count in the
+   glance, so send when she's ready to collect. The send doubles as the client's first
+   contact from the new system.
+2. **Held deposits SECOND.** For each client whose money she holds: record it in the
+   Deposits ledger as it happened — real amount, real received-on date, actual method,
+   memo like "Deposit for Sep 12–15 sitting, received before Stridetail". It lands held
+   (green credit in the glance) and auto-applies when that booking is invoiced.
+3. **Why that order:** a client who both owes AND has a deposit down for a future booking —
+   if the deposit is recorded before the carry-over invoice is created, the invoice
+   consumes the deposit on creation, letting old debt eat money that reserves a future
+   date (contradicting her own deposit policy). All carry-over invoices across the roster,
+   then all deposits.
+4. **No history reconstruction.** No back-entering old visits, paid invoices, or reports —
+   Stridetail starts clean; only money still in motion crosses over. Old records stay
+   wherever they live today as the archive.
+
 ## 7. One more question for Round 1: preferred walker on requests?
 
 Clients currently request a service + time window only; the owner assigns the walker at
