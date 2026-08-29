@@ -98,8 +98,12 @@ the prerequisite for the first device build; App Store Connect record exists —
    Gmail drafts). Plan 7b Task 3 (react-native-maps) and the lazy-loaded native map ride this
    same build cut.
 2. **Cut the build** (EAS device build including her UDID); install on her iPhone.
-3. **Create her business**: name "Paw & Whisker Pet Services", time zone `America/Chicago`,
-   keep default brand color unless she picks one.
+3. **Create her business**: SHE signs up and creates it herself with her REAL account
+   (business Gmail pawandwhiskerpetservices@gmail.com) — decided 2026-08-29: the first
+   customer's tenant lives on her own account, not a sponsor alias. Name "Paw & Whisker
+   Pet Services", time zone `America/Chicago`, keep default brand color unless she picks
+   one. (The sponsor's gyndok+pawandwhisker@gmail.com alias is REHEARSAL ONLY — any
+   business it creates gets cleaned up by SQL and never becomes the real tenant.)
 4. **Seed services** from the table in §1 (replace/edit the demo catalog rows).
 5. **Invite her as owner** (`create_invite`, role `owner`) to
    pawandwhiskerpetservices@gmail.com; her personal Klein.alexandraaerin@gmail.com is the
