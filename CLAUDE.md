@@ -8,6 +8,19 @@ derivable from the code.
 - Current plan: `docs/superpowers/plans/2026-08-23-stridetail-plan1-foundation.md`
 - Precedence on conflict: spec > plan > this file > conversation.
 
+## Vocabulary (the parties, unambiguously)
+- **Owner** = the person who runs the dog-walking BUSINESS (memberships role `owner`;
+  Alexandra). An owner can also walk visits — dual role, one word.
+- **Walker** = a staff member who does visits (role `walker`).
+- **Client** = the pet's human, who buys services. In portal/client-facing warm copy:
+  **"pet parent"**. NEVER call a client an "owner" and never write "pet owner" anywhere —
+  that word collides with the business owner.
+- **Sponsor** = Geff, the developer/platform operator. Not a role in the product; in any
+  future user-facing context he is "support".
+- Client-facing surfaces (portal, report/invoice pages, emails) should not use role words
+  at all where the BUSINESS NAME works: "Paw & Whisker approved your request", not "the
+  owner approved your request".
+
 ## Hard rules
 - Expo SDK **57**. Before using any Expo module, read `https://docs.expo.dev/versions/v57.0.0/sdk/<module>/`.
   The SDK is newer than model training data — verify, do not guess.
