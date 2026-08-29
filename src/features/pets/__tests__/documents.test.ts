@@ -117,11 +117,12 @@ test('storagePetDocPath generates a fresh name per call', () => {
 
 // ===== doc type labels =====
 test('docTypeLabel covers every doc_type enum value', () => {
-  expect(DOC_TYPES).toEqual(['rabies', 'dhpp', 'lepto', 'bordetella', 'other']);
+  expect(DOC_TYPES).toEqual(['rabies', 'dhpp', 'lepto', 'bordetella', 'fvrcp', 'other']);
   expect(docTypeLabel('rabies')).toBe('Rabies');
   expect(docTypeLabel('dhpp')).toBe('DHPP');
   expect(docTypeLabel('lepto')).toBe('Leptospirosis');
   expect(docTypeLabel('bordetella')).toBe('Bordetella');
+  expect(docTypeLabel('fvrcp')).toBe('FVRCP (feline)');
   expect(docTypeLabel('other')).toBe('Other');
 });
 

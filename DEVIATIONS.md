@@ -2952,3 +2952,46 @@ polish; no PRD-CHECKLIST rows ticked):
   not silently half-done here.
 - **listClients now selects `lat, lng`** (ClientListItem gains the fields) so
   the new-visit screen knows the picked client's home without a second query.
+
+## 2026-08-29 — security review response (portal takeover, private columns, anon grants)
+
+Second-pass security review (sponsor's laptop, verified against hosted) found two Sep-1
+blockers and a CI-red root cause. Decisions:
+
+- **#1 Portal account takeover (CRITICAL).** `claim_client_links()` trusted `auth.users.email`
+  as mailbox proof, but email confirmation is off and signup is open, so a password signup with
+  a known client email could claim the link and read/overwrite decrypted access codes. Fix
+  chosen: **review option (a), hardened** — gate the claim on the session having authenticated by
+  email one-time code (the portal's only login path). Implemented as
+  `session_is_mailbox_proven()` reading the authoritative `auth.mfa_amr_claims` for the JWT's
+  `session_id` (method otp/magiclink), with the JWT `amr` array as a belt. Chosen over (b)
+  token-carried claim (more work, changes the invite email + claim UI) and (c) turning on email
+  confirmation (breaks Alexandra's own signup — no unconfirmed/resend flow). **(b) is recorded as
+  the Phase-B durable replacement** — immune to any auth setting, wanted before a second tenant.
+  Tests: 016 proves a password session links nothing on an invited, email-matching client, and an
+  OTP session (via mfa_amr_claims) links normally.
+
+- **#2 Staff-private columns readable by linked clients (HIGH/trust).** Row policies were right;
+  whole-table column grants were not. Owner, walker and client are all `authenticated`, so a
+  column grant cannot separate them. Per-column decisions:
+  - `visit_reports.private_notes_md`: no app surface selects it → column-scoped grant drops it.
+  - `clients.notes_md`: the portal never reads the clients table → **dropped the client SELECT
+    policy on clients** entirely (client loses row visibility it never used; owner/walker keep the
+    full grant). NOTE: this changed 015 tests 10 & 40 (a linked client now sees zero clients rows).
+  - `visits.owner_notes_md` / `decline_reason`: the client's visit ROW visibility is load-bearing
+    (report/event/track child policies + the portal's `visits!inner` embeds), so it must stay.
+    Revoked the two COLUMNS from `authenticated` and re-serve them to staff via the members-only
+    `visit_private_fields` view, **joined client-side** (the existing `services_public`/joinServices
+    pattern) in `listVisits`/`listMyVisits`/`getVisit`/`fetchVisitDetail`. `PORTAL_VISIT_COLUMNS`
+    never listed these, so the portal is untouched. GOTCHA recorded: a table-level
+    `revoke select on visits` does NOT drop pre-existing column-level grants — must
+    `revoke select (col, col)` explicitly (caught by has_column_privilege on hosted).
+
+- **#3 Accidental `anon` table grants (CI-red root cause).** Nine relations carried full DML for
+  `anon` from Supabase default privileges. Revoked ALL from `anon` only (authenticated/service_role
+  untouched; the verify_jwt-off public endpoints use the service role — regression-checked 200 on
+  live tokens). Makes 017 assertion 6 true again (test unedited); 019 asserts anon holds zero public
+  table grants.
+
+Not done before Sep 1 (per the review's own guidance): did NOT rotate the Vault key, did NOT turn
+on email confirmation standalone, did NOT build orphan cleanup.

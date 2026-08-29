@@ -163,10 +163,12 @@ set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-000000000031","
 select is((select count(id) from client_users)::int, 2,
   'the linked user sees their own two links — one per business (multi-business linking allowed)');
 
-select is((select array_agg(id order by id) from clients),
-  array['00000000-0000-0000-0000-0000000000c1',
-        '00000000-0000-0000-0000-0000000000c9']::uuid[],
-  'the client sees exactly their own client rows across both linked businesses — never c2');
+-- 2026-08-29 security: the client SELECT policy on clients was removed (it
+-- exposed clients.notes_md, the owner's private notes). The portal never reads
+-- the clients table, so a linked client now sees ZERO client rows — including,
+-- as before, never c2.
+select is((select count(id) from clients)::int, 0,
+  'the client sees no clients rows at all (row policy removed to hide notes_md)');
 
 select lives_ok($$
   update clients set name = 'Hacked' where id = '00000000-0000-0000-0000-0000000000c1'
@@ -327,9 +329,9 @@ select is((select array_agg(id) from visits),
   array['00000000-0000-0000-0000-0000000000f2']::uuid[],
   'the second client sees only their own visit');
 
-select is((select array_agg(id) from clients),
-  array['00000000-0000-0000-0000-0000000000c2']::uuid[],
-  'the second client sees only their own client row');
+-- 2026-08-29 security: the client SELECT policy on clients was removed.
+select is((select count(id) from clients)::int, 0,
+  'the second client sees no clients rows either (row policy removed)');
 
 select is((select count(id) from booking_requests)::int, 0,
   'the second client does not see the first client''s request');

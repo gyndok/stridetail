@@ -252,14 +252,14 @@ last-updated constant (same rule as this checklist; see CLAUDE.md Workflow).
 
 ## Web experience (spec 2026-08-26; Plans 7–9 proposed)
 
-- [x] **Plan 7: ship the web** (`docs/superpowers/plans/2026-08-26-stridetail-plan7-ship-the-web.md`); both Vercel projects live on real domains; Checkpoint 7 phone run pending
+- [x] **Plan 7: ship the web** (`docs/superpowers/plans/2026-08-26-stridetail-plan7-ship-the-web.md`); both Vercel projects live on real domains; **Checkpoint 7 PASS (2026-08-27, checkpoints.md)**
 
   | # | Plan 7 task | Status | Commit |
   |---|-------------|--------|--------|
   | 1 | product web → Vercel + stridetail.app | [x] live — INV-0001 verified on real domain, noindex headers | b8b71f0 |
   | 2 | marketing scaffold + landing + privacy/terms | [x] | 70e56e6 |
   | 3 | Paw & Whisker SEO page (copy DRAFT for Alexandra) | [x] rebuilt 2026-08-28 from her published site (correct name "Pet Services", real prices, phone, bio, policies, Wag! reviews) — Alexandra signs off at Round 1 | 93a2dbe |
-  | 4 | SEO plumbing + Checkpoint 7 | [x] script written; phone run PENDING | |
+  | 4 | SEO plumbing + Checkpoint 7 | [x] **Checkpoint 7 PASS 2026-08-27** (email link → live stridetail.app invoice, Venmo prefilled, Rich Results LocalBusiness valid; checkpoints.md) | |
 - [~] **Plan 7b: walk report maps** (`docs/superpowers/plans/2026-08-26-stridetail-plan7b-walk-report-maps.md`); code complete — Task 3 native verification pending the Sep 1 build
 
   | # | Plan 7b task | Status | Commit |
@@ -267,7 +267,7 @@ last-updated constant (same rule as this checklist; see CLAUDE.md Workflow).
   | 1 | static map render-once pipeline (Mapbox, edge) | [x] | e8d7692 |
   | 2 | report surfaces show the map | [x] | b0c262e |
   | 3 | react-native-maps in-app (rides Sep 1 build) | [x] code complete — native verification pending Sep 1 build (old binaries keep today's UI via lazy loader) | b894442 |
-- [~] **Plan 8: client portal v1** (`docs/superpowers/plans/2026-08-26-stridetail-plan8-client-portal.md`) — Tasks 1–8 done; hosted deployed (migrations 0002–0005 + send-email v10, smoke clean); Checkpoint 8 phone run PENDING
+- [x] **Plan 8: client portal v1** (`docs/superpowers/plans/2026-08-26-stridetail-plan8-client-portal.md`) — Tasks 1–8 done; hosted deployed (migrations 0002–0005 + send-email v10, smoke clean); **Checkpoint 8 PASS (2026-08-27, sponsor solo run as demo client Marcus — invite→OTP→dashboard/reports/invoices/pets/lockbox/request→approve; web date-picker + Settings-tab fixes shipped same day; checkpoints.md)**
 
   | # | Plan 8 task | Status | Commit |
   |---|-------------|--------|--------|
@@ -278,7 +278,7 @@ last-updated constant (same rule as this checklist; see CLAUDE.md Workflow).
   | 5 | reports archive + invoices (tips) | [x] detail = public token pages via RLS-read tokens (DEVIATIONS) | 65addf7 |
   | 6 | pets + access-codes self-service | [x] local only — migration 20260826000005 (self RPCs + client pet-photo storage policies) rides Task 8 | 53e85f0 |
   | 7 | booking requests end-to-end | [x] local only — send-email redeploy rides Task 8 | e860363 |
-  | 8 | hosted deploy + **Checkpoint 8** | [x] deployed — migrations 0002–0005 via MCP, send-email v10, advisors clean, SQL-impersonation smoke passed w/ full cleanup, portal noindex added; Checkpoint 8 phone run PENDING | 8e4f767 |
+  | 8 | hosted deploy + **Checkpoint 8** | [x] deployed — migrations 0002–0005 via MCP, send-email v10, advisors clean, SQL-impersonation smoke passed w/ full cleanup, portal noindex added; **Checkpoint 8 PASS 2026-08-27** (checkpoints.md) | 8e4f767 |
 - [x] **Plan 8b (expanded): owner desktop dashboard** — COMPLETE 2026-08-27, sponsor desktop pass PASS (live KPIs/panels on the demo business, checkpoints.md) (`docs/superpowers/plans/2026-08-27-stridetail-plan8b-owner-desktop-dashboard.md`, supersedes the 2026-08-26 command-strip draft) — sponsor mockup 2026-08-27; desktop web Today becomes the business command center; NO mode toggle, NO manual presence
 
   | # | Plan 8b task | Status | Commit |

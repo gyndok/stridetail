@@ -5,7 +5,7 @@ import { supabase } from '@/src/lib/supabase';
 import { parseDateOnly } from './helpers';
 
 /** Mirrors public.doc_type (supabase/migrations/20260824000001_clients_pets.sql). */
-export const DOC_TYPES = ['rabies', 'dhpp', 'lepto', 'bordetella', 'other'] as const;
+export const DOC_TYPES = ['rabies', 'dhpp', 'lepto', 'bordetella', 'fvrcp', 'other'] as const;
 export type DocType = (typeof DOC_TYPES)[number];
 
 /** Mirrors public.pet_documents. */
@@ -25,6 +25,7 @@ const LABELS: Record<DocType, string> = {
   dhpp: 'DHPP',
   lepto: 'Leptospirosis',
   bordetella: 'Bordetella',
+  fvrcp: 'FVRCP (feline)',
   other: 'Other',
 };
 

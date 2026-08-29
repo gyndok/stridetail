@@ -267,7 +267,9 @@ docs/evidence/cp7-*.png when convenient).
 
 ## Checkpoint 8 — client portal end-to-end on a real phone (Plan 8)
 
-**Status: PENDING.** Everything below the phone script is already proven on hosted:
+**Status: PASS (2026-08-27, sponsor solo run — see the evidence table below).** The rest of
+this note is the original pre-run context, kept for history.
+Everything below the phone script was already proven on hosted:
 Plan 8 migrations 0002–0005 applied via MCP, `send-email` v10 carries `client_invite`
 + the booking-request templates, advisors clean (no new findings), and the whole
 invite → claim → client-scoped reads (price column denied 42501) → pets/access-code

@@ -219,12 +219,16 @@ test('memberName resolves display names and falls back to a stub', () => {
 
 // ---- listVisits (column-grant safety: never select price, never select *) ----
 
-test('VISIT_COLUMNS names every readable column and never the price', () => {
+test('VISIT_COLUMNS names every readable column and never the price or private notes', () => {
   expect(VISIT_COLUMNS).not.toContain('*');
   expect(VISIT_COLUMNS).not.toContain('price');
-  for (const col of ['id', 'walker_id', 'scheduled_start', 'scheduled_end', 'business_tz', 'status', 'decline_reason']) {
+  for (const col of ['id', 'walker_id', 'scheduled_start', 'scheduled_end', 'business_tz', 'status']) {
     expect(VISIT_COLUMNS).toContain(col);
   }
+  // owner_notes_md / decline_reason left the base grant (2026-08-29 security);
+  // merged in from the staff-only visit_private_fields view instead.
+  expect(VISIT_COLUMNS).not.toContain('owner_notes_md');
+  expect(VISIT_COLUMNS).not.toContain('decline_reason');
 });
 
 test('listVisits selects named columns with embeds and a start-time window', async () => {

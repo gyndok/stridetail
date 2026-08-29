@@ -65,8 +65,8 @@ const visitRow = {
   scheduled_end: '2026-08-24T14:30:00.000Z',
   business_tz: 'America/Chicago',
   status: 'accepted',
-  owner_notes_md: 'gate code on the side door',
-  decline_reason: null,
+  // owner_notes_md / decline_reason are NOT in the visits select anymore
+  // (2026-08-29 security) — they arrive via the visit_private_fields view.
   started_at: null,
   finished_at: null,
   client: { name: 'Dana' },
@@ -75,6 +75,10 @@ const visitRow = {
 function seedHappyPath() {
   mockResults = {
     visits: { data: visitRow, error: null },
+    visit_private_fields: {
+      data: { owner_notes_md: 'gate code on the side door', decline_reason: null },
+      error: null,
+    },
     clients: {
       data: { id: 'c1', name: 'Dana', phones: ['+15550001'], address: '1 Main St', notes_md: 'ring twice' },
       error: null,
@@ -145,6 +149,9 @@ test('fetchVisitDetail assembles the detail: service joined onto the visit, pets
   seedHappyPath();
   const detail = await fetchVisitDetail('v1');
   expect(detail.visit.id).toBe('v1');
+  // Private fields merged from the staff-only view onto the visit.
+  expect(detail.visit.owner_notes_md).toBe('gate code on the side door');
+  expect(argsOf('visit_private_fields', 'eq')).toEqual([['visit_id', 'v1']]);
   expect(detail.visit.service).toEqual({ name: '30-min walk', duration_min: 30 });
   expect(detail.service).toEqual({ id: 's1', name: '30-min walk', duration_min: 30, requires_gps: true });
   expect(detail.client?.name).toBe('Dana');

@@ -61,9 +61,13 @@ test('MY_VISIT_COLUMNS names columns, never the price, and has NO services embed
   // walker RLS, so the walker read must not carry one.
   expect(MY_VISIT_COLUMNS).not.toContain('services(');
   expect(MY_VISIT_COLUMNS).toContain('client:clients(name)');
-  for (const col of ['id', 'service_id', 'walker_id', 'scheduled_start', 'scheduled_end', 'business_tz', 'status', 'decline_reason']) {
+  for (const col of ['id', 'service_id', 'walker_id', 'scheduled_start', 'scheduled_end', 'business_tz', 'status']) {
     expect(MY_VISIT_COLUMNS).toContain(col);
   }
+  // owner_notes_md / decline_reason left the base grant (2026-08-29 security);
+  // they are merged in from the staff-only visit_private_fields view instead.
+  expect(MY_VISIT_COLUMNS).not.toContain('owner_notes_md');
+  expect(MY_VISIT_COLUMNS).not.toContain('decline_reason');
 });
 
 // ---- listMyVisits query shape ----
@@ -72,9 +76,10 @@ test('listMyVisits reads visits (named columns, window, cancelled excluded) then
   mockResults.push(
     { data: [{ id: 'v1', service_id: 's1' }], error: null },
     { data: [{ id: 's1', name: 'Walk 30', duration_min: 30 }], error: null },
+    { data: [{ visit_id: 'v1', owner_notes_md: 'n', decline_reason: null }], error: null },
   );
   const out = await listMyVisits('b1', new Date('2026-09-01T00:00:00Z'), new Date('2026-11-01T00:00:00Z'));
-  expect(mockLog.map((q) => q.table)).toEqual(['visits', 'services_public']);
+  expect(mockLog.map((q) => q.table)).toEqual(['visits', 'services_public', 'visit_private_fields']);
 
   const visitsQ = mockLog[0]!;
   const select = visitsQ.steps.find(([n]) => n === 'select')![1][0] as string;
@@ -95,6 +100,12 @@ test('listMyVisits reads visits (named columns, window, cancelled excluded) then
 
   // Service names joined client-side.
   expect(out[0]!.service).toEqual({ name: 'Walk 30', duration_min: 30 });
+  // Private fields merged in from the staff-only view.
+  expect(out[0]!.owner_notes_md).toBe('n');
+  expect(out[0]!.decline_reason).toBeNull();
+  const privQ = mockLog[2]!;
+  expect(privQ.table).toBe('visit_private_fields');
+  expect((privQ.steps.find(([n]) => n === 'eq')![1])).toEqual(['business_id', 'b1']);
 });
 
 test('joinServices fills matches and leaves unknown services null', () => {

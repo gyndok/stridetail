@@ -135,11 +135,15 @@ export async function deactivateSeries(id: string): Promise<void> {
 // and never the price. Writes may still stamp the price (whole-table
 // insert/update grants).
 
-/** Every client-readable visits column — everything except price_cents_snapshot. */
+// Staff-readable visits columns. price_cents_snapshot is withheld by the column
+// grant; owner_notes_md and decline_reason ALSO left the grant (2026-08-29
+// security — clients could otherwise read them off their own visit rows), so
+// they are NOT selected here and are merged in from the staff-only
+// visit_private_fields view via joinPrivateFields — the joinServices pattern.
 export const VISIT_COLUMNS =
   'id, business_id, client_id, service_id, series_id, walker_id, pet_ids, ' +
-  'scheduled_start, scheduled_end, business_tz, status, owner_notes_md, ' +
-  'decline_reason, started_at, finished_at, ' +
+  'scheduled_start, scheduled_end, business_tz, status, ' +
+  'started_at, finished_at, ' +
   'client:clients(name, phones), service:services(name, duration_min)';
 
 export type Visit = {
@@ -519,7 +523,9 @@ export async function listVisits(businessId: string, window: ListVisitsWindow): 
   if (window.status) query = query.eq('status', window.status);
   const { data, error } = await query.order('scheduled_start');
   if (error) throw error;
-  return (data ?? []) as unknown as Visit[];
+  type Row = Omit<Visit, 'owner_notes_md' | 'decline_reason'>;
+  const priv = await fetchVisitPrivateFields(businessId);
+  return joinPrivateFields((data ?? []) as unknown as Row[], priv) as Visit[];
 }
 
 /**
@@ -532,8 +538,8 @@ export async function listVisits(businessId: string, window: ListVisitsWindow): 
  */
 export const MY_VISIT_COLUMNS =
   'id, business_id, client_id, service_id, series_id, walker_id, pet_ids, ' +
-  'scheduled_start, scheduled_end, business_tz, status, owner_notes_md, ' +
-  'decline_reason, started_at, finished_at, client:clients(name)';
+  'scheduled_start, scheduled_end, business_tz, status, ' +
+  'started_at, finished_at, client:clients(name)';
 
 export type PublicService = { id: string; name: string; duration_min: number };
 
@@ -546,6 +552,45 @@ export function joinServices<T extends { service_id: string }>(
   return visits.map((v) => {
     const s = byId.get(v.service_id);
     return { ...v, service: s ? { name: s.name, duration_min: s.duration_min } : null };
+  });
+}
+
+/**
+ * The two staff-private visit fields, served by the members-only
+ * visit_private_fields view (2026-08-29 security). Fetched per business and
+ * merged onto visit rows client-side — the joinServices pattern — because the
+ * columns no longer ride the base-table grant. A client is not a member, so the
+ * view returns them nothing even if they call it directly.
+ */
+export type VisitPrivateFields = {
+  visit_id: string;
+  owner_notes_md: string | null;
+  decline_reason: string | null;
+};
+
+export async function fetchVisitPrivateFields(
+  businessId: string,
+): Promise<Map<string, VisitPrivateFields>> {
+  const { data, error } = await supabase
+    .from('visit_private_fields')
+    .select('visit_id, owner_notes_md, decline_reason')
+    .eq('business_id', businessId);
+  if (error) throw error;
+  return new Map(((data ?? []) as unknown as VisitPrivateFields[]).map((r) => [r.visit_id, r]));
+}
+
+/** Merge owner_notes_md/decline_reason onto visit rows; absent -> null. */
+export function joinPrivateFields<T extends { id: string }>(
+  visits: T[],
+  priv: Map<string, VisitPrivateFields>,
+): (T & { owner_notes_md: string | null; decline_reason: string | null })[] {
+  return visits.map((v) => {
+    const p = priv.get(v.id);
+    return {
+      ...v,
+      owner_notes_md: p?.owner_notes_md ?? null,
+      decline_reason: p?.decline_reason ?? null,
+    };
   });
 }
 
@@ -569,8 +614,10 @@ export async function listMyVisits(businessId: string, fromUtc: Date, toUtc: Dat
     .select('id, name, duration_min')
     .eq('business_id', businessId);
   if (svcError) throw svcError;
-  type Row = Omit<Visit, 'service'>;
-  return joinServices((data ?? []) as unknown as Row[], (services ?? []) as PublicService[]) as Visit[];
+  type Row = Omit<Visit, 'service' | 'owner_notes_md' | 'decline_reason'>;
+  const priv = await fetchVisitPrivateFields(businessId);
+  const withServices = joinServices((data ?? []) as unknown as Row[], (services ?? []) as PublicService[]);
+  return joinPrivateFields(withServices, priv) as Visit[];
 }
 
 export async function getVisit(businessId: string, id: string): Promise<Visit> {
@@ -581,7 +628,17 @@ export async function getVisit(businessId: string, id: string): Promise<Visit> {
     .eq('id', id)
     .single();
   if (error) throw error;
-  return data as unknown as Visit;
+  const { data: priv, error: privError } = await supabase
+    .from('visit_private_fields')
+    .select('owner_notes_md, decline_reason')
+    .eq('visit_id', id)
+    .maybeSingle();
+  if (privError) throw privError;
+  return {
+    ...(data as unknown as Omit<Visit, 'owner_notes_md' | 'decline_reason'>),
+    owner_notes_md: (priv as { owner_notes_md: string | null } | null)?.owner_notes_md ?? null,
+    decline_reason: (priv as { decline_reason: string | null } | null)?.decline_reason ?? null,
+  } as Visit;
 }
 
 /**

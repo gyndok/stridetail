@@ -4,10 +4,8 @@
     <loc>https://stridetail.com/</loc>
     <lastmod>2026-08-26</lastmod>
   </url>
-  <url>
-    <loc>https://stridetail.com/p/paw-and-whisker</loc>
-    <lastmod>2026-08-28</lastmod>
-  </url>
+  <!-- p/paw-and-whisker is withheld from the sitemap (and carries noindex)
+       until Alexandra signs off at Round 1 — re-add on her approval. -->
   <url>
     <loc>https://stridetail.com/privacy</loc>
     <lastmod>2026-08-26</lastmod>

@@ -66,7 +66,21 @@ export async function fetchVisitDetail(visitId: string): Promise<VisitDetail> {
     .eq('id', visitId)
     .single();
   if (error) throw error;
-  const v = data as unknown as Omit<Visit, 'service'>;
+  const base = data as unknown as Omit<Visit, 'service' | 'owner_notes_md' | 'decline_reason'>;
+  // owner_notes_md / decline_reason left the base grant (2026-08-29 security);
+  // the walker reads them for THEIR visit from the staff-only view.
+  const { data: privData, error: privError } = await supabase
+    .from('visit_private_fields')
+    .select('owner_notes_md, decline_reason')
+    .eq('visit_id', visitId)
+    .maybeSingle();
+  if (privError) throw privError;
+  const priv = (privData ?? null) as { owner_notes_md: string | null; decline_reason: string | null } | null;
+  const v: Omit<Visit, 'service'> = {
+    ...base,
+    owner_notes_md: priv?.owner_notes_md ?? null,
+    decline_reason: priv?.decline_reason ?? null,
+  };
 
   const [clientRes, petsRes, serviceRes] = await Promise.all([
     supabase.from('clients').select(VISIT_CLIENT_COLUMNS).eq('id', v.client_id).maybeSingle(),
