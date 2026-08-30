@@ -616,3 +616,17 @@ a { color: var(--primary); }
 @media (min-width: 1000px) {
   .services-grid { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* landscape map screenshot in a feature slot (2026-08-30 imagery pass) */
+.map-shot {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 30px rgba(43, 29, 18, 0.10);
+}
+.map-caption {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--ink-muted);
+  text-align: center;
+}
