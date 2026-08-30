@@ -432,6 +432,12 @@ verify_jwt = false
 enabled = true
 verify_jwt = false
 
+# PUBLIC BY DESIGN — anonymous lead capture from the marketing landing page
+# (no session exists). Honeypot + per-IP rate limit inside the function.
+[functions.early-access]
+enabled = true
+verify_jwt = false
+
 [analytics]
 enabled = false
 port = 54327

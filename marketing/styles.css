@@ -340,6 +340,46 @@ a { color: var(--primary); }
   color: var(--ink-muted);
 }
 
+.early-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.early-form .input {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  padding: 13px 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.early-form .input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.early-form .input::placeholder { color: var(--ink-muted); opacity: 0.7; }
+
+.early-form .btn { border: 0; cursor: pointer; font-size: 17px; }
+.early-form .btn:disabled { opacity: 0.7; cursor: default; }
+
+/* honeypot: off-screen, never display:none (some bots skip hidden fields) */
+.early-form .hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
 /* ---------- footer ---------- */
 
 .site-footer {
