@@ -438,6 +438,13 @@ verify_jwt = false
 enabled = true
 verify_jwt = false
 
+# Resend inbound-email webhook — Resend cannot send a Supabase JWT; the
+# credential is the svix signature verified in the function (fail-closed
+# when RESEND_INBOUND_WEBHOOK_SECRET is unset).
+[functions.inbound-email]
+enabled = true
+verify_jwt = false
+
 [analytics]
 enabled = false
 port = 54327
