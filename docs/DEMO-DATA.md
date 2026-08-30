@@ -82,3 +82,12 @@ delete from clients
 Equivalently: every demo invoice has `number between 5 and 65`; every demo visit
 belongs to a client other than Karla. Do **not** reset
 `businesses.invoice_next_number` after deletion — numbers are never reused.
+
+## Marketing walk (2026-08-30)
+
+Abby Chen's Aug 6 visit (`9824547c-8b69-4233-bc37-239bc0dba3f6`, report token
+`cce5e0f6…`) had its synthetic track replaced with a loop of Memorial Park's
+running trails (66 points, distance_m 2140) and its Mapbox report map rendered.
+PURPOSE: the publish-safe report page for landing-page imagery — real walks
+trace the sponsor's neighborhood and must never be published. Keep this visit's
+track as-is; the bulk-removal predicate still covers it.
