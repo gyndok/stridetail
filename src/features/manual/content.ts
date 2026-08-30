@@ -17,7 +17,7 @@
 import { APP_NAME, PORTAL_LOGIN_URL, SUPPORT_EMAIL, WEB_BASE_URL } from '@/src/lib/brand';
 
 export const MANUAL_VERSION = '1.0';
-export const MANUAL_UPDATED = '2026-08-29';
+export const MANUAL_UPDATED = '2026-08-30';
 
 export type ManualAudience = 'owner' | 'walker' | 'client' | 'all';
 
@@ -137,6 +137,15 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         kind: 'p',
         text:
           'The Clients tab is your roster. Each client has contact details and an address, and each of their pets has a profile with notes and documents — vaccine records and anything else worth keeping. A document can carry an expiry date: the badge turns to a warning within 30 days of expiring and flags it once expired, so you catch an out-of-date rabies certificate before it matters.',
+      },
+      {
+        kind: 'steps',
+        items: [
+          'Add a client: Clients tab → Add client. Name is all that’s required, but add their phone, email, and address while you’re there — the email is what portal invites go to, and the address places them on the map for scheduling.',
+          'Add their pets: open the client, tap Add pet. Species and breed help walkers know what they’re meeting; feeding, medications, allergies, and behavior notes are what a walker sees mid-visit — write them like instructions to a new sitter. Add the vet’s info and a photo too.',
+          'Edit anytime: open the client or pet and tap Edit — changes show up for walkers immediately.',
+          'Vaccine records: on the pet’s profile, Add document, pick the type (Rabies, DHPP, FVRCP for cats, and so on) and the expiry date from the certificate.',
+        ],
       },
       {
         kind: 'p',
