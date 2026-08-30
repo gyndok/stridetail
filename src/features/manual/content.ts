@@ -48,6 +48,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         text: `There are three kinds of people in ${APP_NAME}. An owner runs the business — and can walk visits too. A walker is a team member who does visits. A client is a pet parent: they never install anything, they get email links and a simple web portal.`,
       },
       {
+        kind: 'p',
+        text:
+          'Your clients see YOUR brand, not ours: pick your brand color when you create the business (or later in Settings → Brand color) and it dresses every report page, invoice, portal screen, and email your clients get.',
+      },
+      {
         kind: 'steps',
         items: [
           'Owners and walkers sign in with their email address and password.',

@@ -23,6 +23,11 @@ jest.mock('@/src/features/business/active', () => ({
   useActiveBusiness: () => ({ businessId: 'b1', setBusinessId: jest.fn(async () => {}) }),
 }));
 
+// The BrandingCard import chain reaches src/lib/supabase, whose native
+// storage adapter drags react-native-worklets into jest — mock the client
+// (the branding.test.ts suite covers the real query shape).
+jest.mock('@/src/lib/supabase', () => ({ supabase: {} }));
+
 const mockRole: { value: 'owner' | 'walker' } = { value: 'owner' };
 jest.mock('@/src/features/business/useMemberships', () => ({
   useMemberships: () => ({

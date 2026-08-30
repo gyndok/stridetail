@@ -3,8 +3,12 @@ import { useRouter, type Href } from 'expo-router';
 import { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { useState } from 'react';
+
 import { signOut } from '@/src/features/auth/session';
 import { useActiveBusiness } from '@/src/features/business/active';
+import { BrandColorPicker } from '@/src/features/business/BrandColorPicker';
+import { DEFAULT_BRAND_COLOR, updateBrandColor } from '@/src/features/business/branding';
 import { useMemberships } from '@/src/features/business/useMemberships';
 import { useWalkTheme, type WalkTheme } from '@/src/features/settings/walkTheme';
 import { Button } from '@/src/ui/Button';
@@ -64,6 +68,13 @@ export function SettingsScreen({ extra }: { extra?: ReactNode }) {
           ))}
         </View>
       </Card>
+      {role === 'owner' && businessId ? (
+        <BrandingCard
+          businessId={businessId}
+          savedColor={current?.brand_color ?? DEFAULT_BRAND_COLOR}
+          onSaved={() => void qc.invalidateQueries({ queryKey: ['memberships'] })}
+        />
+      ) : null}
       {/* Earnings (Plan 6): the walker-group route works from both role groups
           — owners walk their own visits too and see their own finalized
           statements (walker-side RLS), or an empty list. */}
@@ -105,5 +116,49 @@ export function SettingsScreen({ extra }: { extra?: ReactNode }) {
         }
       />
     </Screen>
+  );
+}
+
+/**
+ * Owner-only client-facing brand color (2026-08-30, sponsor request).
+ * Save-on-tap: choosing a swatch writes businesses.brand_color immediately
+ * (owner-update RLS, the billing-settings write pattern) and refreshes the
+ * memberships cache the embed reads from. The color dresses report pages,
+ * invoices, the portal, and the branded emails — the app's own chrome stays
+ * on Stridetail tokens.
+ */
+function BrandingCard({
+  businessId,
+  savedColor,
+  onSaved,
+}: {
+  businessId: string;
+  savedColor: string;
+  onSaved: () => void;
+}) {
+  const t = useTheme();
+  const [pending, setPending] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const shown = pending ?? savedColor;
+
+  async function pick(color: string) {
+    if (color === shown) return;
+    setPending(color);
+    setError(null);
+    try {
+      await updateBrandColor(businessId, color);
+      onSaved();
+    } catch (e) {
+      setPending(null);
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  return (
+    <Card style={{ gap: t.space.sm }}>
+      <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Brand color</Text>
+      <BrandColorPicker value={shown} onSelect={(c) => void pick(c)} />
+      {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
+    </Card>
   );
 }

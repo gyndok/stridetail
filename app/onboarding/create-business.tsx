@@ -6,6 +6,8 @@ import { Text } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
 import { createBusiness } from '@/src/features/business/api';
+import { BrandColorPicker } from '@/src/features/business/BrandColorPicker';
+import { DEFAULT_BRAND_COLOR } from '@/src/features/business/branding';
 import { Button } from '@/src/ui/Button';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
@@ -23,6 +25,7 @@ export default function CreateBusiness() {
   const { setBusinessId } = useActiveBusiness();
   const [name, setName] = useState('');
   const [tz, setTz] = useState(deviceTimeZone);
+  const [brandColor, setBrandColor] = useState(DEFAULT_BRAND_COLOR);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +41,7 @@ export default function CreateBusiness() {
     setBusy(true);
     setError(null);
     try {
-      const id = await createBusiness({ name, timeZone: tz.trim() });
+      const id = await createBusiness({ name, timeZone: tz.trim(), brandColor });
       await setBusinessId(id);
       await qc.invalidateQueries({ queryKey: ['memberships'] });
       router.replace('/');
@@ -54,6 +57,10 @@ export default function CreateBusiness() {
       <Text style={{ color: t.colors.inkMuted }}>Clients will see this name on texts and reports.</Text>
       <TextField label="Business name" value={name} onChangeText={setName} error={error ?? undefined} />
       <TextField label="Time zone" value={tz} onChangeText={setTz} autoCapitalize="none" autoCorrect={false} />
+      <Text style={[t.type.label, { color: t.colors.inkMuted, marginTop: t.space.sm }]}>
+        Your brand color
+      </Text>
+      <BrandColorPicker value={brandColor} onSelect={setBrandColor} disabled={busy} />
       <Button title="Create business" onPress={submit} loading={busy} />
     </Screen>
   );
