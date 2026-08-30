@@ -1,9 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter, type Href } from 'expo-router';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-
-import { useState } from 'react';
 
 import { signOut } from '@/src/features/auth/session';
 import { useActiveBusiness } from '@/src/features/business/active';
