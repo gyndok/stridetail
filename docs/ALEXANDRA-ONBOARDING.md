@@ -205,7 +205,30 @@ her public page gains a "Serving 77008, 77007, …" line + `areaServed` zips in 
 JSON-LD (local-SEO win now, no product code), and the answer seeds the coverage data
 model behind the future "find a walker" directory (docs/SAAS-PLAN.md, Phase C).
 
-## 9. One more question for Round 1: preferred walker on requests?
+## 9. Post-sign-off SEO launch (the day after Round 1)
+
+The page (stridetail.com/p/paw-and-whisker) is SEO-complete but deliberately gated:
+`noindex` meta + withheld from sitemap.xml until she approves it. Once she signs off:
+
+1. **Flip the gate** (Claude): remove the noindex meta from
+   `marketing/p/paw-and-whisker/index.html`, restore the sitemap entry, push.
+2. **Add her coverage zips** (from §8) to the visible copy ("Serving 77008, 77007, …")
+   and as `areaServed` zip entries in the JSON-LD.
+3. **Search Console** (sponsor): verify stridetail.com (DNS TXT record in the same
+   Squarespace panel as the mail records), submit the sitemap, request indexing for
+   /p/paw-and-whisker. Bing Webmaster Tools too (imports from GSC in two clicks).
+4. **The two-sites decision (ask her)**: paw-and-whisker.com overlaps this page —
+   duplicate signals split ranking. Recommended beta answer: her site stays the brand
+   homepage and links prominently ("Book now") to the Stridetail page, concentrating
+   action signal there. Stronger later options: 301 her domain, or serve the tenant
+   page ON her domain (custom-domain feature, SaaS plan website product).
+5. **Backlinks that matter** (her, 10 minutes): add the page link to her Thumbtack
+   profile and any socials. Local citations > directory spam.
+6. **Expectations**: target the zip/neighborhood long tail ("dog walker 77008",
+   "pet sitter Houston Heights") — not "dog walker houston" (Rover/Wag territory).
+   Rich Results already validated at Checkpoint 7; re-run after the zip edits.
+
+## 10. One more question for Round 1: preferred walker on requests?
 
 Clients currently request a service + time window only; the owner assigns the walker at
 approval (the approve card now shows availability hints — off / busy / outside hours — per
