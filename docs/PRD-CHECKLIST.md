@@ -260,13 +260,13 @@ last-updated constant (same rule as this checklist; see CLAUDE.md Workflow).
   | 2 | marketing scaffold + landing + privacy/terms | [x] | 70e56e6 |
   | 3 | Paw & Whisker SEO page (copy DRAFT for Alexandra) | [x] rebuilt 2026-08-28 from her published site (correct name "Pet Services", real prices, phone, bio, policies, Wag! reviews) — Alexandra signs off at Round 1 | 93a2dbe |
   | 4 | SEO plumbing + Checkpoint 7 | [x] **Checkpoint 7 PASS 2026-08-27** (email link → live stridetail.app invoice, Venmo prefilled, Rich Results LocalBusiness valid; checkpoints.md) | |
-- [~] **Plan 7b: walk report maps** (`docs/superpowers/plans/2026-08-26-stridetail-plan7b-walk-report-maps.md`); code complete — Task 3 native verification pending the Sep 1 build
+- [x] **Plan 7b: walk report maps** (`docs/superpowers/plans/2026-08-26-stridetail-plan7b-walk-report-maps.md`) — **COMPLETE 2026-08-30**: Task 3 native verification passed on the sponsor's real walk (0.2.0 build)
 
   | # | Plan 7b task | Status | Commit |
   |---|--------------|--------|--------|
   | 1 | static map render-once pipeline (Mapbox, edge) | [x] | e8d7692 |
   | 2 | report surfaces show the map | [x] | b0c262e |
-  | 3 | react-native-maps in-app (rides Sep 1 build) | [x] code complete — native verification pending Sep 1 build (old binaries keep today's UI via lazy loader) | b894442 |
+  | 3 | react-native-maps in-app (rides Sep 1 build) | [x] **NATIVE VERIFICATION PASS 2026-08-30** — sponsor real walk on the 0.2.0 build: live in-visit map with route, no crash; report page rendered its first real-walk Mapbox map (emoji pins); one visit_started + one visit_finished email (one-email fix confirmed on a real walk) | b894442 |
 - [x] **Plan 8: client portal v1** (`docs/superpowers/plans/2026-08-26-stridetail-plan8-client-portal.md`) — Tasks 1–8 done; hosted deployed (migrations 0002–0005 + send-email v10, smoke clean); **Checkpoint 8 PASS (2026-08-27, sponsor solo run as demo client Marcus — invite→OTP→dashboard/reports/invoices/pets/lockbox/request→approve; web date-picker + Settings-tab fixes shipped same day; checkpoints.md)**
 
   | # | Plan 8 task | Status | Commit |
