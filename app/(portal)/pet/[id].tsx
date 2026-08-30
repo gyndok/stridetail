@@ -125,7 +125,15 @@ function Editor({ pet }: { pet: PortalPetDetail }) {
       {photo.data ? (
         <Image
           source={{ uri: photo.data }}
-          style={{ width: '100%', height: 220, borderRadius: t.radius.card }}
+          // Capped card, 4:3 — matches the owner pet screen (full-width strips
+          // butcher the photo on wide screens; 2026-08-30).
+          style={{
+            width: '100%',
+            maxWidth: 440,
+            aspectRatio: 4 / 3,
+            alignSelf: 'center',
+            borderRadius: t.radius.card,
+          }}
           contentFit="cover"
           accessibilityLabel={`Photo of ${pet.name}`}
         />

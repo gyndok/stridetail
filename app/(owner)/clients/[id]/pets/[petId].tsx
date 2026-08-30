@@ -74,7 +74,15 @@ export default function PetProfile() {
           {photo.data ? (
             <Image
               source={{ uri: photo.data }}
-              style={{ width: '100%', height: 220, borderRadius: t.radius.card }}
+              // Capped card, 4:3 — full-bleed 220px-tall strips butcher the
+              // photo on wide desktop screens (2026-08-30 sponsor finding).
+              style={{
+                width: '100%',
+                maxWidth: 440,
+                aspectRatio: 4 / 3,
+                alignSelf: 'center',
+                borderRadius: t.radius.card,
+              }}
               contentFit="cover"
               accessibilityLabel={`Photo of ${p.name}`}
             />
