@@ -198,7 +198,14 @@ product / lead gen) and is code-frozen until her beta — her answer shapes it. 
 then the working procedure is: inquiry arrives → Add Client immediately (that IS the
 lead record) → the pending-M&G badge tracks it → mark M&G done → invite to portal.
 
-## 8. One more question for Round 1: preferred walker on requests?
+## 8. Round 1 question: coverage zip codes
+
+Ask which Houston zip codes she serves (and would accept new clients from). Two uses:
+her public page gains a "Serving 77008, 77007, …" line + `areaServed` zips in the
+JSON-LD (local-SEO win now, no product code), and the answer seeds the coverage data
+model behind the future "find a walker" directory (docs/SAAS-PLAN.md, Phase C).
+
+## 9. One more question for Round 1: preferred walker on requests?
 
 Clients currently request a service + time window only; the owner assigns the walker at
 approval (the approve card now shows availability hints — off / busy / outside hours — per

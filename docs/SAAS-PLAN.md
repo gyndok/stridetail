@@ -83,7 +83,10 @@ Today a business is created by hand. The wizard is the product's first impressio
 
 1. **Sign up** — public owner signup (email OTP, same passwordless posture as the portal;
    today's flow is invite-only claim — this is a new path, gated by a Stripe-trial record)
-2. **Your business** — name, time zone, brand color, logo, service area
+2. **Your business** — name, time zone, brand color, logo, and **coverage zip codes**
+   (2026-08-30 sponsor direction: collected from day one — it feeds the tenant page's
+   local SEO and `areaServed` schema immediately, and becomes the matching key when the
+   Phase-C directory turns on)
 3. **Your services** — pre-seeded catalog templates (30/60-min walk, drop-in, overnight,
    meet & greet at market-typical prices — Alexandra's catalog is the template) that the
    owner edits rather than builds from scratch
@@ -150,9 +153,21 @@ Productize the hand-built paw-and-whisker page:
 - **Stripe card payments as an optional add-on** (owner absorbs or passes the fee) —
   competitor parity for owners who want cards, without surrendering the zero-fee default.
 - **Referral loop**: a founding member refers a walker → both get a free month.
-- Later, honestly evaluated only after ~25 tenants: reviews on business pages, client
-  marketplace/directory ("find a walker near you" — the tenant pages already carry the
-  LocalBusiness schema for it), route optimization, Wag/Rover import.
+- Later, honestly evaluated only after ~25 tenants: reviews on business pages, route
+  optimization, Wag/Rover import.
+- **Zip-code directory ("find a walker", 2026-08-30 sponsor direction).** Mechanism:
+  tenants declare coverage zips (collected since onboarding, above); a pet parent enters
+  their zip at stridetail.com and sees providers covering it, feeding the per-tenant
+  lead flow. SEQUENCING RULES: (a) coverage DATA ships early — it has single-player SEO
+  value with one tenant; (b) the directory UI waits for DENSITY — turn it on per-metro
+  once several zips have 2–3 providers (Houston first), because an empty-result search
+  is a burned visitor; (c) bridge: the marketing site asks pet PARENTS for their zip
+  ("looking for a walker?") — each entry is a hand-off lead when a covering tenant
+  exists and a recruiting map for where to find the next founding walker; (d) decide the
+  same-zip RANKING rule before building (rotation/rating/response-time — arbitrary-feeling
+  order angers tenants); (e) note the posture change: a directory makes Stridetail a
+  CHANNEL (vetting/reviews/dispute questions) and is also the differentiator no core-band
+  competitor has — potential premium-tier or per-lead pricing.
 
 ## 5. The parts nobody asks about (but that decide whether this works)
 
