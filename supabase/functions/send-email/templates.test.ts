@@ -31,7 +31,8 @@ Deno.test('visit_started subject and text', () => {
   const m = renderEmail('visit_started', ctx)!;
   assertEquals(m.subject, "Paw & Whisker: Biscuit's Walk visit has started");
   assertEquals(m.text, "Paw & Whisker: Walker has started Biscuit's Walk visit.");
-  assertStringIncludes(m.html, 'Paw &amp; Whisker: Walker has started');
+  assertStringIncludes(m.html, "Biscuit's Walk visit has started");
+  assertStringIncludes(m.html, 'Paw &amp; Whisker</span>'); // branded header carries the business name
 });
 
 Deno.test('visit_finished text matches the SMS wording and carries the report link', () => {
@@ -41,7 +42,8 @@ Deno.test('visit_finished text matches the SMS wording and carries the report li
     m.text,
     "Paw & Whisker: Walker has finished Biscuit's Walk visit. Report: https://stridetail.app/report/abc123",
   );
-  assertStringIncludes(m.html, '<a href="https://stridetail.app/report/abc123">');
+  assertStringIncludes(m.html, 'href="https://stridetail.app/report/abc123"');
+  assertStringIncludes(m.html, 'View the report card');
 });
 
 Deno.test('visit_finished without a report url degrades honestly', () => {
@@ -57,7 +59,8 @@ Deno.test('invoice_ready subject, text (aligned with invoiceSmsBody), and link',
     'Paw & Whisker: Your invoice INV-0007 is ready. Total due: $45.00. ' +
       'View and pay: https://stridetail.app/invoice/tok789',
   );
-  assertStringIncludes(m.html, '<a href="https://stridetail.app/invoice/tok789">');
+  assertStringIncludes(m.html, 'href="https://stridetail.app/invoice/tok789"');
+  assertStringIncludes(m.html, 'View &amp; pay');
   assertStringIncludes(m.html, 'Total due: $45.00.');
 });
 
@@ -109,14 +112,14 @@ Deno.test('client_invite subject, warm text, and portal link from the payload', 
       'report cards, and invoices in one place. Sign in with this email address: ' +
       'https://stridetail.app/portal-login',
   );
-  assertStringIncludes(m.html, '<a href="https://stridetail.app/portal-login">');
-  assertStringIncludes(m.html, 'Paw &amp; Whisker invited you to their pet care portal');
+  assertStringIncludes(m.html, 'href="https://stridetail.app/portal-login"');
+  assertStringIncludes(m.html, "You're invited to Paw &amp; Whisker's pet care portal");
 });
 
 Deno.test('client_invite without a payload url falls back to the hosted portal login', () => {
   const m = renderEmail('client_invite', { ...ctx, portalUrl: undefined })!;
   assertStringIncludes(m.text, 'https://stridetail.app/portal-login');
-  assertStringIncludes(m.html, '<a href="https://stridetail.app/portal-login">');
+  assertStringIncludes(m.html, 'href="https://stridetail.app/portal-login"');
 });
 
 // ===== Plan 8 Task 7: booking request emails =====
@@ -226,4 +229,20 @@ Deno.test('backoff schedule is 1/5/15/60/60/60 with clamping', () => {
   assertEquals(backoffMinutes(0), 1); // clamp low
   assertEquals(backoffMinutes(99), 60); // clamp high
   assertEquals(MAX_ATTEMPTS, 6);
+});
+
+// ===== 2026-08-30 white-label shell =====
+Deno.test('safeBrandColor accepts hex, rejects style injection', async () => {
+  const { safeBrandColor, DEFAULT_BRAND_COLOR } = await import('./templates.ts');
+  assertEquals(safeBrandColor('#3A7D5C'), '#3A7D5C');
+  assertEquals(safeBrandColor('#abc'), '#abc');
+  assertEquals(safeBrandColor(undefined), DEFAULT_BRAND_COLOR);
+  assertEquals(safeBrandColor('red;background:url(x)'), DEFAULT_BRAND_COLOR);
+});
+
+Deno.test('branded shell uses the business brand color and footer', () => {
+  const m = renderEmail('visit_started', { ...ctx, brandColor: '#3A7D5C' })!;
+  assertStringIncludes(m.html, 'background:#3A7D5C');
+  assertStringIncludes(m.html, 'Powered by');
+  assertStringIncludes(m.html, 'https://stridetail.com');
 });

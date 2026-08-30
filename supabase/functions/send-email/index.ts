@@ -90,16 +90,34 @@ type SendResult = {
 
 type Resend = { apiKey: string; from: string };
 
+/**
+ * Per-business sender display name (2026-08-30): the EMAIL_FROM secret's
+ * ADDRESS is kept, but its display name is replaced with the notification's
+ * own business — "Geff Dog Walker Demo via Stridetail", not a hardcoded
+ * tenant. Newlines/quotes/angle brackets are stripped from the name so a
+ * business name can never inject headers.
+ */
+export function fromForBusiness(envFrom: string, businessName: string): string {
+  const m = envFrom.match(/<([^>]+)>/);
+  const addr = (m ? m[1]! : envFrom).trim();
+  const name = businessName.replace(/[\r\n"<>]/g, ' ').replace(/\s+/g, ' ').trim();
+  return name ? `${name} via Stridetail <${addr}>` : `Stridetail <${addr}>`;
+}
+
 /** Assemble the template context for one notification row (admin reads). */
 async function buildContext(admin: SupabaseClient, row: NotificationRow): Promise<EmailContext> {
   const ctx: EmailContext = { businessName: 'Your pet care team', petNames: 'your pet', serviceName: 'scheduled' };
 
   const { data: biz } = await admin
     .from('businesses')
-    .select('name, time_zone')
+    .select('name, time_zone, brand_color')
     .eq('id', row.business_id)
     .maybeSingle();
   if (biz?.name) ctx.businessName = biz.name as string;
+  // White-label header/button color (2026-08-30); templates validate the hex.
+  if (typeof (biz as { brand_color?: unknown } | null)?.brand_color === 'string') {
+    ctx.brandColor = (biz as { brand_color: string }).brand_color;
+  }
   // Business zone for the booking-request time labels (UTC only if the row is
   // somehow gone — the business is the notification's own tenant).
   const bizTz =
@@ -361,7 +379,11 @@ async function processRow(admin: SupabaseClient, row: NotificationRow, resend: R
     };
   }
 
-  const sendRes = await resendSend(resend, row.to, msg);
+  const sendRes = await resendSend(
+    { apiKey: resend.apiKey, from: fromForBusiness(resend.from, ctx.businessName) },
+    row.to,
+    msg,
+  );
   if (!sendRes.error) {
     await admin
       .from('notifications')

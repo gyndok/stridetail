@@ -11,6 +11,8 @@
 
 export type EmailContext = {
   businessName: string;
+  /** businesses.brand_color — the white-label header/button color (2026-08-30). */
+  brandColor?: string;
   /** Joined pet names, e.g. "Biscuit" or "Biscuit & Max". */
   petNames: string;
   serviceName: string;
@@ -57,8 +59,54 @@ export function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function wrapHtml(paragraphs: string[]): string {
-  return paragraphs.map((p) => `<p>${p}</p>`).join('');
+export const DEFAULT_BRAND_COLOR = '#E8642C';
+const EMAIL_FONT = "-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
+
+/** '#a1b2c3' (3/6/8-hex) or the default — never interpolate raw DB text into styles. */
+export function safeBrandColor(c: string | undefined): string {
+  return c && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(c)
+    ? c
+    : DEFAULT_BRAND_COLOR;
+}
+
+/**
+ * White-label email shell (2026-08-30): brand-colored header carrying the
+ * business name, white card body, optional brand-colored CTA button, muted
+ * "Powered by Stridetail" footer. Table-based with inline styles only —
+ * email clients ignore stylesheets. Because the header names the business,
+ * body paragraphs should NOT repeat the "BusinessName:" prefix the plain-text
+ * variant keeps (text has no header).
+ */
+function brandedHtml(
+  c: EmailContext,
+  paragraphs: string[],
+  cta?: { label: string; url: string },
+): string {
+  const brand = safeBrandColor(c.brandColor);
+  const body = paragraphs
+    .map((p) => `<p style="margin:0 0 14px;">${p}</p>`)
+    .join('');
+  const button = cta
+    ? `<p style="margin:22px 0 6px;"><a href="${escapeHtml(cta.url)}" ` +
+      `style="display:inline-block;background:${brand};color:#FFFFFF;text-decoration:none;` +
+      `font-weight:700;font-size:16px;padding:12px 26px;border-radius:999px;">${escapeHtml(cta.label)}</a></p>`
+    : '';
+  return (
+    `<div style="background:#FFF4E6;padding:24px 12px;">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;border-collapse:collapse;">` +
+    `<tr><td style="background:${brand};border-radius:16px 16px 0 0;padding:18px 28px;">` +
+    `<span style="color:#FFFFFF;font-family:${EMAIL_FONT};font-size:20px;font-weight:700;">${escapeHtml(c.businessName)}</span>` +
+    `</td></tr>` +
+    `<tr><td style="background:#FFFFFF;border-radius:0 0 16px 16px;padding:26px 28px;` +
+    `font-family:${EMAIL_FONT};font-size:16px;line-height:1.6;color:#2B1D12;">` +
+    body +
+    button +
+    `</td></tr>` +
+    `<tr><td style="padding:16px 8px;text-align:center;font-family:${EMAIL_FONT};font-size:12px;color:#8A5A2B;">` +
+    `Powered by <a href="https://stridetail.com" style="color:#8A5A2B;">Stridetail</a>` +
+    `</td></tr>` +
+    `</table></div>`
+  );
 }
 
 /**
@@ -127,8 +175,8 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
   visit_started: (c) => ({
     subject: `${c.businessName}: ${possessive(c.petNames)} ${c.serviceName} visit has started`,
     text: `${c.businessName}: Walker has started ${possessive(c.petNames)} ${c.serviceName} visit.`,
-    html: wrapHtml([
-      `${escapeHtml(c.businessName)}: Walker has started ${escapeHtml(possessive(c.petNames))} ${escapeHtml(c.serviceName)} visit.`,
+    html: brandedHtml(c, [
+      `${escapeHtml(possessive(c.petNames))} ${escapeHtml(c.serviceName)} visit has started — your walker has arrived.`,
     ]),
   }),
   visit_finished: (c) => ({
@@ -136,12 +184,14 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
     text:
       `${c.businessName}: Walker has finished ${possessive(c.petNames)} ${c.serviceName} visit. ` +
       `Report: ${c.reportUrl ?? ''}`,
-    html: wrapHtml([
-      `${escapeHtml(c.businessName)}: Walker has finished ${escapeHtml(possessive(c.petNames))} ${escapeHtml(c.serviceName)} visit.`,
-      c.reportUrl
-        ? `<a href="${escapeHtml(c.reportUrl)}">View the visit report</a>`
-        : 'The visit report link will follow separately.',
-    ]),
+    html: brandedHtml(
+      c,
+      [
+        `${escapeHtml(possessive(c.petNames))} ${escapeHtml(c.serviceName)} visit is finished — the report card is ready, with the route, photos, and timeline.`,
+        ...(c.reportUrl ? [] : ['The visit report link will follow separately.']),
+      ],
+      c.reportUrl ? { label: 'View the report card', url: c.reportUrl } : undefined,
+    ),
   }),
   // First sentence stays ALIGNED with invoiceSmsBody in
   // src/features/report/deviceSms.ts ("Text the client" composes the same
@@ -159,12 +209,14 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
       text:
         `${c.businessName}: Your invoice${label} is ready.${totalSentence} ` +
         `View and pay: ${c.invoiceUrl ?? ''}`,
-      html: wrapHtml([
-        `${escapeHtml(c.businessName)}: Your invoice${escapeHtml(label)} is ready.${escapeHtml(totalSentence)}`,
-        c.invoiceUrl
-          ? `<a href="${escapeHtml(c.invoiceUrl)}">View and pay your invoice</a>`
-          : 'The invoice link will follow separately.',
-      ]),
+      html: brandedHtml(
+        c,
+        [
+          `Your invoice${escapeHtml(label)} is ready.${escapeHtml(totalSentence)}`,
+          ...(c.invoiceUrl ? [] : ['The invoice link will follow separately.']),
+        ],
+        c.invoiceUrl ? { label: 'View & pay', url: c.invoiceUrl } : undefined,
+      ),
     };
   },
   // Plan 8 Task 3: the owner's "Invite to portal" email. Warm and short; the
@@ -177,10 +229,14 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
       text:
         `${c.businessName} invited you to their pet care portal — see your pet's visits, ` +
         `report cards, and invoices in one place. Sign in with this email address: ${url}`,
-      html: wrapHtml([
-        `${escapeHtml(c.businessName)} invited you to their pet care portal — see your pet's visits, report cards, and invoices in one place.`,
-        `<a href="${escapeHtml(url)}">Sign in with this email address</a>`,
-      ]),
+      html: brandedHtml(
+        c,
+        [
+          `You're invited to ${escapeHtml(possessive(c.businessName))} pet care portal — see your pet's visits, report cards, and invoices in one place.`,
+          `No password needed: sign in with this email address and a one-time code.`,
+        ],
+        { label: 'Open the portal', url },
+      ),
     };
   },
   // Plan 8 Task 7: booking-request emails. Received goes to the OWNER (queued
@@ -194,8 +250,8 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
       text:
         `${c.businessName}: ${who ?? 'A client'} requested a ${c.serviceName} visit${win}. ` +
         'Open Stridetail to approve or decline.',
-      html: wrapHtml([
-        `${escapeHtml(c.businessName)}: ${escapeHtml(who ?? 'A client')} requested a ${escapeHtml(c.serviceName)} visit${escapeHtml(win)}.`,
+      html: brandedHtml(c, [
+        `${escapeHtml(who ?? 'A client')} requested a ${escapeHtml(c.serviceName)} visit${escapeHtml(win)}.`,
         'Open Stridetail to approve or decline.',
       ]),
     };
@@ -209,8 +265,8 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
       text:
         `Good news from ${c.businessName} — your ${c.serviceName} request is approved! ` +
         `${when} We look forward to seeing your pet.`,
-      html: wrapHtml([
-        `Good news from ${escapeHtml(c.businessName)} — your ${escapeHtml(c.serviceName)} request is approved!`,
+      html: brandedHtml(c, [
+        `Good news — your ${escapeHtml(c.serviceName)} request is approved!`,
         `${escapeHtml(when)} We look forward to seeing your pet.`,
       ]),
     };
@@ -222,8 +278,8 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
       text:
         `${c.businessName} couldn't fit your ${c.serviceName} request this time.${reason} ` +
         'Please try another day or time.',
-      html: wrapHtml([
-        `${escapeHtml(c.businessName)} couldn't fit your ${escapeHtml(c.serviceName)} request this time.${escapeHtml(reason)}`,
+      html: brandedHtml(c, [
+        `We couldn't fit your ${escapeHtml(c.serviceName)} request this time.${escapeHtml(reason)}`,
         'Please try another day or time.',
       ]),
     };
@@ -231,10 +287,14 @@ export const EMAIL_TEMPLATES: Record<string, (c: EmailContext) => EmailMessage> 
   invite: (c) => ({
     subject: `${c.businessName} invited you to join their team on Stridetail`,
     text: `${c.businessName} invited you to join their team on Stridetail: ${c.inviteLink ?? ''}`,
-    html: wrapHtml([
-      `${escapeHtml(c.businessName)} invited you to join their team on Stridetail: ` +
-        `<a href="${escapeHtml(c.inviteLink ?? '')}">${escapeHtml(c.inviteLink ?? '')}</a>`,
-    ]),
+    html: brandedHtml(
+      c,
+      [
+        `You're invited to join ${escapeHtml(possessive(c.businessName))} team on Stridetail.`,
+        ...(c.inviteLink ? [] : ['The invite link will follow separately.']),
+      ],
+      c.inviteLink ? { label: 'Accept the invite', url: c.inviteLink } : undefined,
+    ),
   }),
 };
 
