@@ -6,6 +6,7 @@ import { useActiveBusiness } from '@/src/features/business/active';
 import {
   createInvite,
   queueInviteSms,
+  removeWalker,
   type MemberRole,
   type MembershipStatus,
 } from '@/src/features/business/api';
@@ -40,6 +41,11 @@ export default function Team() {
   const [pendingSms, setPendingSms] = useState<{ phone: string; token: string } | null>(null);
   const [smsBusy, setSmsBusy] = useState(false);
   const [smsQueued, setSmsQueued] = useState(false);
+  // Two-tap removal confirm (Alert.alert is a no-op on web, so the confirm is
+  // inline): first tap arms this id, second tap runs the RPC, Cancel disarms.
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  const [removeBusy, setRemoveBusy] = useState(false);
+  const [removedNote, setRemovedNote] = useState<string | null>(null);
   const members = useQuery({
     queryKey: ['members', businessId],
     enabled: !!businessId,
@@ -76,6 +82,27 @@ export default function Team() {
     }
   }
 
+  async function doRemove(m: Row) {
+    setRemoveBusy(true);
+    setError(null);
+    try {
+      const unassigned = await removeWalker(m.id);
+      setConfirmRemove(null);
+      setRemovedNote(
+        m.status === 'invited'
+          ? 'Invite revoked.'
+          : unassigned > 0
+            ? `Walker removed — ${unassigned} upcoming ${unassigned === 1 ? 'visit' : 'visits'} returned to you to reassign.`
+            : 'Walker removed.',
+      );
+      await members.refetch();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRemoveBusy(false);
+    }
+  }
+
   async function queueSms() {
     if (!businessId || !pendingSms) return;
     setSmsBusy(true);
@@ -93,15 +120,43 @@ export default function Team() {
   return (
     <Screen title="Team">
       {(members.data ?? []).map((m) => (
-        <Card key={m.id}>
+        <Card key={m.id} style={{ gap: t.space.xs }}>
           <Text style={[t.type.body, { color: t.colors.ink }]}>
             {m.profile?.display_name ?? m.invited_email ?? m.invited_phone ?? 'Pending'}
           </Text>
           <Text style={{ color: t.colors.inkMuted }}>
             {m.role} · {m.status}
           </Text>
+          {m.role === 'walker' ? (
+            confirmRemove === m.id ? (
+              <>
+                <Text style={{ color: t.colors.danger, fontSize: 13 }}>
+                  {m.status === 'invited'
+                    ? 'Revoke this invite? The link stops working immediately.'
+                    : 'Remove from the team? Their upcoming visits return to you to reassign; their access ends now. Past walks and payouts are kept.'}
+                </Text>
+                <Button
+                  title={m.status === 'invited' ? 'Yes, revoke invite' : 'Yes, remove walker'}
+                  variant="secondary"
+                  loading={removeBusy}
+                  onPress={() => void doRemove(m)}
+                />
+                <Button title="Cancel" variant="ghost" onPress={() => setConfirmRemove(null)} />
+              </>
+            ) : (
+              <Button
+                title={m.status === 'invited' ? 'Revoke invite' : 'Remove from team'}
+                variant="ghost"
+                onPress={() => {
+                  setRemovedNote(null);
+                  setConfirmRemove(m.id);
+                }}
+              />
+            )
+          ) : null}
         </Card>
       ))}
+      {removedNote ? <Text style={{ color: t.colors.inkMuted }}>{removedNote}</Text> : null}
       <TextField
         label="Invite a walker (phone or email)"
         value={contact}

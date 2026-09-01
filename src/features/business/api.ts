@@ -53,6 +53,19 @@ export async function createBusiness(input: {
   return data as string;
 }
 
+/**
+ * Walker offboarding (20260901000001): atomic definer RPC — future
+ * offered/accepted visits return to the pool (history keeps the walker),
+ * the membership (or unaccepted invite) is deleted, audited. Owner-only,
+ * walker-rows only; blocked while a visit is in progress. Returns how many
+ * visits went back to unassigned.
+ */
+export async function removeWalker(membershipId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('remove_walker', { p_membership: membershipId });
+  if (error) throw error;
+  return (data ?? 0) as number;
+}
+
 export async function createInvite(
   businessId: string,
   role: MemberRole,

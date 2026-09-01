@@ -458,9 +458,10 @@ end $fn$;
 select is(
   pg_temp.matrix_mismatches('00000000-0000-0000-0000-000000000021',
     array['unassigned->offered', 'unassigned->accepted', 'unassigned->cancelled',
-          'offered->accepted', 'offered->cancelled', 'accepted->cancelled']),
+          'offered->accepted', 'offered->cancelled', 'accepted->cancelled',
+          'offered->unassigned', 'accepted->unassigned']),
   '{}'::text[],
-  'owner: exactly offer, force-assign, and pre-in_progress cancel are legal');
+  'owner: offer, force-assign, pre-in_progress cancel, withdraw, and unassign are legal (withdraw/unassign added 20260901000001)');
 
 select is(
   pg_temp.matrix_mismatches('00000000-0000-0000-0000-000000000022',

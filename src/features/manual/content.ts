@@ -17,7 +17,7 @@
 import { APP_NAME, PORTAL_LOGIN_URL, SUPPORT_EMAIL, WEB_BASE_URL } from '@/src/lib/brand';
 
 export const MANUAL_VERSION = '1.0';
-export const MANUAL_UPDATED = '2026-08-30';
+export const MANUAL_UPDATED = '2026-08-31';
 
 export type ManualAudience = 'owner' | 'walker' | 'client' | 'all';
 
@@ -51,6 +51,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         kind: 'p',
         text:
           'Your clients see YOUR brand, not ours: pick your brand color when you create the business (or later in Settings → Brand color) and it dresses every report page, invoice, portal screen, and email your clients get.',
+      },
+      {
+        kind: 'p',
+        text:
+          'Your team lives on the Team tab: invite a walker by phone or email (they get a link that walks them into the app), and when someone leaves, Remove from team ends their access immediately — any upcoming visits assigned to them come back to you to reassign, while their past walks and payout history are kept. Revoke invite does the same for an invitation nobody accepted.',
       },
       {
         kind: 'steps',
