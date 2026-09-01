@@ -68,6 +68,13 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
   install via TestFlight over the ad-hoc build; then retire preview channel + ad-hoc.
   Google: stridetail.com verified in Search Console (also Play-account prereq),
   sitemap submitted (4 pages), her page indexing requested.
+- **Android: FIRST BUILD DONE 2026-09-01** — Play Console account created (developer
+  verification pending, a few days); keystore generated + stored on EAS; production
+  .aab built (build 207d2c61, versionCode 2). Next: when verification clears, create
+  the app entry, upload the .aab to INTERNAL testing (no 12-tester rule there), add
+  testers. Personal-account note: PRODUCTION release later requires a 14-day closed
+  test with 12 testers. First upload: manual via Play Console UI; wire `eas submit
+  -p android` (Google service-account JSON) after.
 - Sponsor: Google Search Console verification + sitemap submit; her Thumbtack backlink.
 - Remove sponsor's owner membership from Paw & Whisker when her first real client
   household enters the portal (agreed cutoff).
