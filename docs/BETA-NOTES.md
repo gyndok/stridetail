@@ -13,9 +13,10 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
   showed 0% with no way to set it): Team tab rows show "payout N%" + Edit payout %
   (owner-only via the memberships update policy, validated 0–100). Kelly set to 75%
   by SQL immediately; UI shipped same hour.
-- OPEN from the same report: payout picker chips said "Team member" ×3 — server-side
-  verified healthy (names return under her JWT); suspected stale client bundle,
-  bisect pending (sponsor checks his own app on Paw & Whisker).
+- RESOLVED same night: the "Team member" ×3 chips were a stale client bundle —
+  force-quit ×2 pulled the current OTA and names rendered. Screenshot-confirmed:
+  "Kelly Whipple is paid 75% of each visit price." Lesson for beta support: the
+  first question for any UI oddity is "force-quit twice, still there?".
 
 ## The delete-story backlog (from the same conversation)
 - **Clients/pets with history → ARCHIVE, not delete**: hide from roster and pickers,
