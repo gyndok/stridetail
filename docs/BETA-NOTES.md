@@ -40,7 +40,15 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
 - Opening balances per onboarding pack §6 (carry-over invoices BEFORE deposits).
 
 ## Infrastructure next
-- **TestFlight** (top priority after beta week — the 3-device ad-hoc ritual is the ceiling).
+- **TestFlight: DONE 2026-08-31 (launch night!)** — production build 0.2.0(3) submitted
+  via EAS (ASC API key stored, future releases non-interactive), internal Team(Expo)
+  group live immediately, external "Paw & Whisker beta" group (Alexandra + Kelly)
+  awaiting Beta App Review. Apple reviewer login: reviewer@stridetail.com (owner of
+  the DEMO business only, verified via live auth). GOTCHA: SQL-created auth users need
+  ''-not-NULL token columns or GoTrue 500s. Once approved: invites auto-send, testers
+  install via TestFlight over the ad-hoc build; then retire preview channel + ad-hoc.
+  Google: stridetail.com verified in Search Console (also Play-account prereq),
+  sitemap submitted (4 pages), her page indexing requested.
 - Sponsor: Google Search Console verification + sitemap submit; her Thumbtack backlink.
 - Remove sponsor's owner membership from Paw & Whisker when her first real client
   household enters the portal (agreed cutoff).
