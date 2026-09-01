@@ -60,6 +60,22 @@ export async function createBusiness(input: {
  * walker-rows only; blocked while a visit is in progress. Returns how many
  * visits went back to unassigned.
  */
+/**
+ * Payout percent (2026-09-01, Alexandra's first field bug: no way to set it).
+ * Direct update under the core "owner manages memberships" policy. Percent is
+ * validated 0–100 here so a typo can never mint a 750% payout.
+ */
+export async function updatePayoutPercent(membershipId: string, percent: number): Promise<void> {
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+    throw new Error('Payout must be between 0 and 100 percent.');
+  }
+  const { error } = await supabase
+    .from('memberships')
+    .update({ payout_percent: percent })
+    .eq('id', membershipId);
+  if (error) throw error;
+}
+
 export async function removeWalker(membershipId: string): Promise<number> {
   const { data, error } = await supabase.rpc('remove_walker', { p_membership: membershipId });
   if (error) throw error;

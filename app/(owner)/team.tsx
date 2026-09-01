@@ -7,6 +7,7 @@ import {
   createInvite,
   queueInviteSms,
   removeWalker,
+  updatePayoutPercent,
   type MemberRole,
   type MembershipStatus,
 } from '@/src/features/business/api';
@@ -25,6 +26,7 @@ type Row = {
   id: string;
   role: MemberRole;
   status: MembershipStatus;
+  payout_percent: number;
   invited_email: string | null;
   invited_phone: string | null;
   profile: { display_name: string | null } | null;
@@ -46,13 +48,32 @@ export default function Team() {
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [removeBusy, setRemoveBusy] = useState(false);
   const [removedNote, setRemovedNote] = useState<string | null>(null);
+  // Inline payout editor: membership id being edited + the draft percent text.
+  const [editPayout, setEditPayout] = useState<{ id: string; text: string } | null>(null);
+  const [payoutBusy, setPayoutBusy] = useState(false);
+
+  async function savePayout() {
+    if (!editPayout) return;
+    const pct = Number(editPayout.text.trim());
+    setPayoutBusy(true);
+    setError(null);
+    try {
+      await updatePayoutPercent(editPayout.id, pct);
+      setEditPayout(null);
+      await members.refetch();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPayoutBusy(false);
+    }
+  }
   const members = useQuery({
     queryKey: ['members', businessId],
     enabled: !!businessId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('memberships')
-        .select('id, role, status, invited_email, invited_phone, profile:profiles(display_name)')
+        .select('id, role, status, payout_percent, invited_email, invited_phone, profile:profiles(display_name)')
         .eq('business_id', businessId!)
         .order('created_at');
       if (error) throw error;
@@ -125,8 +146,30 @@ export default function Team() {
             {m.profile?.display_name ?? m.invited_email ?? m.invited_phone ?? 'Pending'}
           </Text>
           <Text style={{ color: t.colors.inkMuted }}>
-            {m.role} · {m.status}
+            {m.role} · {m.status} · payout {Number(m.payout_percent ?? 0)}%
           </Text>
+          {m.status === 'active' ? (
+            editPayout?.id === m.id ? (
+              <>
+                <TextField
+                  label="Payout % of each visit price"
+                  value={editPayout.text}
+                  onChangeText={(v) => setEditPayout({ id: m.id, text: v })}
+                  keyboardType="decimal-pad"
+                  autoCapitalize="none"
+                  placeholder="75"
+                />
+                <Button title="Save payout" variant="secondary" loading={payoutBusy} onPress={() => void savePayout()} />
+                <Button title="Cancel" variant="ghost" onPress={() => setEditPayout(null)} />
+              </>
+            ) : (
+              <Button
+                title="Edit payout %"
+                variant="ghost"
+                onPress={() => setEditPayout({ id: m.id, text: String(Number(m.payout_percent ?? 0)) })}
+              />
+            )
+          ) : null}
           {m.role === 'walker' ? (
             confirmRemove === m.id ? (
               <>

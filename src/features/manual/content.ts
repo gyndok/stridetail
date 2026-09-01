@@ -55,7 +55,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Your team lives on the Team tab: invite a walker by phone or email (they get a link that walks them into the app), and when someone leaves, Remove from team ends their access immediately — any upcoming visits assigned to them come back to you to reassign, while their past walks and payout history are kept. Revoke invite does the same for an invitation nobody accepted.',
+          'Your team lives on the Team tab: invite a walker by phone or email (they get a link that walks them into the app), set each member’s payout percent right on their row (Edit payout %) — statements pay that share of each visit’s price; and when someone leaves, Remove from team ends their access immediately — any upcoming visits assigned to them come back to you to reassign, while their past walks and payout history are kept. Revoke invite does the same for an invitation nobody accepted.',
       },
       {
         kind: 'steps',

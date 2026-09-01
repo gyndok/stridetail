@@ -9,6 +9,14 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
   Matrix amendment rode along: the owner can now WITHDRAW an offer and UNASSIGN an
   accepted visit directly (reassignment building block).
 
+- **Payout percent editor** (2026-09-01, Alexandra's first field bug report — payouts
+  showed 0% with no way to set it): Team tab rows show "payout N%" + Edit payout %
+  (owner-only via the memberships update policy, validated 0–100). Kelly set to 75%
+  by SQL immediately; UI shipped same hour.
+- OPEN from the same report: payout picker chips said "Team member" ×3 — server-side
+  verified healthy (names return under her JWT); suspected stale client bundle,
+  bisect pending (sponsor checks his own app on Paw & Whisker).
+
 ## The delete-story backlog (from the same conversation)
 - **Clients/pets with history → ARCHIVE, not delete**: hide from roster and pickers,
   keep invoices/reports intact. Hard delete only for the no-references typo case
