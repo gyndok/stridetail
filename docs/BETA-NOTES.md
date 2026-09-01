@@ -68,6 +68,11 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
   install via TestFlight over the ad-hoc build; then retire preview channel + ad-hoc.
   Google: stridetail.com verified in Search Console (also Play-account prereq),
   sitemap submitted (4 pages), her page indexing requested.
+- **Play identity decision (2026-09-01, sponsor call):** org = GK&KK LLC at its
+  registered (home) address — proceeding AS-IS with verification, accepting that
+  Play may display the org name/address publicly on listings (already TX public
+  record). Revisit a virtual business address if it ever chafes. D-U-N-S must be
+  GK&KK LLC's, not personal.
 - **Play verification prep**: ORGANIZATION account (skips the personal-account
   12-tester/14-day production rule). Order: identity/org verification + D-U-N-S
   FIRST; phone verification unlocks after approval. Public "developer phone" =
