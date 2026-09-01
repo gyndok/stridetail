@@ -68,6 +68,11 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
   install via TestFlight over the ad-hoc build; then retire preview channel + ad-hoc.
   Google: stridetail.com verified in Search Console (also Play-account prereq),
   sitemap submitted (4 pages), her page indexing requested.
+- **Play verification prep**: ORGANIZATION account (skips the personal-account
+  12-tester/14-day production rule). Order: identity/org verification + D-U-N-S
+  FIRST; phone verification unlocks after approval. Public "developer phone" =
+  Stridetail Google Voice (832) 844-6596; private contact = sponsor cell. The
+  .aab is at ~/Downloads/stridetail-0.2.0-vc2.aab awaiting "Create app" unlock.
 - **Android: FIRST BUILD DONE 2026-09-01** — Play Console account created (developer
   verification pending, a few days); keystore generated + stored on EAS; production
   .aab built (build 207d2c61, versionCode 2). Next: when verification clears, create
