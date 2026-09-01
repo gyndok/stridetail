@@ -18,6 +18,17 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
   "Kelly Whipple is paid 75% of each visit price." Lesson for beta support: the
   first question for any UI oddity is "force-quit twice, still there?".
 
+- **Report map render-on-first-view** (2026-09-01, Alexandra's report: Poppy's map
+  "had trouble loading"): root cause — map rendering lived ONLY in the email
+  pipeline, and Poppy's owner (real client Neha) has no email on file → no email
+  queued → no render, ever. ensureReportMap moved to _shared/reportMap.ts; the
+  report-public function now renders on cache-miss (idempotent, warm path
+  unchanged). Verified live on her actual report. FOLLOW-UPS: (a) remind
+  Alexandra to add client emails when she has them — email-less clients get no
+  automatic report/invoice emails at all (she texts links by hand); (b) observed
+  GPS jitter on the track (sniffy-walk zigzags) — consider accuracy filtering,
+  quality item not a bug.
+
 ## The delete-story backlog (from the same conversation)
 - **Clients/pets with history → ARCHIVE, not delete**: hide from roster and pickers,
   keep invoices/reports intact. Hard delete only for the no-references typo case

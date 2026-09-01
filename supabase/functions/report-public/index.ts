@@ -28,6 +28,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 import { corsHeaders } from '../_shared/cors.ts';
+import { ensureReportMap } from '../_shared/reportMap.ts';
 import { downsamplePolyline, flattenTrackPoints, type TrackPoint } from './polyline.ts';
 
 const SIGNED_URL_TTL_S = 86_400; // 24 h
@@ -175,13 +176,23 @@ Deno.serve(async (req) => {
   }
   const route = downsamplePolyline(flattenTrackPoints(tracks));
 
-  // Plan 7b: signed URL (1 h) for the render-once walk map, when send-email
-  // stored one. createSignedUrl errors on a missing object, so one call is
-  // both the existence check and the sign; absent map -> no mapUrl field and
-  // the page falls back to its SVG polyline.
-  const { data: mapData } = await admin.storage
+  // Plan 7b: signed URL (1 h) for the render-once walk map. createSignedUrl
+  // errors on a missing object, so one call is both the existence check and
+  // the sign. RENDER-ON-FIRST-VIEW (2026-09-01): the email pipeline pre-renders
+  // the map, but a client with no email on file gets no queued email — so when
+  // the map is missing here, render it now (idempotent, failure-swallowed) and
+  // sign again. Warm path (map already stored) pays nothing extra; a render
+  // failure still degrades to the SVG polyline exactly as before.
+  const mapPath = `reports/${report.visit_id}/map.png`;
+  let { data: mapData } = await admin.storage
     .from('media')
-    .createSignedUrl(`reports/${report.visit_id}/map.png`, MAP_URL_TTL_S);
+    .createSignedUrl(mapPath, MAP_URL_TTL_S);
+  if (!mapData?.signedUrl) {
+    await ensureReportMap(admin, report.visit_id);
+    ({ data: mapData } = await admin.storage
+      .from('media')
+      .createSignedUrl(mapPath, MAP_URL_TTL_S));
+  }
   const mapUrl = mapData?.signedUrl ?? null;
 
   return json({
