@@ -79,10 +79,18 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
   Stridetail Google Voice (832) 844-6596; private contact = sponsor cell. The
   .aab is at ~/Downloads/stridetail-0.2.0-vc2.aab awaiting "Create app" unlock.
 - Play package registered (2026-09-01): app.stridetail / "Stridetail", keystore
-  SHA-256 25:9B:15:02:...:34:F1 attached, "In review". Developer name set to
-  Stridetail (public profile); D-U-N-S 135366746 (GK&KK LLC) on file; website
-  pre-verified via GSC. Identity submission done — ALL Android-side tasks complete,
-  awaiting Google.
+  SHA-256 25:9B:15:02:...:34:F1 attached. Developer name set to Stridetail
+  (public profile); D-U-N-S 135366746 (GK&KK LLC) on file; website pre-verified
+  via GSC. Verification CLEARED same night.
+- **Play INTERNAL TESTING LIVE 2026-09-01**: app entry created (Stridetail /
+  app.stridetail, Free), release 0.2.0 (2) published to internal track
+  ("Available to internal testers", 32.4 MB download). Tester list "Stridetail
+  internal" = gyndok@gmail.com. Opt-in link:
+  https://play.google.com/apps/internaltest/4701598200265848517
+  Testers see temp name "app.stridetail (unreviewed)" until store listing +
+  review — cosmetic. Warnings accepted: no deobfuscation file (Expo doesn't
+  obfuscate). Next Android steps: smoke-test install via opt-in link; wire
+  `eas submit -p android` (service-account JSON); store listing later.
 - **Android: FIRST BUILD DONE 2026-09-01** — Play Console account created (developer
   verification pending, a few days); keystore generated + stored on EAS; production
   .aab built (build 207d2c61, versionCode 2). Next: when verification clears, create
