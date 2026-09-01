@@ -37,6 +37,14 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
 - **Pet passing away**: archive with care — must not vanish from history.
 - Until built: deletions are a support request (SQL under the owner policies).
 
+## External recruits
+- **First stranger tester (2026-09-01):** a Houston dog walker Alexandra found via
+  NEXTDOOR — alexandriachalet@gmail.com, added to the TestFlight external group
+  (invite sends on beta approval). PLAN: they create their OWN business (never a
+  walker on P&W — door-code exposure); they are founding-member prospect #1 and the
+  first honest-signal user. Watch their onboarding funnel server-side. Validates the
+  Nextdoor/local-network recruitment channel from the SaaS plan.
+
 ## Open Round 1 questions
 - Catalog extras (meds / transport / grooming / aquarium / house sitting) — add with prices?
 - Preferred walker on portal requests?
