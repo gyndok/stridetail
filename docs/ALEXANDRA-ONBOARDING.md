@@ -198,7 +198,10 @@ product / lead gen) and is code-frozen until her beta — her answer shapes it. 
 then the working procedure is: inquiry arrives → Add Client immediately (that IS the
 lead record) → the pending-M&G badge tracks it → mark M&G done → invite to portal.
 
-## 8. Round 1 question: coverage zip codes
+## 8. Round 1 question: coverage zip codes — ANSWERED 2026-08-31 (launch night)
+
+She supplied 77 zips (central Houston). On the page: residential zips + neighborhoods
+visible, full list in areaServed JSON-LD (772xx PO-box zips metadata-only).
 
 Ask which Houston zip codes she serves (and would accept new clients from). Two uses:
 her public page gains a "Serving 77008, 77007, …" line + `areaServed` zips in the
