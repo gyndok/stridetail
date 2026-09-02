@@ -108,8 +108,9 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
   `ascAppId` now in eas.json submit profile — future submits fully
   non-interactive. NOTE: 0.2.0(3) still "Waiting for Beta App Review" for the
   external group; once 0.2.1(4) processes, consider pointing the group at it.
-- Android build 3a3da19c → ~/Downloads/stridetail-0.2.1-vc3.aab (83MB,
-  versionCode 3), awaiting manual Play Console internal-testing upload.
+- Android build 3a3da19c → 0.2.1 (versionCode 3) UPLOADED to Play internal
+  testing 2026-09-01 (sponsor, manual). Next Android build: wire `eas submit
+  -p android` (Google service-account JSON) to retire the manual step.
 - OTA note: future `eas update` publishes target runtime 0.2.1 — 0.2.0
   binaries are frozen at the round-2 OTA until replaced.
 - Legal pages finalized same night: draft banners removed from /terms +
