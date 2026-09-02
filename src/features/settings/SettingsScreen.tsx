@@ -8,6 +8,14 @@ import { useActiveBusiness } from '@/src/features/business/active';
 import { BrandColorPicker } from '@/src/features/business/BrandColorPicker';
 import { DEFAULT_BRAND_COLOR, updateBrandColor } from '@/src/features/business/branding';
 import { useMemberships } from '@/src/features/business/useMemberships';
+import {
+  parseRequiredVaccines,
+  SPECIES_VACCINE_OPTIONS,
+  updateRequiredVaccines,
+  type RequiredVaccines,
+} from '@/src/features/pets/vaccines';
+import { docTypeLabel } from '@/src/features/pets/documents';
+import { Chip } from '@/src/features/schedule/Chip';
 import { useWalkTheme, type WalkTheme } from '@/src/features/settings/walkTheme';
 import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
@@ -73,6 +81,13 @@ export function SettingsScreen({ extra }: { extra?: ReactNode }) {
           onSaved={() => void qc.invalidateQueries({ queryKey: ['memberships'] })}
         />
       ) : null}
+      {role === 'owner' && businessId ? (
+        <RequiredVaccinesCard
+          businessId={businessId}
+          saved={parseRequiredVaccines(current?.required_vaccines)}
+          onSaved={() => void qc.invalidateQueries({ queryKey: ['memberships'] })}
+        />
+      ) : null}
       {/* Earnings (Plan 6): the walker-group route works from both role groups
           — owners walk their own visits too and see their own finalized
           statements (walker-side RLS), or an empty list. */}
@@ -125,6 +140,72 @@ export function SettingsScreen({ extra }: { extra?: ReactNode }) {
  * invoices, the portal, and the branded emails — the app's own chrome stays
  * on Stridetail tokens.
  */
+/**
+ * Owner-only required vaccines (wish list #5, 2026-09-01). Save-on-tap like
+ * the brand color: toggling a chip writes businesses.required_vaccines and
+ * refreshes the memberships cache the booking screen reads from. The booking
+ * screen shows a warning for missing/expired required vaccines — never a block.
+ */
+function RequiredVaccinesCard({
+  businessId,
+  saved,
+  onSaved,
+}: {
+  businessId: string;
+  saved: RequiredVaccines;
+  onSaved: () => void;
+}) {
+  const t = useTheme();
+  const [pending, setPending] = useState<RequiredVaccines | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const shown = pending ?? saved;
+
+  async function toggle(species: string, type: string) {
+    const cur = shown[species] ?? [];
+    const next = {
+      ...shown,
+      [species]: cur.includes(type as (typeof cur)[number])
+        ? cur.filter((x) => x !== type)
+        : [...cur, type as (typeof cur)[number]],
+    };
+    setPending(next);
+    setError(null);
+    try {
+      await updateRequiredVaccines(businessId, next);
+      onSaved();
+    } catch (e) {
+      setPending(null);
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  return (
+    <Card style={{ gap: t.space.sm }}>
+      <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Required vaccines</Text>
+      <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
+        Booking a visit warns you when a selected pet is missing one of these or its record has
+        expired. It never blocks the booking.
+      </Text>
+      {SPECIES_VACCINE_OPTIONS.map((group) => (
+        <View key={group.species} style={{ gap: t.space.xs }}>
+          <Text style={{ color: t.colors.ink, fontWeight: '600' }}>{group.label}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
+            {group.types.map((type) => (
+              <Chip
+                key={type}
+                label={docTypeLabel(type)}
+                selected={(shown[group.species] ?? []).includes(type)}
+                onPress={() => void toggle(group.species, type)}
+              />
+            ))}
+          </View>
+        </View>
+      ))}
+      {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
+    </Card>
+  );
+}
+
 function BrandingCard({
   businessId,
   savedColor,

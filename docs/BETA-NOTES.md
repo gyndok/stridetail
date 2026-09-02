@@ -53,7 +53,10 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
 - Business-name/logo edit UI (D2 gap — name was fixed by SQL on launch night).
 
 ## Alexandra's wish list (texted 2026-09-01, day-1 of full testing)
-Suggested build order: 6 → 5 → 3+4 → 2 → 1 → 7. NOT started — awaiting sponsor go.
+ROUND-2 DECISIONS (Alexandra by text, 2026-09-01): defer #3/#4 texting ("ignore
+the text messaging" — she'll copy/paste links from her current business number;
+sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
+**10-second video cap** (her number). Build order: 5 → 2 → 1 → 7.
 1. Custom map marks, add/delete (MED — events carry no coords today; needs
    coords + label + map-tap UI + report render).
 2. Remove markers before report sends (MED — needs a review step between

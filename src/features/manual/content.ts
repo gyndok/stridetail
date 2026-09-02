@@ -170,6 +170,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
+          'Required vaccines: in Settings, mark which vaccines your business requires for dogs and for cats. When you book a visit, the New Visit screen warns you if a selected pet is missing a required vaccine or its record has expired — the warning never blocks the booking, it just makes sure you know before you commit.',
+      },
+      {
+        kind: 'p',
+        text:
           'Access codes — door, lockbox, gate, alarm, key location — live on the client, encrypted. They are never stored on your screen: every time someone reveals them, it happens fresh and is written to an audit log with who looked and when.',
       },
       {

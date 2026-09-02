@@ -6,7 +6,7 @@ const m = (id: string, role: 'owner' | 'walker'): Membership => ({
   business_id: id,
   role,
   status: 'active',
-  business: { id, name: id, brand_color: '#E8642C', time_zone: 'UTC', logo_path: null, access_grace_hours: 12 },
+  business: { id, name: id, brand_color: '#E8642C', time_zone: 'UTC', logo_path: null, access_grace_hours: 12, required_vaccines: {} },
 });
 
 test('no memberships → onboarding', () => {

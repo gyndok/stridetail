@@ -17,6 +17,8 @@ export type Membership = {
     logo_path: string | null;
     /** Grace window (hours) for the offline reveal cache (spec §8). */
     access_grace_hours: number;
+    /** Species-keyed required doc types (wish list #5); parse with parseRequiredVaccines. */
+    required_vaccines: unknown;
   };
 };
 
@@ -31,7 +33,7 @@ export async function listMyMemberships(): Promise<Membership[]> {
     .from('memberships')
     .select(
       'id, business_id, role, status, ' +
-        'business:businesses(id, name, brand_color, time_zone, logo_path, access_grace_hours)',
+        'business:businesses(id, name, brand_color, time_zone, logo_path, access_grace_hours, required_vaccines)',
     )
     .eq('user_id', session.user.id)
     .eq('status', 'active');

@@ -8,6 +8,12 @@ import { useMemberships } from '@/src/features/business/useMemberships';
 import { listClients } from '@/src/features/clients/api';
 import { listPets } from '@/src/features/pets/api';
 import {
+  fetchVaccineDocs,
+  issueLabel,
+  parseRequiredVaccines,
+  vaccineIssues,
+} from '@/src/features/pets/vaccines';
+import {
   createSeries,
   createVisit,
   listActiveMembers,
@@ -76,6 +82,23 @@ export default function NewVisit() {
     enabled: !!businessId,
     queryFn: () => listActiveMembers(businessId!),
   });
+
+  // Required-vaccine warning (wish list #5): fetched per client (all their
+  // pets' docs in one query), issues recomputed as pets are toggled. A warning
+  // only — booking is never blocked.
+  const requiredVaccines = parseRequiredVaccines(
+    memberships.data?.find((m) => m.business_id === businessId)?.business.required_vaccines,
+  );
+  const clientPetIds = (pets.data ?? []).map((p) => p.id);
+  const vaccineDocs = useQuery({
+    queryKey: ['vaccineDocs', businessId, clientId, clientPetIds.length],
+    enabled: !!businessId && clientPetIds.length > 0 && Object.keys(requiredVaccines).length > 0,
+    queryFn: () => fetchVaccineDocs(businessId!, clientPetIds),
+  });
+  const selectedPets = (pets.data ?? []).filter((p) => petIds.includes(p.id));
+  const issues = vaccineDocs.data
+    ? vaccineIssues(selectedPets, vaccineDocs.data, requiredVaccines)
+    : [];
 
   // Default the pet selection to ALL of the client's pets whenever they load
   // for a (newly) picked client.
@@ -217,6 +240,14 @@ export default function NewVisit() {
           {pets.isSuccess && pets.data.length === 0 ? (
             <Text style={{ color: t.colors.inkMuted }}>This client has no pets yet.</Text>
           ) : null}
+          {issues.map((issue) => (
+            <Text
+              key={`${issue.petId}-${issue.type}`}
+              style={{ color: t.colors.danger, fontWeight: '600' }}
+            >
+              ⚠ {issueLabel(issue)}
+            </Text>
+          ))}
         </>
       ) : null}
 
