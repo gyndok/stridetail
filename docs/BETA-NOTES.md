@@ -71,8 +71,10 @@ Suggested build order: 6 → 5 → 3+4 → 2 → 1 → 7. NOT started — awaiti
 5. Vaccine due dates per species + business-required flags + expired warning
    at booking (MED — pet_documents w/ expiry badges already shipped Phase 2;
    missing: business "required vaccines" setting + booking-time check).
-6. Photo-marketing consent flag on client profiles (SMALL — boolean + toggle
-   + show on visit brief).
+6. Photo-marketing consent flag on client profiles — SHIPPED 2026-09-01
+   (`clients.marketing_photos_ok` 3-state: null=not asked/true/false; chips on
+   the client form, colored line on client detail + walker visit brief, "not
+   asked = treat as no" default; OTA'd to preview + production channels).
 7. Videos in reports (MED — storage cost is the catch, ~100× photos; email
    can't embed video → tap-to-play on report page; cap clip length).
 8. (Sponsor add, 2026-09-01) Expo push notifications — FREE channel, no
