@@ -28,6 +28,13 @@ export interface OutboxStore {
   /** With visitId: only items whose payload targets that visit (sync badge). */
   countPending(visitId?: string): Promise<number>;
   countErrors(): Promise<number>;
+  /**
+   * Remove a still-pending visit.event by its payload clientUuid (event
+   * deletion, wish list #2). True = the item was pending and is gone (the
+   * server never saw it); false = not found or already past 'pending' — the
+   * caller must delete the server row instead.
+   */
+  removePendingEvent(clientUuid: string): Promise<boolean>;
 }
 
 export class MemoryOutbox implements OutboxStore {
@@ -67,6 +74,19 @@ export class MemoryOutbox implements OutboxStore {
   }
   async countErrors() {
     return [...this.items.values()].filter((i) => i.state === 'error').length;
+  }
+  async removePendingEvent(clientUuid: string) {
+    for (const [id, item] of this.items) {
+      if (
+        item.kind === 'visit.event' &&
+        item.state === 'pending' &&
+        (item.payload as { clientUuid?: string } | null)?.clientUuid === clientUuid
+      ) {
+        this.items.delete(id);
+        return true;
+      }
+    }
+    return false;
   }
 }
 
@@ -141,5 +161,14 @@ export class SqliteOutbox implements OutboxStore {
       "SELECT COUNT(*) AS n FROM outbox WHERE state = 'error'",
     );
     return r?.n ?? 0;
+  }
+  async removePendingEvent(clientUuid: string) {
+    // Same JSON.stringify-shape LIKE trick as countPending — the uuid appears
+    // exactly as "clientUuid":"<uuid>" in the stored payload.
+    const r = await this.db.runAsync(
+      "DELETE FROM outbox WHERE state = 'pending' AND kind = 'visit.event' AND payload LIKE $p",
+      { $p: `%"clientUuid":"${clientUuid}"%` },
+    );
+    return r.changes > 0;
   }
 }

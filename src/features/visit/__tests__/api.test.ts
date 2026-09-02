@@ -1,6 +1,7 @@
 import { MemoryOutbox } from '@/src/lib/offline/outbox';
+import { supabase } from '@/src/lib/supabase';
 
-import { appendVisitEvent, appendVisitFinish, appendVisitStart } from '../api';
+import { appendVisitEvent, appendVisitFinish, appendVisitStart, deleteVisitEvent } from '../api';
 
 jest.mock('@/src/lib/supabase', () => ({ supabase: {} }));
 
@@ -82,4 +83,49 @@ test('mutations preserve insertion order in the outbox', async () => {
     'visit.event',
     'visit.finish',
   ]);
+});
+
+// ---- deleteVisitEvent (wish list #2) ----
+
+function mockDeleteChain(result: { data: unknown; error: unknown }) {
+  const calls: Record<string, unknown[][]> = { delete: [], eq: [], select: [] };
+  const chain = {
+    delete: (...a: unknown[]) => (calls.delete!.push(a), chain),
+    eq: (...a: unknown[]) => (calls.eq!.push(a), chain),
+    select: (...a: unknown[]) => (calls.select!.push(a), Promise.resolve(result)),
+  };
+  (supabase as unknown as { from: unknown }).from = jest.fn(() => chain);
+  return calls;
+}
+
+test('deleteVisitEvent dequeues a still-pending event locally, never touching the server', async () => {
+  const { outbox, deps } = setup();
+  const payload = await appendVisitEvent({ visitId: 'v1', businessId: 'b1', type: 'pee' }, deps);
+  (supabase as unknown as { from: unknown }).from = jest.fn(() => {
+    throw new Error('server must not be called');
+  });
+  await expect(
+    deleteVisitEvent({ clientUuid: payload.clientUuid, visitId: 'v1' }, deps),
+  ).resolves.toBe('local');
+  expect(await outbox.countPending('v1')).toBe(0);
+});
+
+test('deleteVisitEvent falls through to a server delete scoped by client_uuid and visit', async () => {
+  const { deps } = setup();
+  const calls = mockDeleteChain({ data: [{ id: 'e1' }], error: null });
+  await expect(deleteVisitEvent({ clientUuid: 'cu-1', visitId: 'v1' }, deps)).resolves.toBe(
+    'server',
+  );
+  expect(calls.eq).toEqual([
+    ['client_uuid', 'cu-1'],
+    ['visit_id', 'v1'],
+  ]);
+});
+
+test('deleteVisitEvent surfaces a mid-flight item as a retryable error', async () => {
+  const { deps } = setup();
+  mockDeleteChain({ data: [], error: null });
+  await expect(deleteVisitEvent({ clientUuid: 'cu-gone', visitId: 'v1' }, deps)).rejects.toThrow(
+    /still syncing/i,
+  );
 });

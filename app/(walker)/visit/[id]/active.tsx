@@ -28,7 +28,7 @@ import {
   smsUrl,
 } from '@/src/features/report/deviceSms';
 import { getVisitReport, reportLink } from '@/src/features/schedule/report';
-import { appendVisitEvent, appendVisitFinish } from '@/src/features/visit/api';
+import { appendVisitEvent, appendVisitFinish, deleteVisitEvent } from '@/src/features/visit/api';
 import { fetchVisitDetail, type VisitDetail } from '@/src/features/visit/detail';
 import { WalkMap } from '@/src/features/visit/WalkMap';
 import { isPinEventType, type WalkMapEvent } from '@/src/features/visit/walkMapData';
@@ -62,7 +62,13 @@ function errorText(e: unknown): string {
 const POLL_MS = 5_000;
 const DEFAULT_GRACE_HOURS = 12; // businesses.access_grace_hours DB default
 
-type RecentEvent = { type: VisitEventType; occurredAt: string; petName?: string };
+type RecentEvent = {
+  type: VisitEventType;
+  occurredAt: string;
+  petName?: string;
+  /** Set for events this screen logged — the handle event deletion works by. */
+  clientUuid?: string;
+};
 type Revealed = { codes: ClientAccessCodes; note: string | null };
 
 /**
@@ -190,7 +196,15 @@ function ActiveVisitBody() {
       const payload = await appendVisitEvent(input);
       const petName = pets.find((p) => p.id === payload.petId)?.name;
       setRecent((r) =>
-        [{ type, occurredAt: payload.occurredAt, ...(petName && { petName }) }, ...r].slice(0, 5),
+        [
+          {
+            type,
+            occurredAt: payload.occurredAt,
+            clientUuid: payload.clientUuid,
+            ...(petName && { petName }),
+          },
+          ...r,
+        ].slice(0, 5),
       );
       if (isPinEventType(type)) {
         const atMs = Date.parse(payload.occurredAt);
@@ -225,6 +239,22 @@ function ActiveVisitBody() {
       await appendEvent('photo', { photoLocalUri: result.assets[0].uri });
     } catch (e) {
       setEventError(errorText(e));
+    }
+  };
+
+  // Wish list #2: remove a mis-logged marker before the report exists. The
+  // outbox item is dequeued when still unsynced; a synced row is deleted under
+  // the walker delete policy. The map pin (matched by time) goes with it.
+  const onDeleteEvent = async (e: RecentEvent) => {
+    if (!e.clientUuid || !d) return;
+    setEventError(null);
+    try {
+      await deleteVisitEvent({ clientUuid: e.clientUuid, visitId: d.visit.id });
+      setRecent((r) => r.filter((x) => x.clientUuid !== e.clientUuid));
+      const atMs = Date.parse(e.occurredAt);
+      if (!Number.isNaN(atMs)) setPinEvents((p) => p.filter((pin) => pin.atMs !== atMs));
+    } catch (err) {
+      setEventError(errorText(err));
     }
   };
 
@@ -599,10 +629,29 @@ function ActiveVisitBody() {
             <Card style={{ gap: t.space.xs }}>
               <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Recent</Text>
               {recent.map((e, i) => (
-                <Text key={`${e.occurredAt}-${i}`} style={{ color: t.colors.ink }}>
-                  {eventLabel(e.type)} · {tickerTime(e.occurredAt)}
-                  {e.petName ? ` · ${e.petName}` : ''}
-                </Text>
+                <View
+                  key={`${e.occurredAt}-${i}`}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.sm }}
+                >
+                  <Text style={{ color: t.colors.ink, flex: 1 }}>
+                    {eventLabel(e.type)} · {tickerTime(e.occurredAt)}
+                    {e.petName ? ` · ${e.petName}` : ''}
+                  </Text>
+                  {e.clientUuid ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${eventLabel(e.type)}`}
+                      onPress={() => void onDeleteEvent(e)}
+                      hitSlop={8}
+                      style={({ pressed }) => ({
+                        paddingHorizontal: t.space.sm,
+                        opacity: pressed ? 0.6 : 1,
+                      })}
+                    >
+                      <Text style={{ color: t.colors.danger, fontWeight: '700' }}>Remove</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               ))}
             </Card>
           ) : null}

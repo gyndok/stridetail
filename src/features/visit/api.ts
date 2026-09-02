@@ -1,5 +1,6 @@
 import * as Crypto from 'expo-crypto';
 
+import { supabase } from '@/src/lib/supabase';
 import { getDb } from '@/src/lib/offline/db';
 import { SqliteOutbox, type OutboxItem, type OutboxStore } from '@/src/lib/offline/outbox';
 import {
@@ -63,6 +64,35 @@ export async function appendVisitEvent(
   await outbox.enqueue('visit.event', payload);
   kick();
   return payload;
+}
+
+/**
+ * Delete a mis-logged event (wish list #2). Outbox first: a still-pending item
+ * is simply dequeued (the server never saw it). Otherwise delete the server
+ * row by client_uuid under the walker's delete policy (own running visit,
+ * non-structural types). Zero rows deleted with nothing in the outbox means
+ * the item is mid-flight or the visit already finished — surface it honestly.
+ * A deleted photo event leaves its stored object orphaned on purpose: the
+ * report reads events rows, never the bucket, and storage delete rights don't
+ * extend to walkers.
+ */
+export async function deleteVisitEvent(
+  args: { clientUuid: string; visitId: string },
+  deps: VisitOutboxDeps = {},
+): Promise<'local' | 'server'> {
+  const { outbox } = resolve(deps);
+  if (await outbox.removePendingEvent(args.clientUuid)) return 'local';
+  const { data, error } = await supabase
+    .from('visit_events')
+    .delete()
+    .eq('client_uuid', args.clientUuid)
+    .eq('visit_id', args.visitId)
+    .select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Could not remove it yet — still syncing. Try again in a moment.');
+  }
+  return 'server';
 }
 
 export async function appendVisitFinish(

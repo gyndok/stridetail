@@ -49,3 +49,21 @@ test('enqueue accepts a caller-supplied id for idempotency', async () => {
   const a = await box.enqueue('visit.event', {}, 'fixed-id');
   expect(a.id).toBe('fixed-id');
 });
+
+test('removePendingEvent dequeues a pending visit.event by clientUuid, once', async () => {
+  const box = new MemoryOutbox(() => 1);
+  await box.enqueue('visit.event', { visitId: 'v1', clientUuid: 'uuid-a', type: 'pee' });
+  await box.enqueue('visit.event', { visitId: 'v1', clientUuid: 'uuid-b', type: 'poop' });
+  expect(await box.removePendingEvent('uuid-a')).toBe(true);
+  expect(await box.removePendingEvent('uuid-a')).toBe(false); // already gone
+  expect(await box.countPending('v1')).toBe(1);
+});
+
+test('removePendingEvent refuses items past pending and non-event kinds', async () => {
+  const box = new MemoryOutbox(() => 1);
+  const sent = await box.enqueue('visit.event', { visitId: 'v1', clientUuid: 'uuid-sent' });
+  await box.markSent(sent.id);
+  await box.enqueue('visit.track', { visitId: 'v1', clientUuid: 'uuid-track' });
+  expect(await box.removePendingEvent('uuid-sent')).toBe(false);
+  expect(await box.removePendingEvent('uuid-track')).toBe(false);
+});

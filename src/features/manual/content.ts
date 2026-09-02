@@ -206,7 +206,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         kind: 'steps',
         items: [
           'Tap Start on the visit when you arrive. Start only works on visits assigned to you that you’ve accepted.',
-          'The walk screen records your route in the background and shows four quick buttons: Pee, Poop, Photo, Note. Each tap is stamped with the time. Feeding, water, or meds go in a note.',
+          'The walk screen records your route in the background and shows four quick buttons: Pee, Poop, Photo, Note. Each tap is stamped with the time. Feeding, water, or meds go in a note. Fat-fingered a button? The Recent list at the bottom has a Remove link next to everything you logged — take it back any time before you finish the visit, and it never appears in the report.',
           'Reveal door or lockbox codes from the walk screen if you need them — this only works while the visit is in progress.',
           'Tap Finish when you’re done. That closes the walk and sends the client their report.',
         ],
