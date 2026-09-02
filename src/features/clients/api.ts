@@ -33,6 +33,15 @@ export function firstPhone(phones: string[] | null | undefined): string | null {
   return phones?.[0] ?? null;
 }
 
+/** How to render marketing_photos_ok wherever it appears (detail, visit brief). */
+export type MarketingPhotosView = { label: string; tone: 'ok' | 'no' | 'unknown' };
+
+export function marketingPhotosView(value: boolean | null | undefined): MarketingPhotosView {
+  if (value === true) return { label: 'Marketing photos allowed', tone: 'ok' };
+  if (value === false) return { label: 'No marketing photos', tone: 'no' };
+  return { label: 'Marketing photos: not asked — treat as no', tone: 'unknown' };
+}
+
 /** What the client-detail "Client portal" card should offer (Plan 8 Task 3). */
 export type PortalInviteState = 'needs-email' | 'invitable' | 'invited';
 

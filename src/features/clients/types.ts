@@ -9,6 +9,8 @@ export type Client = {
   lat: number | null;
   lng: number | null;
   notes_md: string | null;
+  /** Marketing-photo consent: null = not asked yet (treat as no), true/false = answered. */
+  marketing_photos_ok: boolean | null;
   mg_completed_at: string | null;
   /** Stamped by invite_client_to_portal (Plan 8 Task 3); null = never invited. */
   portal_invited_at: string | null;
@@ -37,5 +39,6 @@ export type ClientInput = {
   lat?: number | null;
   lng?: number | null;
   notes_md?: string | null;
+  marketing_photos_ok?: boolean | null;
   mg_completed_at?: string | null;
 };

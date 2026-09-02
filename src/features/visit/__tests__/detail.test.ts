@@ -137,7 +137,9 @@ test('column constants name their fields and include the instruction/gps columns
   for (const cols of [VISIT_CLIENT_COLUMNS, VISIT_PET_COLUMNS, VISIT_SERVICE_COLUMNS]) {
     expect(cols).not.toContain('*');
   }
-  for (const c of ['name', 'phones', 'address', 'notes_md']) expect(VISIT_CLIENT_COLUMNS).toContain(c);
+  for (const c of ['name', 'phones', 'address', 'notes_md', 'marketing_photos_ok']) {
+    expect(VISIT_CLIENT_COLUMNS).toContain(c);
+  }
   for (const c of ['feeding_md', 'meds_md', 'allergies', 'reactivity_md', 'vet_name', 'vet_phone',
     'vet_address', 'photo_path']) {
     expect(VISIT_PET_COLUMNS).toContain(c);

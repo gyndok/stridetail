@@ -20,6 +20,8 @@ export type VisitClientInfo = {
   phones: string[];
   address: string | null;
   notes_md: string | null;
+  /** Marketing-photo consent: null = not asked (treat as no). */
+  marketing_photos_ok: boolean | null;
 };
 
 export type VisitPetInfo = {
@@ -51,7 +53,7 @@ export type VisitDetail = {
   service: VisitServiceInfo | null;
 };
 
-export const VISIT_CLIENT_COLUMNS = 'id, name, phones, address, notes_md';
+export const VISIT_CLIENT_COLUMNS = 'id, name, phones, address, notes_md, marketing_photos_ok';
 export const VISIT_PET_COLUMNS =
   'id, name, species, breed, feeding_md, meds_md, allergies, reactivity_md, ' +
   'vet_name, vet_phone, vet_address, photo_path';

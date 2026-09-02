@@ -9,6 +9,7 @@ import {
   getClient,
   inviteClientToPortal,
   isMeetGreetPending,
+  marketingPhotosView,
   portalInviteState,
   updateClient,
 } from '@/src/features/clients/api';
@@ -166,6 +167,23 @@ export default function ClientDetail() {
             ) : (
               <Text style={{ color: t.colors.inkMuted }}>No address on file</Text>
             )}
+            {(() => {
+              const consent = marketingPhotosView(c.marketing_photos_ok);
+              return (
+                <Text
+                  style={{
+                    color:
+                      consent.tone === 'ok'
+                        ? t.colors.green
+                        : consent.tone === 'no'
+                          ? t.colors.danger
+                          : t.colors.inkMuted,
+                  }}
+                >
+                  {consent.label}
+                </Text>
+              );
+            })()}
           </Card>
           {c.notes_md ? (
             <Card>

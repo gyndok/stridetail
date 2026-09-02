@@ -9,6 +9,7 @@ import { useSession } from '@/src/features/auth/session';
 import { isVisitInvoiced } from '@/src/features/billing/api';
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
+import { marketingPhotosView } from '@/src/features/clients/api';
 import { telUrl } from '@/src/features/clients/form';
 import { petPhotoUrl } from '@/src/features/pets/api';
 import { joinPetNames, reportSmsBody, smsUrl } from '@/src/features/report/deviceSms';
@@ -475,6 +476,26 @@ export default function VisitScreen() {
 
           <Text style={[t.type.title, { color: t.colors.ink }]}>Client</Text>
           <Card style={{ gap: t.space.sm }}>
+            {d!.client
+              ? (() => {
+                  const consent = marketingPhotosView(d!.client.marketing_photos_ok);
+                  return (
+                    <Text
+                      style={{
+                        fontWeight: '600',
+                        color:
+                          consent.tone === 'ok'
+                            ? t.colors.green
+                            : consent.tone === 'no'
+                              ? t.colors.danger
+                              : t.colors.inkMuted,
+                      }}
+                    >
+                      {consent.label}
+                    </Text>
+                  );
+                })()
+              : null}
             {d!.client?.notes_md ? (
               <View style={{ gap: 2 }}>
                 <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Notes</Text>

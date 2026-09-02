@@ -7,6 +7,7 @@ import {
   getClient,
   isMeetGreetPending,
   listClients,
+  marketingPhotosView,
   petsCountLabel,
   updateClient,
 } from '../api';
@@ -82,6 +83,16 @@ test('petsCountLabel pluralizes', () => {
   expect(petsCountLabel(0)).toBe('No pets');
   expect(petsCountLabel(1)).toBe('1 pet');
   expect(petsCountLabel(2)).toBe('2 pets');
+});
+
+test('marketingPhotosView maps the three consent states, unknown reads as no', () => {
+  expect(marketingPhotosView(true)).toEqual({ label: 'Marketing photos allowed', tone: 'ok' });
+  expect(marketingPhotosView(false)).toEqual({ label: 'No marketing photos', tone: 'no' });
+  expect(marketingPhotosView(null)).toEqual({
+    label: 'Marketing photos: not asked — treat as no',
+    tone: 'unknown',
+  });
+  expect(marketingPhotosView(undefined).tone).toBe('unknown');
 });
 
 test('firstPhone returns the first phone or null', () => {

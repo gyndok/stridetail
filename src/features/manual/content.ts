@@ -17,7 +17,7 @@
 import { APP_NAME, PORTAL_LOGIN_URL, SUPPORT_EMAIL, WEB_BASE_URL } from '@/src/lib/brand';
 
 export const MANUAL_VERSION = '1.0';
-export const MANUAL_UPDATED = '2026-08-31';
+export const MANUAL_UPDATED = '2026-09-01';
 
 export type ManualAudience = 'owner' | 'walker' | 'client' | 'all';
 
@@ -161,6 +161,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         kind: 'p',
         text:
           'Each client row also shows their money at a glance: a green "$50.00 credit" means you hold their deposit, a red "Owes $30.00" means unpaid invoices, and a settled client shows nothing. The same balance sits at the top of their profile (tap it to jump to Billing) and on the desktop dashboard roster.',
+      },
+      {
+        kind: 'p',
+        text:
+          'Marketing photos: each client records whether they allow their pets’ photos in your marketing (social media, website). Set it on the client form — Allowed, Not allowed, or Not asked — and both you and your walkers see the answer on the client’s profile and on every visit. Until a client has said yes, treat it as a no.',
       },
       {
         kind: 'p',

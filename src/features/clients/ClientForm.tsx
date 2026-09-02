@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/src/ui/Button';
 import { TextField } from '@/src/ui/TextField';
@@ -11,7 +11,10 @@ import type { Client, ClientInput } from './types';
 
 type Props = {
   /** Prefill for edit mode; omit for a new client. */
-  initial?: Pick<Client, 'name' | 'phones' | 'email' | 'address' | 'lat' | 'lng' | 'notes_md'>;
+  initial?: Pick<
+    Client,
+    'name' | 'phones' | 'email' | 'address' | 'lat' | 'lng' | 'notes_md' | 'marketing_photos_ok'
+  >;
   submitLabel: string;
   onSubmit: (input: ClientInput) => Promise<void>;
   onCancel?: () => void;
@@ -29,6 +32,9 @@ export function ClientForm({ initial, submitLabel, onSubmit, onCancel }: Props) 
   const [email, setEmail] = useState(initial?.email ?? '');
   const [address, setAddress] = useState(initial?.address ?? '');
   const [notes, setNotes] = useState(initial?.notes_md ?? '');
+  const [marketingPhotos, setMarketingPhotos] = useState<boolean | null>(
+    initial?.marketing_photos_ok ?? null,
+  );
   const [errors, setErrors] = useState<ClientFormErrors>({});
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -59,6 +65,7 @@ export function ClientForm({ initial, submitLabel, onSubmit, onCancel }: Props) 
         lat,
         lng,
         notes_md: notes.trim() || null,
+        marketing_photos_ok: marketingPhotos,
       });
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : String(e));
@@ -110,6 +117,42 @@ export function ClientForm({ initial, submitLabel, onSubmit, onCancel }: Props) 
         multiline
         style={{ minHeight: 96, textAlignVertical: 'top' }}
       />
+      <View style={{ gap: t.space.xs }}>
+        <Text style={[t.type.label, { color: t.colors.inkMuted }]}>
+          Photos for marketing (social media, website)
+        </Text>
+        <View style={{ flexDirection: 'row', gap: t.space.sm }}>
+          {(
+            [
+              { value: null, label: 'Not asked' },
+              { value: true, label: 'Allowed' },
+              { value: false, label: 'Not allowed' },
+            ] as const
+          ).map((opt) => {
+            const selected = marketingPhotos === opt.value;
+            return (
+              <Pressable
+                key={opt.label}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => setMarketingPhotos(opt.value)}
+                style={{
+                  paddingVertical: t.space.sm,
+                  paddingHorizontal: t.space.md,
+                  borderRadius: t.radius.pill,
+                  borderWidth: 1,
+                  borderColor: selected ? t.colors.primary : t.colors.line,
+                  backgroundColor: selected ? t.colors.primary : 'transparent',
+                }}
+              >
+                <Text style={{ color: selected ? t.colors.onPrimary : t.colors.ink }}>
+                  {opt.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
       {submitError ? <Text style={{ color: t.colors.danger }}>{submitError}</Text> : null}
       <Button title={submitLabel} onPress={() => void save()} loading={busy} />
       {onCancel ? <Button title="Cancel" variant="ghost" onPress={onCancel} disabled={busy} /> : null}
