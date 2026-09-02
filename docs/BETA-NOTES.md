@@ -75,6 +75,13 @@ Suggested build order: 6 → 5 → 3+4 → 2 → 1 → 7. NOT started — awaiti
    + show on visit brief).
 7. Videos in reports (MED — storage cost is the catch, ~100× photos; email
    can't embed video → tap-to-play on report page; cap clip length).
+8. (Sponsor add, 2026-09-01) Expo push notifications — FREE channel, no
+   carrier registration. First use: STAFF (visit offers/requests/payments —
+   everyone has the app); later: report-ready push for app-using clients.
+   Does NOT replace SMS (the manually-texted clients don't have the app; the
+   no-email 3 can't OTP into the portal). Ladder: push → email → SMS.
+   Needs a new native binary (expo-notifications, no OTA); EAS manages
+   APNs/FCM creds. Pairs with whatever the next build ships.
 
 ## Migration track (DoggyLogs, ~17 clients + appointments)
 - **ROSTER IMPORTED 2026-09-01**: 16 client screenshots from Alexandra parsed →
