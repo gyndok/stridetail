@@ -134,6 +134,20 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
   hello@stridetail.com (the .app address received no mail), privacy now lists
   short videos + the per-client marketing-photo consent record.
 
+## Test-data hygiene (2026-09-02, Kelly's test walks)
+- Invoice lifecycle covers it: draft (editable) → sent (immutable) → paid/void
+  (terminal). Void releases deposits, frees visits, revokes the pay page,
+  keeps the number (gapless tombstone — accounting discipline, no hard delete).
+- Rules for the testers: test only against the test client records (Geffrey
+  Klein / Alexandra klein); Void test invoices when done; NEVER Record payment
+  on a test invoice (payments = dashboard revenue, no in-app undo; SQL rescue
+  only). Sponsor leaving cleanup to Alexandra's discretion.
+- Current books: INV-0001 $25 paid = REAL (Olivia). INV-0002 void. INV-0003
+  $25 sent to Alexandra-as-client = TEST, hers to void.
+- REAL money spotted: Poppy's Sep-1 walk ($25, Neha) completed but UNINVOICED.
+- Backlog tie-in: voided test visits become invoiceable again — the archive-
+  clients feature is the permanent fix.
+
 ## Migration track (DoggyLogs, ~17 clients + appointments)
 - **ROSTER IMPORTED 2026-09-01**: 16 client screenshots from Alexandra parsed →
   16 clients + 22 pets inserted via SQL (combined "X + Y" DoggyLogs pet records
