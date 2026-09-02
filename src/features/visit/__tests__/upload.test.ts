@@ -1,4 +1,4 @@
-import { pushTrackSegments, storageVisitPhotoPath, uploadVisitPhoto } from '../upload';
+import { pushTrackSegments, storageVisitMediaPath, uploadVisitMedia, visitMediaContentType } from '../upload';
 
 type Step = [string, unknown[]];
 
@@ -64,7 +64,7 @@ test('pushTrackSegments throws on function error', async () => {
 });
 
 test('storageVisitPhotoPath builds business/visit/clientUuid.jpg', () => {
-  expect(storageVisitPhotoPath(biz, visit, cu)).toBe(`${biz}/${visit}/${cu}.jpg`);
+  expect(storageVisitMediaPath(biz, visit, cu)).toBe(`${biz}/${visit}/${cu}.jpg`);
 });
 
 test('uploadVisitPhoto uploads bytes to the visit path as jpeg and returns the path', async () => {
@@ -74,7 +74,7 @@ test('uploadVisitPhoto uploads bytes to the visit path as jpeg and returns the p
     .mockResolvedValue({ arrayBuffer: async () => bytes } as unknown as Response);
   let path: string;
   try {
-    path = await uploadVisitPhoto(biz, visit, cu, 'file:///tmp/photo.jpg');
+    path = await uploadVisitMedia(biz, visit, cu, 'file:///tmp/photo.jpg');
   } finally {
     fetchSpy.mockRestore();
   }
@@ -94,8 +94,20 @@ test('uploadVisitPhoto throws on storage error', async () => {
     .mockResolvedValue({ arrayBuffer: async () => new ArrayBuffer(0) } as unknown as Response);
   mockUploadResult = { data: null, error: new Error('denied') };
   try {
-    await expect(uploadVisitPhoto(biz, visit, cu, 'file:///x.jpg')).rejects.toThrow('denied');
+    await expect(uploadVisitMedia(biz, visit, cu, 'file:///x.jpg')).rejects.toThrow('denied');
   } finally {
     fetchSpy.mockRestore();
   }
+});
+
+test('storageVisitMediaPath and contentType follow the video container (wish list #7)', () => {
+  expect(storageVisitMediaPath(biz, visit, cu, 'video', 'file:///tmp/clip.MOV')).toBe(
+    `${biz}/${visit}/${cu}.mov`,
+  );
+  expect(storageVisitMediaPath(biz, visit, cu, 'video', 'file:///tmp/clip.mp4')).toBe(
+    `${biz}/${visit}/${cu}.mp4`,
+  );
+  expect(visitMediaContentType('video', 'a.mov')).toBe('video/quicktime');
+  expect(visitMediaContentType('video', 'a.mp4')).toBe('video/mp4');
+  expect(visitMediaContentType('photo')).toBe('image/jpeg');
 });

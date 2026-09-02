@@ -6,6 +6,7 @@ import {
   localTime,
   petsServiceLine,
   photoUrls,
+  videoUrls,
   reportDateLine,
   statItems,
   timelineLabel,
@@ -87,4 +88,17 @@ test('photoUrls keeps only photo-bearing events, in timeline order', () => {
 test('reportEndpoint tolerates a trailing slash on the project URL', () => {
   expect(reportEndpoint('https://x.supabase.co')).toBe('https://x.supabase.co/functions/v1/report-public');
   expect(reportEndpoint('https://x.supabase.co/')).toBe('https://x.supabase.co/functions/v1/report-public');
+});
+
+test('video clips leave the photo grid and land in videoUrls (wish list #7)', () => {
+  const timeline = [
+    { type: 'photo', occurredAt: 'a', text: null, photoUrl: 'https://x/p1.jpg' },
+    { type: 'video', occurredAt: 'b', text: null, photoUrl: 'https://x/v1.mov' },
+    { type: 'video', occurredAt: 'c', text: null, photoUrl: null },
+    { type: 'pee', occurredAt: 'd', text: null, photoUrl: null },
+  ];
+  expect(photoUrls(timeline)).toEqual(['https://x/p1.jpg']);
+  expect(videoUrls(timeline)).toEqual(['https://x/v1.mov']);
+  expect(timelineLabel('video')).toBe('Video');
+  expect(timelineLabel('mark')).toBe('Marked spot');
 });

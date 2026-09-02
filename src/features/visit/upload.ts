@@ -24,33 +24,49 @@ export async function pushTrackSegments(
   return data as IngestResult;
 }
 
-/** Storage path for a visit photo: `business_id/visit_id/<client_uuid>.jpg`. */
-export function storageVisitPhotoPath(
+export type VisitMediaKind = 'photo' | 'video';
+
+/**
+ * Storage path for visit media: `business_id/visit_id/<client_uuid>.<ext>`.
+ * Photos are always jpg; a video keeps its recorded container (iOS camera
+ * hands back .mov, Android .mp4) so playback matches the bytes.
+ */
+export function storageVisitMediaPath(
   businessId: string,
   visitId: string,
   clientUuid: string,
+  kind: VisitMediaKind = 'photo',
+  uri = '',
 ): string {
-  return `${businessId}/${visitId}/${clientUuid}.jpg`;
+  const ext = kind === 'photo' ? 'jpg' : /\.mov$/i.test(uri) ? 'mov' : 'mp4';
+  return `${businessId}/${visitId}/${clientUuid}.${ext}`;
+}
+
+export function visitMediaContentType(kind: VisitMediaKind, uri = ''): string {
+  if (kind === 'photo') return 'image/jpeg';
+  return /\.mov$/i.test(uri) ? 'video/quicktime' : 'video/mp4';
 }
 
 /**
- * Upload a visit photo to the `media` bucket under the visit's prefix — the
- * walker insert policy allows this only while the visit is in_progress. Same
- * RN ArrayBuffer pattern as uploadPetPhoto (fetch the local uri; FormData/Blob
- * uploads are unreliable in RN). Returns the storage path for the event row.
+ * Upload visit media (photo or ≤10s video, wish list #7) to the `media`
+ * bucket under the visit's prefix — the walker insert policy allows this only
+ * while the visit is in_progress. Same RN ArrayBuffer pattern as
+ * uploadPetPhoto (fetch the local uri; FormData/Blob uploads are unreliable
+ * in RN). Returns the storage path for the event row.
  */
-export async function uploadVisitPhoto(
+export async function uploadVisitMedia(
   businessId: string,
   visitId: string,
   clientUuid: string,
   uri: string,
+  kind: VisitMediaKind = 'photo',
 ): Promise<string> {
   const response = await fetch(uri);
   const body = await response.arrayBuffer();
-  const path = storageVisitPhotoPath(businessId, visitId, clientUuid);
+  const path = storageVisitMediaPath(businessId, visitId, clientUuid, kind, uri);
   const { error } = await supabase.storage
     .from('media')
-    .upload(path, body, { contentType: 'image/jpeg', upsert: true });
+    .upload(path, body, { contentType: visitMediaContentType(kind, uri), upsert: true });
   if (error) throw error;
   return path;
 }

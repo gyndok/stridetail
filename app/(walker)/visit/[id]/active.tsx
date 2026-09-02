@@ -31,6 +31,7 @@ import { getVisitReport, reportLink } from '@/src/features/schedule/report';
 import { appendVisitEvent, appendVisitFinish, deleteVisitEvent } from '@/src/features/visit/api';
 import { fetchVisitDetail, type VisitDetail } from '@/src/features/visit/detail';
 import { WalkMap } from '@/src/features/visit/WalkMap';
+import { videoCaptureSupported } from '@/src/features/visit/videoSupport';
 import { isPinEventType, type WalkMapEvent } from '@/src/features/visit/walkMapData';
 import { useWalkTheme } from '@/src/features/settings/walkTheme';
 import { getLocalTrack, getLocalVisitStart, stopVisitTracking } from '@/src/lib/gps/controller';
@@ -51,6 +52,7 @@ import {
   PeeIcon,
   PhotoIcon,
   PoopIcon,
+  VideoIcon,
 } from '@/src/ui/icons';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
@@ -185,7 +187,10 @@ function ActiveVisitBody() {
   // (derived, not an effect — no setState-in-effect churn).
   const effectivePetId = selectedPetId ?? (pets.length > 1 ? pets[0]!.id : null);
 
-  const appendEvent = async (type: VisitEventType, extras?: { text?: string; photoLocalUri?: string }) => {
+  const appendEvent = async (
+    type: VisitEventType,
+    extras?: { text?: string; photoLocalUri?: string; videoLocalUri?: string },
+  ) => {
     if (!d) return;
     setEventError(null);
     try {
@@ -259,6 +264,45 @@ function ActiveVisitBody() {
       if (!Number.isNaN(atMs)) setPinEvents((p) => p.filter((pin) => pin.atMs !== atMs));
     } catch (err) {
       setEventError(errorText(err));
+    }
+  };
+
+  // Report videos (wish list #7). Alexandra's cap: 10 seconds — the camera
+  // enforces it (videoMaxDuration); the duration guard catches the DEV
+  // library fallback. Medium quality keeps a clip at a few MB and H.264
+  // (playable in every browser the report page meets).
+  const onVideo = async () => {
+    setEventError(null);
+    try {
+      const options = {
+        mediaTypes: ['videos'] as ImagePicker.MediaType[],
+        videoMaxDuration: 10,
+        videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
+      };
+      let result: ImagePicker.ImagePickerResult | null = null;
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (perm.granted) {
+        try {
+          result = await ImagePicker.launchCameraAsync(options);
+        } catch (e) {
+          if (__DEV__) result = await ImagePicker.launchImageLibraryAsync(options);
+          else throw e;
+        }
+      } else if (__DEV__) {
+        result = await ImagePicker.launchImageLibraryAsync(options);
+      } else {
+        setEventError('Camera permission is needed to record a video.');
+        return;
+      }
+      if (!result || result.canceled || !result.assets[0]) return;
+      const asset = result.assets[0];
+      if (typeof asset.duration === 'number' && asset.duration > 11_000) {
+        setEventError('Videos are capped at 10 seconds — record a shorter clip.');
+        return;
+      }
+      await appendEvent('video', { videoLocalUri: asset.uri });
+    } catch (e) {
+      setEventError(errorText(e));
     }
   };
 
@@ -561,6 +605,13 @@ function ActiveVisitBody() {
                 icon={(c) => <MarkIcon size={20} color={c} />}
                 onPress={() => setMarkOpen((v) => !v)}
               />
+              {videoCaptureSupported() ? (
+                <EventButton
+                  title="Video"
+                  icon={(c) => <VideoIcon size={20} color={c} />}
+                  onPress={() => void onVideo()}
+                />
+              ) : null}
             </View>
           ) : null}
 

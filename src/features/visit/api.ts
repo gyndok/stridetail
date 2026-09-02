@@ -42,6 +42,7 @@ export type VisitEventInput = {
   petId?: string;
   text?: string;
   photoLocalUri?: string;
+  videoLocalUri?: string;
   /** ISO instant; defaults to now. */
   occurredAt?: string;
 };
@@ -60,6 +61,7 @@ export async function appendVisitEvent(
     ...(input.petId !== undefined && { petId: input.petId }),
     ...(input.text !== undefined && { text: input.text }),
     ...(input.photoLocalUri !== undefined && { photoLocalUri: input.photoLocalUri }),
+    ...(input.videoLocalUri !== undefined && { videoLocalUri: input.videoLocalUri }),
   };
   await outbox.enqueue('visit.event', payload);
   kick();

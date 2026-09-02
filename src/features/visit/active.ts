@@ -52,6 +52,7 @@ export type BuildEventArgs = {
   selectedPetId?: string;
   text?: string;
   photoLocalUri?: string;
+  videoLocalUri?: string;
 };
 
 /**
@@ -74,6 +75,7 @@ export function buildEventInput(args: BuildEventArgs): VisitEventInput {
     ...(petId !== undefined && { petId }),
     ...(args.text !== undefined && { text: args.text }),
     ...(args.photoLocalUri !== undefined && { photoLocalUri: args.photoLocalUri }),
+    ...(args.videoLocalUri !== undefined && { videoLocalUri: args.videoLocalUri }),
   };
 }
 
@@ -83,6 +85,7 @@ const EVENT_LABEL: Partial<Record<VisitEventType, string>> = {
   pee: 'Pee',
   poop: 'Poop',
   photo: 'Photo',
+  video: 'Video',
   mark: 'Mark',
   note: 'Note',
   ate: 'Ate',

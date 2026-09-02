@@ -1,5 +1,5 @@
 import { supabase } from '@/src/lib/supabase';
-import { pushTrackSegments, uploadVisitPhoto, type TrackPoint } from '@/src/features/visit/upload';
+import { pushTrackSegments, uploadVisitMedia, type TrackPoint } from '@/src/features/visit/upload';
 
 import { getDb } from './db';
 import { SqliteOutbox, type OutboxItem, type OutboxKind, type OutboxStore } from './outbox';
@@ -39,6 +39,7 @@ export type VisitEventType =
   | 'note'
   | 'photo'
   | 'mark'
+  | 'video'
   | 'finished';
 
 export type VisitStartPayload = { visitId: string };
@@ -54,6 +55,8 @@ export type VisitEventPayload = {
   text?: string;
   /** Local file uri of a photo to upload before inserting the event row. */
   photoLocalUri?: string;
+  /** Local file uri of a video clip (≤10 s, wish list #7) — same pipeline, video contentType. */
+  videoLocalUri?: string;
 };
 /**
  * Plan-1 GPS controller shape, unchanged: { visitId, segmentNo, points }.
@@ -140,11 +143,13 @@ export type SyncApi = {
     visitId: string,
     segments: { segmentNo: number; points: TrackPoint[]; clientUuid: string }[],
   ): Promise<void>;
+  /** kind defaults to 'photo'; 'video' stores the clip with a video contentType. */
   uploadPhoto(
     businessId: string,
     visitId: string,
     clientUuid: string,
     uri: string,
+    kind?: 'photo' | 'video',
   ): Promise<string>;
 };
 
@@ -173,9 +178,9 @@ export const defaultSyncApi: SyncApi = {
       throw toSyncError(e);
     }
   },
-  async uploadPhoto(businessId, visitId, clientUuid, uri) {
+  async uploadPhoto(businessId, visitId, clientUuid, uri, kind = 'photo') {
     try {
-      return await uploadVisitPhoto(businessId, visitId, clientUuid, uri);
+      return await uploadVisitMedia(businessId, visitId, clientUuid, uri, kind);
     } catch (e) {
       throw toSyncError(e);
     }
@@ -209,6 +214,14 @@ async function performItem(item: OutboxItem, api: SyncApi): Promise<void> {
       if (p.photoLocalUri) {
         // Photo first; the upload is upsert:true so a retry re-uploads safely.
         photoPath = await api.uploadPhoto(p.businessId, p.visitId, p.clientUuid, p.photoLocalUri);
+      } else if (p.videoLocalUri) {
+        photoPath = await api.uploadPhoto(
+          p.businessId,
+          p.visitId,
+          p.clientUuid,
+          p.videoLocalUri,
+          'video',
+        );
       }
       await api.insertEvent({
         business_id: p.businessId,

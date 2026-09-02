@@ -5,10 +5,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchPublicReport, ReportUnavailableError, type ReportPayload } from '@/src/features/report/api';
 import { RouteCard } from '@/src/features/report/RouteCard';
+import { VideoPlayer } from '@/src/features/report/VideoPlayer';
 import {
   localTime,
   petsServiceLine,
   photoUrls,
+  videoUrls,
   reportDateLine,
   statItems,
   timelineLabel,
@@ -51,6 +53,7 @@ function ReportBody({ report }: { report: ReportPayload }) {
   const insets = useSafeAreaInsets();
   const stats = statItems(report.summary);
   const photos = photoUrls(report.timeline);
+  const videos = videoUrls(report.timeline);
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: t.colors.surface }}
@@ -113,6 +116,15 @@ function ReportBody({ report }: { report: ReportPayload }) {
                   {e.text ? <Text style={{ color: t.colors.inkMuted }}>{e.text}</Text> : null}
                 </View>
               </View>
+            ))}
+          </Card>
+        ) : null}
+
+        {videos.length > 0 ? (
+          <Card style={{ gap: t.space.sm }}>
+            <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Videos</Text>
+            {videos.map((uri) => (
+              <VideoPlayer key={uri} uri={uri} />
             ))}
           </Card>
         ) : null}

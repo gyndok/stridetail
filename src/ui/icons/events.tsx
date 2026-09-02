@@ -124,3 +124,17 @@ export function MarkIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** Camcorder (report video clips, wish list #7). */
+export function VideoIcon(props: IconProps) {
+  const { size, color } = useIconColors(props);
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M4.4 7.4h9.4a1.9 1.9 0 0 1 1.9 1.9v5.4a1.9 1.9 0 0 1-1.9 1.9H4.4a1.9 1.9 0 0 1-1.9-1.9V9.3a1.9 1.9 0 0 1 1.9-1.9Z"
+        {...stroke(color)}
+      />
+      <Path d="M15.7 10.6l4.5-2.4a0.55 0.55 0 0 1 .8.5v6.6a0.55 0.55 0 0 1-.8.5l-4.5-2.4Z" {...stroke(color)} />
+    </Svg>
+  );
+}

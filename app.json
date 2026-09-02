@@ -73,7 +73,7 @@
         {
           "cameraPermission": "Stridetail uses the camera to take pet profile photos.",
           "photosPermission": "Stridetail uses your photo library to pick pet profile photos.",
-          "microphonePermission": false
+          "microphonePermission": "Stridetail records short walk videos (with sound) for the client’s report."
         }
       ],
       "expo-secure-store",

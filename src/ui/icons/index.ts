@@ -20,6 +20,7 @@ export {
   PeeIcon,
   PhotoIcon,
   PoopIcon,
+  VideoIcon,
 } from './events';
 export { CheckCircleIcon, LockIcon, ShareIcon } from './status';
 export { HomeIcon, ReportsIcon, RequestIcon } from './portal';

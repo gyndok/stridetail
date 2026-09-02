@@ -21,6 +21,7 @@ const TIMELINE_LABELS: Record<string, string> = {
   meds: 'Medication given',
   note: 'Note',
   photo: 'Photo',
+  video: 'Video',
   mark: 'Marked spot',
   finished: 'Visit finished',
 };
@@ -71,7 +72,18 @@ export function statItems(s: ReportPayload['summary']): Stat[] {
   return out;
 }
 
-/** Photo URLs for the grid, in timeline order. */
+/** Photo URLs for the grid, in timeline order (video clips have their own card). */
 export function photoUrls(timeline: ReportPayload['timeline']): string[] {
-  return timeline.map((e) => e.photoUrl).filter((u): u is string => typeof u === 'string');
+  return timeline
+    .filter((e) => e.type !== 'video')
+    .map((e) => e.photoUrl)
+    .filter((u): u is string => typeof u === 'string');
+}
+
+/** Signed video-clip URLs (wish list #7), in timeline order. */
+export function videoUrls(timeline: ReportPayload['timeline']): string[] {
+  return timeline
+    .filter((e) => e.type === 'video')
+    .map((e) => e.photoUrl)
+    .filter((u): u is string => typeof u === 'string');
 }
