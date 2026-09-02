@@ -53,10 +53,25 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
 - Business-name/logo edit UI (D2 gap — name was fixed by SQL on launch night).
 
 ## Migration track (DoggyLogs, ~17 clients + appointments)
-- Email info@doggylogs.com for a data export (no export in their docs) — parallel path.
-- Her paste-dump of client pages → parsed → roster import (clients + pets).
+- **ROSTER IMPORTED 2026-09-01**: 16 client screenshots from Alexandra parsed →
+  16 clients + 22 pets inserted via SQL (combined "X + Y" DoggyLogs pet records
+  split into individual pets, breeds matched by position; assumptions + DoggyLogs
+  quirks recorded in each client's notes_md). P&W now 19 clients / 24 pets.
+  Not geocoded (lat/lng null) — editing+saving a client in-app re-geocodes.
+- **Open questions for Alexandra** (email if she doesn't surface them in-app):
+  Jae's last name + email; Brody + Mia species/breeds; Hankanthony breed;
+  Rudy's breed (assumed Chihuahua); Yvette "Matthew's" spelling; whose number
+  is Marilyn Klein's second (281) 236-8700; most ZIPs missing (cosmetic).
+- **Notification mismatch**: 5 clients had email notifications OFF in DoggyLogs
+  (Cindy Warner, Niaz Siamak-Lighvani, Jenny Lewis, Roxanne Wieland, Marilyn
+  Klein) but Stridetail has no per-client email opt-out — they WILL get
+  report/invoice emails now that their addresses are on file. Flag to Alexandra;
+  possible backlog item (per-client email mute).
+- 2 clients have NO email (Austin Cleveland, Jae) + Neha Akkad — no auto emails.
+- Pet photos exist in DoggyLogs — Alexandra re-adds in-app (not imported).
 - Appointments NOT imported: recreate future recurring walks as visit series in-app.
 - Opening balances per onboarding pack §6 (carry-over invoices BEFORE deposits).
+- Email info@doggylogs.com for a data export — no longer needed unless photos wanted.
 
 ## Infrastructure next
 - **TestFlight: DONE 2026-08-31 (launch night!)** — production build 0.2.0(3) submitted
