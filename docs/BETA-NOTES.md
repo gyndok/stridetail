@@ -92,7 +92,9 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
    — iOS crashes video capture without the plist key, and OTA can't add plist
    keys. Fixed in app.json; the Video button is gated on
    Updates.runtimeVersion >= 0.2.1 (videoSupport.ts), so 0.2.0 binaries never
-   show it. **Next binary MUST bump version to 0.2.1** to light it up.
+   show it. LIVE-VERIFIED 2026-09-01 on the 0.2.1 TestFlight build (sponsor):
+   button appeared via the runtime gate, clip captured → synced .mov in bucket
+   → signed URL in report-public payload → Videos card on the report page.
 8. (Sponsor add, 2026-09-01) Expo push notifications — FREE channel, no
    carrier registration. First use: STAFF (visit offers/requests/payments —
    everyone has the app); later: report-ready push for app-using clients.
