@@ -112,10 +112,18 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
   group invites auto-sent (Alexandra, Kelly, Nextdoor recruit). `ascAppId` now
   in eas.json submit profile — future submits fully non-interactive.
   Sponsor verified video end-to-end on this build (TestFlight internal),
-  Chrome playback confirmed. Kelly: internal-tester "No Builds Available" =
-  Apple ID mismatch — but her EXTERNAL invite (redeem link) sidesteps it.
-  OPEN: cancel the Alexandria Chalet App Manager ASC invite (stranger; belongs
-  in the external group only).
+  Chrome playback confirmed.
+- **TESTFLIGHT MIGRATION COMPLETE 2026-09-02**: Alexandra installed 0.2.1(4)
+  (iPhone 17), Kelly in via the group PUBLIC LINK
+  (https://testflight.apple.com/join/CJVDr5Jk — share person-to-person only).
+  Kelly gotcha for the file: her main Apple Account matched, but TestFlight
+  follows the Media & Purchases identity, which can differ — the public link
+  is identity-agnostic and is the universal fix. Ad-hoc/preview era OVER:
+  OTA publishes go to the PRODUCTION channel only from now on; preview channel
+  retired (stop publishing; nothing to delete). Chalet invite still "Invited".
+  OPEN cleanup: cancel the Alexandria Chalet App Manager ASC invite (stranger;
+  external group only); optionally drop Kelly's stale internal-tester row +
+  ASC team membership (public link covers her).
 - Android build 3a3da19c → 0.2.1 (versionCode 3) UPLOADED to Play internal
   testing 2026-09-01 (sponsor, manual). Next Android build: wire `eas submit
   -p android` (Google service-account JSON) to retire the manual step.
