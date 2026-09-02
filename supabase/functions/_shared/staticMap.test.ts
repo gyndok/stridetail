@@ -131,3 +131,9 @@ Deno.test('nearestTrackPoint picks the nearest-in-time point (event pin position
   assertEquals(nearestTrackPoint(pts, 0)?.lat, 1);
   assertEquals(nearestTrackPoint([], 1000), null);
 });
+
+Deno.test('mark events place the pushpin disc', () => {
+  const events: EventPin[] = [{ lat: 40.7, lng: -120.95, type: 'mark' }];
+  const url = buildStaticMapUrl(GOOGLE_TRACK, events, 'tok')!;
+  assertStringIncludes(url, `url-${M('mark')}(-120.95,40.7)`);
+});

@@ -83,6 +83,7 @@ const EVENT_LABEL: Partial<Record<VisitEventType, string>> = {
   pee: 'Pee',
   poop: 'Poop',
   photo: 'Photo',
+  mark: 'Mark',
   note: 'Note',
   ate: 'Ate',
   drank: 'Drank',

@@ -110,3 +110,17 @@ export function MedsIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** Map pin (custom marks, wish list #1). */
+export function MarkIcon(props: IconProps) {
+  const { size, color } = useIconColors(props);
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M12 3.6a6.15 6.15 0 0 1 6.15 6.15c0 3.4-2.7 6.9-6.15 10.65-3.45-3.75-6.15-7.25-6.15-10.65A6.15 6.15 0 0 1 12 3.6Z"
+        {...stroke(color)}
+      />
+      <Circle cx={12} cy={9.75} r={2.1} {...stroke(color)} />
+    </Svg>
+  );
+}

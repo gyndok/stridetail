@@ -38,6 +38,7 @@ export type VisitEventType =
   | 'meds'
   | 'note'
   | 'photo'
+  | 'mark'
   | 'finished';
 
 export type VisitStartPayload = { visitId: string };

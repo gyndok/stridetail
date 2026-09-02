@@ -25,7 +25,7 @@ export type LatLng = { lat: number; lng: number };
 /** Raw ingest-track point shape: t is epoch ms, acc is meters. */
 export type TimedPoint = { t: number; lat: number; lng: number; acc?: number };
 
-export type EventPinType = 'pee' | 'poop' | 'photo';
+export type EventPinType = 'pee' | 'poop' | 'photo' | 'mark';
 
 export type EventPin = { lat: number; lng: number; type: EventPinType };
 
@@ -63,6 +63,7 @@ const EVENT_MARKERS: Record<EventPinType, string> = {
   pee: 'pee', // droplet
   poop: 'poop', // pile of poo
   photo: 'photo', // camera
+  mark: 'mark', // round pushpin
 };
 
 /** Mapbox custom-marker overlay: url-<encoded image url>(lng,lat). */

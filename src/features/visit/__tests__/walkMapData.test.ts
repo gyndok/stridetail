@@ -1,6 +1,7 @@
 import {
   buildVisitRoute,
   cleanTrack,
+  isPinEventType,
   nearestPointByTime,
   pinsForEvents,
   regionForTrack,
@@ -113,4 +114,13 @@ test('buildVisitRoute ignores malformed points and unparsable timestamps', () =>
   );
   expect(route.track).toEqual([pt(1_000, 29.761, -95.361)]);
   expect(route.events).toEqual([]);
+});
+
+test('mark is a pin type (wish list #1) and rides buildVisitRoute', () => {
+  expect(isPinEventType('mark')).toBe(true);
+  const route = buildVisitRoute(
+    [{ points: [{ t: 1_000, lat: 29.76, lng: -95.36 }] }],
+    [{ type: 'mark', occurred_at: new Date(1_500).toISOString() }],
+  );
+  expect(route.events).toEqual([{ type: 'mark', atMs: 1_500 }]);
 });

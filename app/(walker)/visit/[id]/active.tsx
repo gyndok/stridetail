@@ -45,6 +45,7 @@ import {
   AteIcon,
   DrankIcon,
   LockIcon,
+  MarkIcon,
   MedsIcon,
   NoteIcon,
   PeeIcon,
@@ -171,6 +172,9 @@ function ActiveVisitBody() {
   // logged before the next GPS poll still lands correctly once fixes arrive.
   const [pinEvents, setPinEvents] = useState<WalkMapEvent[]>([]);
   const [noteOpen, setNoteOpen] = useState(false);
+  // Custom map mark (wish list #1): a labeled pin at the current spot.
+  const [markOpen, setMarkOpen] = useState(false);
+  const [markText, setMarkText] = useState('');
   // Round 0: Ate/Drank/Meds are demoted behind this toggle, collapsed by default.
   const [moreOpen, setMoreOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
@@ -264,6 +268,13 @@ function ActiveVisitBody() {
     await appendEvent('note', { text });
     setNoteText('');
     setNoteOpen(false);
+  };
+
+  const onSaveMark = async () => {
+    const text = markText.trim();
+    await appendEvent('mark', text ? { text } : undefined);
+    setMarkText('');
+    setMarkOpen(false);
   };
 
   // ---- reveal codes ----
@@ -545,7 +556,25 @@ function ActiveVisitBody() {
                 icon={(c) => <MedsIcon size={20} color={c} accent={c} />}
                 onPress={() => void appendEvent('meds')}
               />
+              <EventButton
+                title="Mark"
+                icon={(c) => <MarkIcon size={20} color={c} />}
+                onPress={() => setMarkOpen((v) => !v)}
+              />
             </View>
+          ) : null}
+
+          {markOpen ? (
+            <Card style={{ gap: t.space.sm }}>
+              <TextField
+                label="Mark this spot"
+                value={markText}
+                onChangeText={setMarkText}
+                placeholder="What's here? (optional)"
+                autoFocus
+              />
+              <Button title="Drop mark" onPress={() => void onSaveMark()} />
+            </Card>
           ) : null}
 
           {noteOpen ? (

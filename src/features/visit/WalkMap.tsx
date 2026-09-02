@@ -34,6 +34,7 @@ const MARKER_IMAGE: Record<PinEventType | 'start' | 'finish', number> = {
   pee: require('../../../assets/markers/pee.png'),
   poop: require('../../../assets/markers/poop.png'),
   photo: require('../../../assets/markers/photo.png'),
+  mark: require('../../../assets/markers/mark.png'),
 };
 
 /** Marker art is a centred disc, not a bottom-tipped pin. anchor is the

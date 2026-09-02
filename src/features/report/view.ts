@@ -21,6 +21,7 @@ const TIMELINE_LABELS: Record<string, string> = {
   meds: 'Medication given',
   note: 'Note',
   photo: 'Photo',
+  mark: 'Marked spot',
   finished: 'Visit finished',
 };
 

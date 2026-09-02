@@ -13,7 +13,7 @@ import type { Pt } from '@/src/lib/gps/geo';
 /** Mirror of geo.ts / polyline.ts / SQL: fixes worse than this are dropped. */
 export const MAX_ACCURACY_M = 50;
 
-export type PinEventType = 'pee' | 'poop' | 'photo';
+export type PinEventType = 'pee' | 'poop' | 'photo' | 'mark';
 
 /** A pin-worthy event: what happened and when (epoch ms). */
 export type WalkMapEvent = { type: PinEventType; atMs: number };
@@ -21,7 +21,7 @@ export type WalkMapEvent = { type: PinEventType; atMs: number };
 /** A placed pin: the event plus the track coordinate it landed on. */
 export type WalkMapPin = { type: PinEventType; lat: number; lng: number; atMs: number };
 
-const PIN_EVENT_TYPES: readonly string[] = ['pee', 'poop', 'photo'];
+const PIN_EVENT_TYPES: readonly string[] = ['pee', 'poop', 'photo', 'mark'];
 
 export function isPinEventType(type: string): type is PinEventType {
   return PIN_EVENT_TYPES.includes(type);

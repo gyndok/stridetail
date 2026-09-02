@@ -16,7 +16,7 @@ import {
   type TimedPoint,
 } from './staticMap.ts';
 
-const EVENT_PIN_TYPES: EventPinType[] = ['pee', 'poop', 'photo'];
+const EVENT_PIN_TYPES: EventPinType[] = ['pee', 'poop', 'photo', 'mark'];
 
 export async function ensureReportMap(admin: SupabaseClient, visitIdRaw: unknown): Promise<void> {
   try {

@@ -14,6 +14,7 @@ export {
 export {
   AteIcon,
   DrankIcon,
+  MarkIcon,
   MedsIcon,
   NoteIcon,
   PeeIcon,
