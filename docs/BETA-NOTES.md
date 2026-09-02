@@ -63,6 +63,11 @@ Suggested build order: 6 → 5 → 3+4 → 2 → 1 → 7. NOT started — awaiti
    one feature: Twilio SMS channel, ~$1–2/mo per number. Biggest lever on the
    list — she manually texts links from her personal number today, and it
    covers the 5 email-notifs-OFF DoggyLogs clients + 3 no-email clients).
+   INTERIM (agreed 2026-09-01): Alexandra gets a FREE Google Voice number for
+   P&W and texts links from the GV app — personal number hidden today, $0,
+   zero code. Still manual (GV has no send API). Later: PORT the GV number to
+   Twilio (~$3 unlock + port) when building the automated channel, so clients
+   keep the same number. Tip: pick a memorable Houston number — it's permanent.
 5. Vaccine due dates per species + business-required flags + expired warning
    at booking (MED — pet_documents w/ expiry badges already shipped Phase 2;
    missing: business "required vaccines" setting + booking-time check).
