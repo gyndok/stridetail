@@ -52,6 +52,25 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
 - Leads: keep inbox → Add Client procedure, or want a dashboard inquiries card?
 - Business-name/logo edit UI (D2 gap — name was fixed by SQL on launch night).
 
+## Alexandra's wish list (texted 2026-09-01, day-1 of full testing)
+Suggested build order: 6 → 5 → 3+4 → 2 → 1 → 7. NOT started — awaiting sponsor go.
+1. Custom map marks, add/delete (MED — events carry no coords today; needs
+   coords + label + map-tap UI + report render).
+2. Remove markers before report sends (MED — needs a review step between
+   finish and send; cheap 80%: delete an event mid-walk).
+3. Per-client report channel: email or text (pairs with #4).
+4. Reports texted from a BUSINESS number, not her personal phone (with #3 =
+   one feature: Twilio SMS channel, ~$1–2/mo per number. Biggest lever on the
+   list — she manually texts links from her personal number today, and it
+   covers the 5 email-notifs-OFF DoggyLogs clients + 3 no-email clients).
+5. Vaccine due dates per species + business-required flags + expired warning
+   at booking (MED — pet_documents w/ expiry badges already shipped Phase 2;
+   missing: business "required vaccines" setting + booking-time check).
+6. Photo-marketing consent flag on client profiles (SMALL — boolean + toggle
+   + show on visit brief).
+7. Videos in reports (MED — storage cost is the catch, ~100× photos; email
+   can't embed video → tap-to-play on report page; cap clip length).
+
 ## Migration track (DoggyLogs, ~17 clients + appointments)
 - **ROSTER IMPORTED 2026-09-01**: 16 client screenshots from Alexandra parsed →
   16 clients + 22 pets inserted via SQL (combined "X + Y" DoggyLogs pet records
