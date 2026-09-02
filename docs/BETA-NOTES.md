@@ -89,8 +89,10 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
   https://play.google.com/apps/internaltest/4701598200265848517
   Testers see temp name "app.stridetail (unreviewed)" until store listing +
   review — cosmetic. Warnings accepted: no deobfuscation file (Expo doesn't
-  obfuscate). Next Android steps: smoke-test install via opt-in link; wire
-  `eas submit -p android` (service-account JSON); store listing later.
+  obfuscate). Emulator smoke test abandoned (TX age-verification law walls Play
+  sign-in on new devices; no Android hardware in the family) — testing waits for
+  a real Android tester. Next Android steps: wire `eas submit -p android`
+  (service-account JSON); store listing later.
 - **Android: FIRST BUILD DONE 2026-09-01** — Play Console account created (developer
   verification pending, a few days); keystore generated + stored on EAS; production
   .aab built (build 207d2c61, versionCode 2). Next: when verification clears, create
