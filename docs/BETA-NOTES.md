@@ -94,7 +94,8 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
    Updates.runtimeVersion >= 0.2.1 (videoSupport.ts), so 0.2.0 binaries never
    show it. LIVE-VERIFIED 2026-09-01 on the 0.2.1 TestFlight build (sponsor):
    button appeared via the runtime gate, clip captured → synced .mov in bucket
-   → signed URL in report-public payload → Videos card on the report page.
+   → signed URL in report-public payload → Videos card on the report page,
+   playback confirmed in Chrome (H.264 via iOS Medium quality — as designed).
 8. (Sponsor add, 2026-09-01) Expo push notifications — FREE channel, no
    carrier registration. First use: STAFF (visit offers/requests/payments —
    everyone has the app); later: report-ready push for app-using clients.
