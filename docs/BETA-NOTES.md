@@ -57,10 +57,14 @@ ROUND-2 DECISIONS (Alexandra by text, 2026-09-01): defer #3/#4 texting ("ignore
 the text messaging" — she'll copy/paste links from her current business number;
 sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
 **10-second video cap** (her number). Build order: 5 → 2 → 1 → 7.
-1. Custom map marks, add/delete (MED — events carry no coords today; needs
-   coords + label + map-tap UI + report render).
-2. Remove markers before report sends (MED — needs a review step between
-   finish and send; cheap 80%: delete an event mid-walk).
+1. Custom map marks — SHIPPED 2026-09-01: 'mark' event type, Mark button
+   (More row) drops a labeled pin at the current spot (nearest-in-time track
+   fix, same rule as pee/poop/photo); on live walk map, static report map
+   (public/markers/mark.png, deployed), and report timeline ("Marked spot").
+2. Remove markers before report sends — SHIPPED 2026-09-01: Remove link on
+   the walk screen's Recent list; pending outbox items dequeue locally, synced
+   rows delete under a new walker RLS policy (own running visit, structural
+   started/finished rows protected). Window closes at finish, as she asked.
 3. Per-client report channel: email or text (pairs with #4).
 4. Reports texted from a BUSINESS number, not her personal phone (with #3 =
    one feature: Twilio SMS channel, ~$1–2/mo per number. Biggest lever on the
@@ -71,15 +75,24 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
    zero code. Still manual (GV has no send API). Later: PORT the GV number to
    Twilio (~$3 unlock + port) when building the automated channel, so clients
    keep the same number. Tip: pick a memorable Houston number — it's permanent.
-5. Vaccine due dates per species + business-required flags + expired warning
-   at booking (MED — pet_documents w/ expiry badges already shipped Phase 2;
-   missing: business "required vaccines" setting + booking-time check).
+5. Vaccine gating — SHIPPED 2026-09-01: businesses.required_vaccines jsonb
+   (species-keyed), Settings "Required vaccines" card (dogs: rabies/DHPP/
+   lepto/bordetella; cats: rabies/FVRCP, save-on-tap), New Visit shows red
+   non-blocking warnings for missing/expired required vaccines on selected
+   pets. Lenient: a doc on file with no expiry counts as current.
 6. Photo-marketing consent flag on client profiles — SHIPPED 2026-09-01
    (`clients.marketing_photos_ok` 3-state: null=not asked/true/false; chips on
    the client form, colored line on client detail + walker visit brief, "not
    asked = treat as no" default; OTA'd to preview + production channels).
-7. Videos in reports (MED — storage cost is the catch, ~100× photos; email
-   can't embed video → tap-to-play on report page; cap clip length).
+7. Report videos — CODE SHIPPED 2026-09-01, **DORMANT until the 0.2.1
+   binary**: 'video' event type, Video button (camera, videoMaxDuration 10 +
+   duration guard, iOS Medium quality → H.264), clip rides the photo pipeline
+   into media bucket (.mov/.mp4), report page "Videos" card (<video> on web,
+   open-URL fallback native). GOTCHA: app.json had microphonePermission:false
+   — iOS crashes video capture without the plist key, and OTA can't add plist
+   keys. Fixed in app.json; the Video button is gated on
+   Updates.runtimeVersion >= 0.2.1 (videoSupport.ts), so 0.2.0 binaries never
+   show it. **Next binary MUST bump version to 0.2.1** to light it up.
 8. (Sponsor add, 2026-09-01) Expo push notifications — FREE channel, no
    carrier registration. First use: STAFF (visit offers/requests/payments —
    everyone has the app); later: report-ready push for app-using clients.
