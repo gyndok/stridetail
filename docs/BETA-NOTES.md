@@ -101,6 +101,22 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
    Needs a new native binary (expo-notifications, no OTA); EAS manages
    APNs/FCM creds. Pairs with whatever the next build ships.
 
+## 0.2.1 release (cut 2026-09-01 night)
+- Version bumped 0.2.0 → 0.2.1 (runtimeVersion follows). Carries the mic
+  permission → **Video button lights up on these binaries**.
+- iOS build 2b0d887d → submitted to App Store Connect (build 4), processing.
+  `ascAppId` now in eas.json submit profile — future submits fully
+  non-interactive. NOTE: 0.2.0(3) still "Waiting for Beta App Review" for the
+  external group; once 0.2.1(4) processes, consider pointing the group at it.
+- Android build 3a3da19c → ~/Downloads/stridetail-0.2.1-vc3.aab (83MB,
+  versionCode 3), awaiting manual Play Console internal-testing upload.
+- OTA note: future `eas update` publishes target runtime 0.2.1 — 0.2.0
+  binaries are frozen at the round-2 OTA until replaced.
+- Legal pages finalized same night: draft banners removed from /terms +
+  /privacy (effective Sep 1, 2026), contact fixed hello@stridetail.app →
+  hello@stridetail.com (the .app address received no mail), privacy now lists
+  short videos + the per-client marketing-photo consent record.
+
 ## Migration track (DoggyLogs, ~17 clients + appointments)
 - **ROSTER IMPORTED 2026-09-01**: 16 client screenshots from Alexandra parsed →
   16 clients + 22 pets inserted via SQL (combined "X + Y" DoggyLogs pet records
