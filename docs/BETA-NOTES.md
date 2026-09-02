@@ -107,10 +107,15 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
 ## 0.2.1 release (cut 2026-09-01 night)
 - Version bumped 0.2.0 → 0.2.1 (runtimeVersion follows). Carries the mic
   permission → **Video button lights up on these binaries**.
-- iOS build 2b0d887d → submitted to App Store Connect (build 4), processing.
-  `ascAppId` now in eas.json submit profile — future submits fully
-  non-interactive. NOTE: 0.2.0(3) still "Waiting for Beta App Review" for the
-  external group; once 0.2.1(4) processes, consider pointing the group at it.
+- iOS build 2b0d887d → **BETA APP REVIEW APPROVED 2026-09-02** (0.2.1 build 4;
+  sponsor had pulled 0.2.0(3) from the queue). External "Stridetail Beta"
+  group invites auto-sent (Alexandra, Kelly, Nextdoor recruit). `ascAppId` now
+  in eas.json submit profile — future submits fully non-interactive.
+  Sponsor verified video end-to-end on this build (TestFlight internal),
+  Chrome playback confirmed. Kelly: internal-tester "No Builds Available" =
+  Apple ID mismatch — but her EXTERNAL invite (redeem link) sidesteps it.
+  OPEN: cancel the Alexandria Chalet App Manager ASC invite (stranger; belongs
+  in the external group only).
 - Android build 3a3da19c → 0.2.1 (versionCode 3) UPLOADED to Play internal
   testing 2026-09-01 (sponsor, manual). Next Android build: wire `eas submit
   -p android` (Google service-account JSON) to retire the manual step.
