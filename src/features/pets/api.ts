@@ -25,6 +25,57 @@ export async function getPet(businessId: string, id: string): Promise<Pet> {
   return data as unknown as Pet;
 }
 
+/**
+ * Hard-delete a pet — the "no-references typo case" from the delete story
+ * (beta round 3, 2026-09-02: accidental duplicates). Any visit carrying the
+ * pet blocks it: history must keep its pets, and that case waits for the
+ * archive feature. pet_documents rows cascade with the row; their stored
+ * files and the photo are removed best-effort afterward (an orphaned object
+ * costs nothing; a thrown storage error after the row is gone helps no one).
+ */
+export async function deletePet(
+  businessId: string,
+  pet: Pick<Pet, 'id' | 'photo_path'>,
+): Promise<void> {
+  const { count, error: refError } = await supabase
+    .from('visits')
+    .select('id', { count: 'exact', head: true })
+    .eq('business_id', businessId)
+    .contains('pet_ids', [pet.id]);
+  if (refError) throw refError;
+  if ((count ?? 0) > 0) {
+    throw new Error(
+      `This pet is on ${count} visit${count === 1 ? '' : 's'} and can't be deleted — ` +
+        'that history has to stay intact. (Archiving pets is coming; for now, ask support.)',
+    );
+  }
+
+  const { data: docs, error: docsError } = await supabase
+    .from('pet_documents')
+    .select('storage_path')
+    .eq('business_id', businessId)
+    .eq('pet_id', pet.id);
+  if (docsError) throw docsError;
+
+  const { error } = await supabase
+    .from('pets')
+    .delete()
+    .eq('business_id', businessId)
+    .eq('id', pet.id);
+  if (error) throw error;
+
+  const paths = [
+    ...(pet.photo_path ? [pet.photo_path] : []),
+    ...(docs ?? []).map((d) => (d as { storage_path: string }).storage_path),
+  ];
+  if (paths.length > 0) {
+    await supabase.storage
+      .from('media')
+      .remove(paths)
+      .catch(() => undefined);
+  }
+}
+
 export async function createPet(
   businessId: string,
   clientId: string,

@@ -7,7 +7,7 @@ import { Button } from '@/src/ui/Button';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
 
-import { validatePet, type PetFormErrors } from './helpers';
+import { birthdateFromAgeInput, petAge, validatePet, type PetFormErrors } from './helpers';
 import type { Pet, PetInput } from './types';
 
 type Props = {
@@ -28,7 +28,11 @@ export function PetForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? '');
   const [species, setSpecies] = useState(initial?.species ?? '');
   const [breed, setBreed] = useState(initial?.breed ?? '');
-  const [birthdate, setBirthdate] = useState(initial?.birthdate ?? '');
+  // Age-first entry (round 3): show the CURRENT age derived from the stored
+  // birthdate; only recompute the birthdate when the walker actually edits the
+  // field — otherwise every save would silently shift an approximate birthdate.
+  const initialAge = initial?.birthdate ? (petAge(initial.birthdate) ?? initial.birthdate) : '';
+  const [ageText, setAgeText] = useState(initialAge);
   const [feeding, setFeeding] = useState(initial?.feeding_md ?? '');
   const [meds, setMeds] = useState(initial?.meds_md ?? '');
   const [allergies, setAllergies] = useState(initial?.allergies ?? '');
@@ -67,9 +71,9 @@ export function PetForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
   }
 
   async function save() {
-    const nextErrors = validatePet({ name, species, birthdate });
+    const nextErrors = validatePet({ name, species, age: ageText });
     setErrors(nextErrors);
-    if (nextErrors.name || nextErrors.species || nextErrors.birthdate) return;
+    if (nextErrors.name || nextErrors.species || nextErrors.age) return;
     setBusy(true);
     setSubmitError(null);
     try {
@@ -78,7 +82,12 @@ export function PetForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
           name: name.trim(),
           species: species.trim(),
           breed: breed.trim() || null,
-          birthdate: birthdate.trim() || null,
+          birthdate:
+            ageText.trim() === initialAge.trim()
+              ? (initial?.birthdate ?? null)
+              : ageText.trim()
+                ? birthdateFromAgeInput(ageText)
+                : null,
           feeding_md: feeding.trim() || null,
           meds_md: meds.trim() || null,
           allergies: allergies.trim() || null,
@@ -134,13 +143,13 @@ export function PetForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
       />
       <TextField label="Breed" value={breed} onChangeText={setBreed} placeholder="Breed" />
       <TextField
-        label="Birthdate (YYYY-MM-DD)"
-        value={birthdate}
-        onChangeText={setBirthdate}
-        placeholder="2023-03-10"
+        label="Age (or exact birthday)"
+        value={ageText}
+        onChangeText={setAgeText}
+        placeholder="3, 8 mo, or 2023-03-10"
         autoCorrect={false}
         autoCapitalize="none"
-        error={errors.birthdate}
+        error={errors.age}
       />
       <TextField
         label="Feeding"

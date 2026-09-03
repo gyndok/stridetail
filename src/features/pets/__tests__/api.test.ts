@@ -1,8 +1,10 @@
-import { createPet, getPet, listPets, petPhotoUrl, updatePet, uploadPetPhoto } from '../api';
+import { createPet, deletePet, getPet, listPets, petPhotoUrl, updatePet, uploadPetPhoto } from '../api';
 
 type Step = [string, unknown[]];
 const mockLog: { table: string; steps: Step[] }[] = [];
 let mockResult: { data: unknown; error: unknown } = { data: [], error: null };
+// When non-empty, each awaited builder shifts the next result (multi-query fns).
+const mockResultQueue: { data: unknown; error: unknown; count?: number | null }[] = [];
 
 const storageLog: { bucket: string; calls: Step[] }[] = [];
 let mockUploadResult: { data: unknown; error: unknown } = { data: { path: 'p' }, error: null };
@@ -17,13 +19,14 @@ jest.mock('@/src/lib/supabase', () => ({
       const entry = { table, steps: [] as Step[] };
       mockLog.push(entry);
       const builder: Record<string, unknown> = {};
-      for (const m of ['select', 'eq', 'order', 'insert', 'update', 'single']) {
+      for (const m of ['select', 'eq', 'order', 'insert', 'update', 'single', 'contains', 'delete']) {
         builder[m] = (...args: unknown[]) => {
           entry.steps.push([m, args]);
           return builder;
         };
       }
-      builder.then = (resolve: (v: unknown) => unknown) => Promise.resolve(resolve(mockResult));
+      builder.then = (resolve: (v: unknown) => unknown) =>
+        Promise.resolve(resolve(mockResultQueue.length > 0 ? mockResultQueue.shift() : mockResult));
       return builder;
     },
     storage: {
@@ -39,6 +42,10 @@ jest.mock('@/src/lib/supabase', () => ({
             entry.calls.push(['createSignedUrl', args]);
             return mockSignedUrlResult;
           },
+          remove: async (...args: unknown[]) => {
+            entry.calls.push(['remove', args]);
+            return { data: null, error: null };
+          },
         };
       },
     },
@@ -46,6 +53,7 @@ jest.mock('@/src/lib/supabase', () => ({
 }));
 
 beforeEach(() => {
+  mockResultQueue.length = 0;
   mockLog.length = 0;
   storageLog.length = 0;
   mockResult = { data: [], error: null };
@@ -153,4 +161,29 @@ test('petPhotoUrl signs the stored path for one hour', async () => {
 test('petPhotoUrl throws on error', async () => {
   mockSignedUrlResult = { data: null, error: new Error('nope') };
   await expect(petPhotoUrl('bad/path')).rejects.toThrow('nope');
+});
+
+
+// ---- deletePet (round 3: the no-references typo case) ----
+
+test('deletePet refuses a pet with visit history', async () => {
+  mockResultQueue.push({ data: null, error: null, count: 3 });
+  await expect(deletePet('b1', { id: 'p1', photo_path: null })).rejects.toThrow(
+    /3 visits and can't be deleted/,
+  );
+  expect(mockLog.map((e) => e.table)).toEqual(['visits']);
+});
+
+test('deletePet deletes the row then sweeps photo + document objects', async () => {
+  mockResultQueue.push(
+    { data: null, error: null, count: 0 },
+    { data: [{ storage_path: 'b1/pets/p1/docs/d.pdf' }], error: null },
+    { data: null, error: null },
+  );
+  await deletePet('b1', { id: 'p1', photo_path: 'b1/pets/p1/photo.jpg' });
+  expect(mockLog.map((e) => e.table)).toEqual(['visits', 'pet_documents', 'pets']);
+  const petSteps = mockLog[2]!.steps.map(([n]) => n);
+  expect(petSteps).toContain('delete');
+  const removes = storageLog.flatMap((e) => e.calls.filter(([n]) => n === 'remove'));
+  expect(removes).toEqual([[ 'remove', [['b1/pets/p1/photo.jpg', 'b1/pets/p1/docs/d.pdf']] ]]);
 });

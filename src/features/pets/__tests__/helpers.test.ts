@@ -1,4 +1,4 @@
-import { petAge, storagePetPhotoPath, validatePet } from '../helpers';
+import { birthdateFromAgeInput, petAge, storagePetPhotoPath, validatePet } from '../helpers';
 
 // ---- petAge (pure date-only math; `now` injected, no time zone involved) ----
 
@@ -40,25 +40,51 @@ test('storagePetPhotoPath follows the media bucket convention (first segment = b
 // ---- validatePet ----
 
 test('validatePet requires name and species', () => {
-  expect(validatePet({ name: '', species: 'Dog', birthdate: '' })).toEqual({
+  expect(validatePet({ name: '', species: 'Dog', age: '' })).toEqual({
     name: 'Name is required',
   });
-  expect(validatePet({ name: 'Rex', species: '  ', birthdate: '' })).toEqual({
+  expect(validatePet({ name: 'Rex', species: '  ', age: '' })).toEqual({
     species: 'Species is required',
   });
-  expect(validatePet({ name: ' ', species: '', birthdate: '' })).toEqual({
+  expect(validatePet({ name: ' ', species: '', age: '' })).toEqual({
     name: 'Name is required',
     species: 'Species is required',
   });
 });
 
-test('validatePet accepts a blank birthdate and rejects malformed ones', () => {
-  expect(validatePet({ name: 'Rex', species: 'Dog', birthdate: '' })).toEqual({});
-  expect(validatePet({ name: 'Rex', species: 'Dog', birthdate: '2023-03-10' })).toEqual({});
-  expect(validatePet({ name: 'Rex', species: 'Dog', birthdate: '03/10/2023' })).toEqual({
-    birthdate: 'Use YYYY-MM-DD',
-  });
-  expect(validatePet({ name: 'Rex', species: 'Dog', birthdate: '2023-02-30' })).toEqual({
-    birthdate: 'Use YYYY-MM-DD',
-  });
+test('validatePet accepts blank/parsable ages and rejects gibberish', () => {
+  expect(validatePet({ name: 'Rex', species: 'Dog', age: '' })).toEqual({});
+  expect(validatePet({ name: 'Rex', species: 'Dog', age: '3' })).toEqual({});
+  expect(validatePet({ name: 'Rex', species: 'Dog', age: '8 mo' })).toEqual({});
+  expect(validatePet({ name: 'Rex', species: 'Dog', age: '2023-03-10' })).toEqual({});
+  expect(validatePet({ name: 'Rex', species: 'Dog', age: 'puppyish' }).age).toMatch(/age like/);
+  expect(validatePet({ name: 'Rex', species: 'Dog', age: '2023-02-30' }).age).toMatch(/age like/);
+});
+
+// ---- birthdateFromAgeInput (round 3: age-first entry) ----
+
+const NOW = new Date(2026, 8, 2); // 2026-09-02 local
+
+test('birthdateFromAgeInput: years, decimals, and unit suffixes', () => {
+  expect(birthdateFromAgeInput('3', NOW)).toBe('2023-09-02');
+  expect(birthdateFromAgeInput('3 y', NOW)).toBe('2023-09-02');
+  expect(birthdateFromAgeInput('2 years', NOW)).toBe('2024-09-02');
+  expect(birthdateFromAgeInput('0.5', NOW)).toBe('2026-03-02');
+});
+
+test('birthdateFromAgeInput: months', () => {
+  expect(birthdateFromAgeInput('8 mo', NOW)).toBe('2026-01-02');
+  expect(birthdateFromAgeInput('10 months', NOW)).toBe('2025-11-02');
+});
+
+test('birthdateFromAgeInput: day clamps into short target months', () => {
+  const endOfMonth = new Date(2026, 6, 31); // 2026-07-31
+  expect(birthdateFromAgeInput('1 mo', endOfMonth)).toBe('2026-06-30');
+});
+
+test('birthdateFromAgeInput: exact dates pass through; future/invalid rejected', () => {
+  expect(birthdateFromAgeInput('2023-03-10', NOW)).toBe('2023-03-10');
+  expect(birthdateFromAgeInput('2030-01-01', NOW)).toBeNull();
+  expect(birthdateFromAgeInput('2023-02-30', NOW)).toBeNull();
+  expect(birthdateFromAgeInput('soon', NOW)).toBeNull();
 });

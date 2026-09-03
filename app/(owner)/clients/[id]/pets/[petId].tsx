@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -6,7 +6,7 @@ import { Linking, Pressable, Text } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
 import { telUrl } from '@/src/features/clients/form';
-import { getPet, petPhotoUrl, updatePet, uploadPetPhoto } from '@/src/features/pets/api';
+import { deletePet, getPet, petPhotoUrl, updatePet, uploadPetPhoto } from '@/src/features/pets/api';
 import { DocumentsSection } from '@/src/features/pets/DocumentsSection';
 import { petAge } from '@/src/features/pets/helpers';
 import { PetForm } from '@/src/features/pets/PetForm';
@@ -22,6 +22,11 @@ export default function PetProfile() {
   const { petId } = useLocalSearchParams<{ id: string; petId: string }>();
   const { businessId } = useActiveBusiness();
   const [editing, setEditing] = useState(false);
+  // Delete (round 3, web-safe inline two-tap — Alert buttons don't render on web).
+  const qc = useQueryClient();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const pet = useQuery({
     queryKey: ['pet', businessId, petId],
@@ -140,6 +145,48 @@ export default function PetProfile() {
           </Card>
           <DocumentsSection businessId={businessId!} petId={p.id} />
           <Button title="Edit pet" onPress={() => setEditing(true)} />
+          {deleteError ? <Text style={{ color: t.colors.danger }}>{deleteError}</Text> : null}
+          {confirmingDelete ? (
+            <Card style={{ gap: t.space.sm, borderWidth: 2, borderColor: t.colors.danger }}>
+              <Text style={{ color: t.colors.ink }}>
+                Delete {p.name}? This removes the profile, photo, and documents and cannot be
+                undone. A pet with any visit history can&apos;t be deleted.
+              </Text>
+              <Button
+                title={`Yes, delete ${p.name}`}
+                onPress={() => {
+                  setDeleteBusy(true);
+                  setDeleteError(null);
+                  deletePet(businessId!, p)
+                    .then(() => {
+                      void qc.invalidateQueries({ queryKey: ['pets'] });
+                      router.back();
+                    })
+                    .catch((e: unknown) => {
+                      setDeleteError(e instanceof Error ? e.message : String(e));
+                      setConfirmingDelete(false);
+                    })
+                    .finally(() => setDeleteBusy(false));
+                }}
+                loading={deleteBusy}
+              />
+              <Button
+                title="Keep pet"
+                variant="ghost"
+                onPress={() => setConfirmingDelete(false)}
+                disabled={deleteBusy}
+              />
+            </Card>
+          ) : (
+            <Button
+              title="Delete pet"
+              variant="ghost"
+              onPress={() => {
+                setDeleteError(null);
+                setConfirmingDelete(true);
+              }}
+            />
+          )}
         </>
       ) : null}
     </Screen>

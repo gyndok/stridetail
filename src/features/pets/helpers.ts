@@ -37,18 +37,61 @@ export function storagePetPhotoPath(businessId: string, petId: string): string {
   return `${businessId}/pets/${petId}/photo.jpg`;
 }
 
-export type PetFormErrors = { name?: string; species?: string; birthdate?: string };
+// ---- age-first entry (beta round 3, 2026-09-02: "a lot of people don't
+// know their dog's birthday"). The form asks for an AGE; we derive an
+// approximate birthdate (today minus the duration) because the column, the
+// vaccine logic, and the display all key off birthdate. An exact YYYY-MM-DD
+// still works for the clients who do know it. ----
 
-/** Name and species are required; birthdate is optional but must be a real YYYY-MM-DD. */
+const YEARS_RE = /^(\d+(?:\.\d+)?)\s*(?:y|yr|yrs|year|years)?$/i;
+const MONTHS_RE = /^(\d+(?:\.\d+)?)\s*(?:mo|mos|m|month|months)$/i;
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** Date-only string for (now minus N months), day clamped to the target month. */
+function monthsAgoYmd(months: number, now: Date): string {
+  const total = now.getFullYear() * 12 + now.getMonth() - months;
+  const y = Math.floor(total / 12);
+  const m = total - y * 12; // 0-based
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const d = Math.min(now.getDate(), daysInMonth);
+  return `${y}-${pad2(m + 1)}-${pad2(d)}`;
+}
+
+/**
+ * Turn a human age entry into a birthdate string. Accepts an exact
+ * 'YYYY-MM-DD', years ('3', '3.5', '3 y', '2 years'), or months
+ * ('8 mo', '10 months'). Null when the text is unparsable or the exact
+ * date is invalid/in the future. Blank input is the caller's concern.
+ */
+export function birthdateFromAgeInput(text: string, now: Date = new Date()): string | null {
+  const s = text.trim();
+  if (DATE_ONLY.test(s)) {
+    const p = parseDateOnly(s);
+    if (!p) return null;
+    return new Date(p.y, p.m - 1, p.d) > now ? null : s;
+  }
+  const months = MONTHS_RE.exec(s);
+  if (months) return monthsAgoYmd(Math.round(Number(months[1])), now);
+  const years = YEARS_RE.exec(s);
+  if (years) return monthsAgoYmd(Math.round(Number(years[1]) * 12), now);
+  return null;
+}
+
+export type PetFormErrors = { name?: string; species?: string; age?: string };
+
+/** Name and species are required; age is optional but must parse when present. */
 export function validatePet(values: {
   name: string;
   species: string;
-  birthdate: string;
+  age: string;
 }): PetFormErrors {
   const errors: PetFormErrors = {};
   if (!values.name.trim()) errors.name = 'Name is required';
   if (!values.species.trim()) errors.species = 'Species is required';
-  const birthdate = values.birthdate.trim();
-  if (birthdate && !parseDateOnly(birthdate)) errors.birthdate = 'Use YYYY-MM-DD';
+  const age = values.age.trim();
+  if (age && birthdateFromAgeInput(age) === null) {
+    errors.age = 'Try an age like 3, 8 mo — or a birthday like 2023-03-10';
+  }
   return errors;
 }
