@@ -134,6 +134,19 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
   hello@stridetail.com (the .app address received no mail), privacy now lists
   short videos + the per-client marketing-photo consent record.
 
+## Round 3 (Alexandra by text, 2026-09-02) — SHIPPED same day
+- **Age instead of birthday** on the pet form ("a lot of people don't know
+  their dog's birthday"): one field accepts "3", "3.5", "8 mo", or an exact
+  YYYY-MM-DD; birthdate derived (today minus duration, day-clamped) so
+  vaccine expiry + age display keep working. DRIFT GUARD: editing a pet
+  without touching the age field keeps the stored birthdate byte-identical.
+- **Delete pet** (her accidental duplicates): Delete pet on the pet profile,
+  inline two-tap confirm (web-safe). HARD-BLOCKED when the pet appears on any
+  visit — history stays intact; that case waits for archive. Cascades
+  documents; sweeps photo + doc storage objects best-effort.
+- OTA'd to production channel (runtime 0.2.1) — both testers get it on next
+  restart. 1064 jest tests.
+
 ## Test-data hygiene (2026-09-02, Kelly's test walks)
 - Invoice lifecycle covers it: draft (editable) → sent (immutable) → paid/void
   (terminal). Void releases deposits, frees visits, revokes the pay page,
