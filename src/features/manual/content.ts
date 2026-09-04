@@ -165,6 +165,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
+          'How much do I owe my walkers? Billing \u2192 Payouts opens with an "Owed now" card: each team member\u2019s earned-but-not-yet-paid amount \u2014 their percentage of completed walks plus 100% of their tips. Creating a payout statement sweeps exactly that amount onto a statement you can finalize (your walker sees it) and mark paid.',
+      },
+      {
+        kind: 'p',
+        text:
           'Tips: when a client pays extra as a thank-you, record it in the Tip field on Record payment — $30 for a $25 walk is $25 toward the invoice and a $5 tip. The invoice closes cleanly (no confusing credit), and the tip goes to the walker at 100% on their next payout statement, on top of their normal share.',
       },
       {

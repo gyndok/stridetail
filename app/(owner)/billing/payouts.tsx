@@ -15,6 +15,7 @@ import {
   periodLabel,
   signedDollarsToCents,
   voidPayoutStatement,
+  walkerOwedNow,
 } from '@/src/features/billing/payouts';
 import { StatusBadge } from '@/src/features/billing/StatusBadge';
 import { useActiveBusiness } from '@/src/features/business/active';
@@ -57,6 +58,13 @@ export default function PayoutsScreen() {
     enabled: !!businessId,
     queryFn: () => listPayoutStatements(businessId!),
   });
+  // Round 7c: live per-member balance — wages accrued on unswept completed
+  // visits + unclaimed tips. The number the owner actually needs.
+  const owed = useQuery({
+    queryKey: ['walkerOwed', businessId],
+    enabled: !!businessId,
+    queryFn: () => walkerOwedNow(businessId!),
+  });
   const members = useQuery({
     queryKey: ['members', businessId],
     enabled: !!businessId,
@@ -72,6 +80,7 @@ export default function PayoutsScreen() {
       setWalkerId(null);
       setError(null);
       void queryClient.invalidateQueries({ queryKey: ['payouts', businessId] });
+      void queryClient.invalidateQueries({ queryKey: ['walkerOwed', businessId] });
       setSelectedId(id);
     },
     onError: (e) => setError(errorText(e)),
@@ -97,6 +106,7 @@ export default function PayoutsScreen() {
         onClose={() => {
           setSelectedId(null);
           void queryClient.invalidateQueries({ queryKey: ['payouts', businessId] });
+      void queryClient.invalidateQueries({ queryKey: ['walkerOwed', businessId] });
         }}
       />
     );
@@ -113,6 +123,40 @@ export default function PayoutsScreen() {
   return (
     <Screen title="Payouts">
       <Button title="Back" variant="ghost" onPress={() => router.back()} />
+
+      {(owed.data ?? []).some((w) => w.wages_cents + w.tips_cents > 0) ? (
+        <Card style={{ gap: t.space.sm }}>
+          <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Owed now</Text>
+          <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
+            Everything earned but not yet on a payout statement. Create a statement to sweep it.
+          </Text>
+          {(owed.data ?? [])
+            .filter((w) => w.wages_cents + w.tips_cents > 0)
+            .map((w) => (
+              <View
+                key={w.walker_id}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: t.space.sm,
+                  paddingVertical: t.space.xs,
+                }}
+              >
+                <View style={{ flexShrink: 1 }}>
+                  <Text style={{ color: t.colors.ink, fontWeight: '600' }}>{w.display_name}</Text>
+                  <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
+                    {formatCents(w.wages_cents)} walks ({w.payout_percent}%)
+                    {w.tips_cents > 0 ? ` + ${formatCents(w.tips_cents)} tips` : ''}
+                  </Text>
+                </View>
+                <Text style={{ color: t.colors.danger, fontWeight: '700' }}>
+                  {formatCents(w.wages_cents + w.tips_cents)}
+                </Text>
+              </View>
+            ))}
+        </Card>
+      ) : null}
 
       {!formOpen ? <Button title="New statement" onPress={() => setFormOpen(true)} /> : null}
       {formOpen ? (
@@ -204,6 +248,7 @@ function StatementDetail({
     setError(null);
     void queryClient.invalidateQueries({ queryKey: ['payout', businessId, id] });
     void queryClient.invalidateQueries({ queryKey: ['payouts', businessId] });
+      void queryClient.invalidateQueries({ queryKey: ['walkerOwed', businessId] });
   };
   const fail = (e: unknown) => setError(errorText(e));
 

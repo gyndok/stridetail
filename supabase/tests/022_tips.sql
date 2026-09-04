@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(7);
+select plan(9);
 
 -- Round 7: tips. A $30 payment on a $25 invoice = $25 toward the invoice +
 -- $5 tip. The invoice closes at exactly its total (no phantom credit), and
@@ -51,6 +51,13 @@ select is((select tip_cents from payments
             where invoice_id = '00000000-0000-0000-0000-0000002200b1'), 500,
   'the tip rides the payment row');
 
+-- ===== owed-now shows the pending sweep before any statement exists =====
+select results_eq($$
+  select wages_cents, tips_cents from walker_owed_now('00000000-0000-0000-0000-00000022aaaa')
+   where walker_id = '00000000-0000-0000-0000-000000000222'
+$$, $$ values (1875::bigint, 500::bigint) $$,
+  'walker_owed_now reports 75% wages + full tip before any statement');
+
 -- ===== payout statement: wage share + 100% of the tip =====
 select lives_ok($$
   select create_payout_statement('00000000-0000-0000-0000-000000000222',
@@ -72,6 +79,12 @@ $$, 'a second sweep over the same period runs');
 select is((select sum(total_cents)::int from payout_statements
             where walker_id = '00000000-0000-0000-0000-000000000222'),
   2375, 'visits and tips are claimed once — the second statement added nothing');
+
+select results_eq($$
+  select wages_cents, tips_cents from walker_owed_now('00000000-0000-0000-0000-00000022aaaa')
+   where walker_id = '00000000-0000-0000-0000-000000000222'
+$$, $$ values (0::bigint, 0::bigint) $$,
+  'after the sweep, owed-now drops to zero');
 
 set local request.jwt.claims to '{}';
 

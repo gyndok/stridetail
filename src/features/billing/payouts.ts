@@ -201,3 +201,18 @@ export function signedDollarsToCents(text: string): number | null {
   if (cents === null) return null;
   return negative ? -cents : cents;
 }
+
+/** "Owed now" (round 7c): what the next statement per member would sweep. */
+export type WalkerOwed = {
+  walker_id: string;
+  display_name: string;
+  payout_percent: number;
+  wages_cents: number;
+  tips_cents: number;
+};
+
+export async function walkerOwedNow(businessId: string): Promise<WalkerOwed[]> {
+  const { data, error } = await supabase.rpc('walker_owed_now', { p_business: businessId });
+  if (error) throw error;
+  return (data ?? []) as WalkerOwed[];
+}
