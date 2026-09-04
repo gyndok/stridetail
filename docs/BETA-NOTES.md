@@ -243,6 +243,12 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
 - Demo overpayments reclassified into tips (4 payments). pgTAP 022 (7 tests,
   suite 779 green); restart-button now explains the iOS "crashed" dialog.
 
+## Round 7b — inline client ledger (sponsor, 2026-09-04 evening) — SHIPPED
+- Balance on the client profile now UNFOLDS IN PLACE (no bounce to Billing):
+  every invoice w/ live status chip + open amount (tap-through), "Collected
+  $X + $Y in tips across N payments", held deposits. ClientLedger.tsx.
+  The Billing-tab client picker stays for the roster-wide view.
+
 ## Round 6b — billing client focus (sponsor, 2026-09-04 night)
 - Ask: client-profile Balance tap should show THAT client's invoices. V1
   (?client= param) worked on web, failed on iOS; v2 (useGlobalSearchParams)
