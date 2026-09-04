@@ -196,6 +196,17 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   membership is the "Public link — Anonymous" row (15 sessions, iPhone 13).
   Named row safe to delete.
 
+## OTA self-serve (2026-09-04 night — sponsor's stuck update on iOS 27 beta)
+- Sponsor's 0.2.2(5) phone wouldn't apply tonight's OTAs (server verified
+  healthy: channel→branch mapping correct, manifest served to a simulated
+  device). Remedy: DELETE + REINSTALL from TestFlight (clears the on-device
+  updates cache). iOS 27 dev beta not ruled out but OTA worked on the same
+  phone Sep 2.
+- HARDENING SHIPPED: Settings "App version" card (all roles) — shows the
+  running bundle (built-in vs update id + publish time) and a "Check for
+  updates" button that downloads AND applies with an in-place restart
+  (appUpdates.ts). Retires force-quit-twice for all testers. OTA'd.
+
 ## Round 5b (ALEXANDRIA's 4-item TestFlight barrage, 2026-09-04 4:31–4:39 PM)
 1. **BUG, FIXED SAME HOUR**: Remove on a SYNCED event failed 42501, rendered
    "[object Object]". Root cause: round-2 shipped the walker DELETE POLICY on
