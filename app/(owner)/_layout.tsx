@@ -1,7 +1,9 @@
 import { Redirect, Tabs } from 'expo-router';
+import { useEffect } from 'react';
 import { Platform, useWindowDimensions } from 'react-native';
 
 import { useSession } from '@/src/features/auth/session';
+import { registerForPush } from '@/src/features/notifications/push';
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
 import {
@@ -22,6 +24,11 @@ export default function OwnerTabs() {
   const { businessId } = useActiveBusiness();
   const memberships = useMemberships();
   const { width } = useWindowDimensions();
+  // Round 4: register this signed-in device for staff push (offer/decline/
+  // request alerts). No-op on binaries without the module or when denied.
+  useEffect(() => {
+    if (status === 'signed-in') void registerForPush();
+  }, [status]);
   if (status === 'signed-out') return <Redirect href="/sign-in" />;
   // Role guard: deep links can land anyone in this group; RLS keeps the data
   // safe, but a walker must never see the owner shell. Wait for the roster

@@ -409,6 +409,12 @@ verify_jwt = true
 
 # Cron-only email queue drain: same pattern as send-sms with its OWN secret,
 # EMAIL_CRON_SECRET (see supabase/migrations/20260824000012_email_channel.sql).
+[functions.send-push]
+# Cron-only drain of channel='push' notification rows (round 4). verify_jwt ON:
+# pg_net sends the anon bearer; the real gate is x-cron-secret (PUSH_CRON_SECRET).
+enabled = true
+verify_jwt = true
+
 [functions.send-email]
 enabled = true
 verify_jwt = true

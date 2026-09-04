@@ -1,12 +1,18 @@
 import { Redirect, Tabs } from 'expo-router';
+import { useEffect } from 'react';
 
 import { useSession } from '@/src/features/auth/session';
+import { registerForPush } from '@/src/features/notifications/push';
 import { ClientsIcon, ScheduleIcon, SettingsIcon, TodayIcon } from '@/src/ui/icons';
 import { useTheme } from '@/src/ui/theme';
 
 export default function WalkerTabs() {
   const t = useTheme();
   const { status } = useSession();
+  // Round 4: staff push registration (visit offers are the walker's whole ask).
+  useEffect(() => {
+    if (status === 'signed-in') void registerForPush();
+  }, [status]);
   if (status === 'signed-out') return <Redirect href="/sign-in" />;
   return (
     <Tabs

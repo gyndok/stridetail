@@ -45,6 +45,7 @@
         "npm:expo-linking@~57.0.7",
         "npm:expo-localization@~57.0.1",
         "npm:expo-location@~57.0.12",
+        "npm:expo-notifications@~57.0.17",
         "npm:expo-router@~57.0.15",
         "npm:expo-secure-store@~57.0.1",
         "npm:expo-splash-screen@~57.0.7",

@@ -3,7 +3,7 @@
     "name": "Stridetail",
     "slug": "stridetail",
     "scheme": "stridetail",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "orientation": "portrait",
     "newArchEnabled": true,
     "icon": "./assets/images/icon.png",
@@ -79,7 +79,11 @@
       "expo-secure-store",
       "expo-localization",
       "expo-document-picker",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {}
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
