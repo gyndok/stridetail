@@ -247,6 +247,17 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
 - Demo overpayments reclassified into tips (4 payments). pgTAP 022 (7 tests,
   suite 779 green); restart-button now explains the iOS "crashed" dialog.
 
+## Round 7c — "Owed now" payout balances (sponsor, 2026-09-04 evening) — SHIPPED
+- The gap: after tips, nothing showed the owner what they owe each walker
+  until a statement was created. Payouts now OPENS with "Owed now": per
+  active member, wages on unswept completed visits (at their %) + unclaimed
+  tips — exactly what the next statement will sweep. walker_owed_now RPC
+  (owner-only, definer, grants pinned). pgTAP 022 extended (owed → sweep → 0).
+- TYPE GOTCHA: memberships.payout_percent is numeric(5,2) — RETURNS TABLE
+  declared int broke with "structure of query does not match"; declare numeric.
+- App-side ledger STILL not rendering on sponsor's device despite updates —
+  BUILD 8 cut with everything embedded (ledger, picker, tips, owed-now).
+
 ## Round 7b — inline client ledger (sponsor, 2026-09-04 evening) — SHIPPED
 - Balance on the client profile now UNFOLDS IN PLACE (no bounce to Billing):
   every invoice w/ live status chip + open amount (tap-through), "Collected
