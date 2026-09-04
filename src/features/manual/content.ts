@@ -160,6 +160,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
+          'Looking at one client\u2019s money? The Billing tab has a Client row \u2014 tap it and pick a client to see only their invoices, with the unpaid total narrowed to match. Tapping the Balance on a client\u2019s profile jumps there too. "All clients" widens back out.',
+      },
+      {
+        kind: 'p',
+        text:
           'Custom prices: some clients have grandfathered or special rates. On the client\u2019s profile, the Custom prices card lists every service — tap one to set that client\u2019s own price. It applies to all their future visits and repeating series (extra-pet charges still add on top); past visits and sent invoices never change. And when booking a one-off visit, the price field is editable right on the New Visit screen for one-time adjustments.',
       },
       {

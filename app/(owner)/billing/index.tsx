@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { listHeldDeposits, listInvoices, type InvoiceListItem } from '@/src/features/billing/api';
+import { listClients } from '@/src/features/clients/api';
 import {
   AUTO_INVOICE_MODES,
   getBusinessBilling,
@@ -72,6 +73,12 @@ export default function BillingIndex() {
   // sponsor's report, 2026-09-04).
   const { client: clientRaw } = useGlobalSearchParams<{ client?: string | string[] }>();
   const clientParam = Array.isArray(clientRaw) ? clientRaw[0] : clientRaw;
+  // Round 6b final form (sponsor): an IN-SCREEN client picker owns the focus —
+  // component state survives every router/tab quirk. The URL param merely
+  // seeds it, so profile Balance taps still deep-link where params deliver.
+  const [pickedClient, setPickedClient] = useState<string | null | undefined>(undefined);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const clientFilter = pickedClient !== undefined ? pickedClient : (clientParam ?? null);
 
   const invoices = useQuery({
     queryKey: ['invoices', businessId],
@@ -85,15 +92,22 @@ export default function BillingIndex() {
   });
   useRefetchOnFocus(invoices.refetch);
   useRefetchOnFocus(deposits.refetch);
+  const clients = useQuery({
+    queryKey: ['clients', businessId, ''],
+    enabled: !!businessId,
+    queryFn: () => listClients(businessId!),
+  });
 
   const now = new Date();
   const everything = invoices.data ?? [];
   // The client focus narrows EVERYTHING on the screen — list, summary strip —
   // so "Unpaid" reads as that client's unpaid, matching the balance they came
   // from. Clearing the chip restores the whole business.
-  const all = clientParam ? everything.filter((i) => i.client_id === clientParam) : everything;
-  const focusedClientName = clientParam
-    ? (all.find((i) => i.client?.name)?.client?.name ?? 'this client')
+  const all = clientFilter ? everything.filter((i) => i.client_id === clientFilter) : everything;
+  const focusedClientName = clientFilter
+    ? ((clients.data ?? []).find((c) => c.id === clientFilter)?.name ??
+      all.find((i) => i.client?.name)?.client?.name ??
+      'this client')
     : null;
   const filtered = applyFilter(all, filter);
   const unpaidCents = unpaidTotalCents(all);
@@ -124,20 +138,40 @@ export default function BillingIndex() {
           <Text style={{ color: t.colors.inkMuted }}>Walker statements →</Text>
         </Card>
       </Pressable>
-      {clientParam ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.setParams({ client: undefined })}
+      <Pressable accessibilityRole="button" onPress={() => setPickerOpen((v) => !v)}>
+        <Card
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
         >
-          <Card
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-          >
-            <Text style={{ color: t.colors.ink, fontWeight: '700' }}>
-              Showing {focusedClientName} only
-            </Text>
-            <Text style={{ color: t.colors.primary, fontWeight: '700' }}>Show all ✕</Text>
-          </Card>
-        </Pressable>
+          <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Client</Text>
+          <Text style={{ color: clientFilter ? t.colors.primary : t.colors.ink, fontWeight: '700' }}>
+            {clientFilter ? focusedClientName : 'All clients'} {pickerOpen ? '▴' : '▾'}
+          </Text>
+        </Card>
+      </Pressable>
+      {pickerOpen ? (
+        <Card style={{ gap: t.space.sm }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
+            <Chip
+              label="All clients"
+              selected={!clientFilter}
+              onPress={() => {
+                setPickedClient(null);
+                setPickerOpen(false);
+              }}
+            />
+            {(clients.data ?? []).map((c) => (
+              <Chip
+                key={c.id}
+                label={c.name}
+                selected={clientFilter === c.id}
+                onPress={() => {
+                  setPickedClient(c.id);
+                  setPickerOpen(false);
+                }}
+              />
+            ))}
+          </View>
+        </Card>
       ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
         {FILTERS.map((f) => (
