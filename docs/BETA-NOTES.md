@@ -169,6 +169,8 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   credential). Rebuild 52b6981c FINISHED, submitted to ASC (build 5).
   Android 9bcbd6ea FINISHED → ~/Downloads/stridetail-0.2.2-vc4.aab (vc 4),
   awaiting manual Play internal upload (no rush; FCM still deferred).
+- Build 5 attached to external "Stridetail Beta" group 2026-09-04 (sponsor) —
+  repeat-build review, expected quick; testers auto-update on approval.
 - Android delivery additionally needs FCM v1 credentials on EAS (not set up —
   zero Android users; do when a real Android tester exists).
 
