@@ -226,6 +226,16 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   updates" button that downloads AND applies with an in-place restart
   (appUpdates.ts). Retires force-quit-twice for all testers. OTA'd.
 
+## Round 6b — billing client focus (sponsor, 2026-09-04 night)
+- Ask: client-profile Balance tap should show THAT client's invoices. V1
+  (?client= param) worked on web, failed on iOS; v2 (useGlobalSearchParams)
+  still failed on his device. FINAL FORM (sponsor's own suggestion): an
+  in-screen **Client picker** on Billing — chip list, "All clients" default,
+  narrows the list AND the summary strip; pure component state, immune to
+  router/tab quirks; the URL param only seeds it (desktop deep-link intact).
+  LESSON: on native tab screens, don't build features on search params —
+  own the state in the screen. OTA'd production.
+
 ## Round 5b (ALEXANDRIA's 4-item TestFlight barrage, 2026-09-04 4:31–4:39 PM)
 1. **BUG, FIXED SAME HOUR**: Remove on a SYNCED event failed 42501, rendered
    "[object Object]". Root cause: round-2 shipped the walker DELETE POLICY on
