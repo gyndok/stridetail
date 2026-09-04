@@ -151,11 +151,15 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
 - Client: registerForPush() on staff sign-in in both layouts (permission ask,
   Expo token upsert); **BINARY-GATED to runtime >= 0.2.2** (expo-notifications
   is native; 0.2.1 binaries no-op via pushSupportedFor — videoSupport pattern).
-- **0.2.2 CUT**: version bumped, iOS build e995f8ca + Android 9bcbd6ea queued.
-- OPEN RISK: Expo push delivery on iOS needs an APNs push key on EAS. The
-  non-interactive build reuses credentials but cannot CREATE a push key. If
-  test pushes fail with credential errors: sponsor runs
-  `bunx eas-cli credentials -p ios` once (interactive) and lets EAS make one.
+- **0.2.2 CUT + SUBMITTED 2026-09-04**: first iOS build (e995f8ca) ERRORED —
+  the App Store provisioning profile lacked the Push Notifications capability
+  (non-interactive builds reuse stale profiles; the predicted trap, one level
+  deeper). FIX: sponsor ran ONE interactive `eas build -p ios` in the app
+  terminal — capability synced to the bundle id, new profile generated, AND
+  the Apple Push Notifications service key created + assigned (the delivery
+  credential). Rebuild 52b6981c FINISHED, submitted to ASC (build 5).
+  Android 9bcbd6ea FINISHED → ~/Downloads/stridetail-0.2.2-vc4.aab (vc 4),
+  awaiting manual Play internal upload (no rush; FCM still deferred).
 - Android delivery additionally needs FCM v1 credentials on EAS (not set up —
   zero Android users; do when a real Android tester exists).
 
