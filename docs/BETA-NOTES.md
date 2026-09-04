@@ -173,8 +173,9 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
 - Build 6 attached to external "Stridetail Beta" group 2026-09-04 (sponsor) —
   repeat-build review, expected quick; testers auto-update on approval.
 - Build 7 (bda238ee) cut Sep 4 night with rounds 5/5b/6a + updates card
-  EMBEDDED (the OTA-on-iOS-27 workaround); swap it into the external group
-  when processed.
+  EMBEDDED; sponsor verified on-device, then ADDED TO THE EXTERNAL GROUP
+  (supersedes 6 for review). On approval all three external testers land on
+  the fully-loaded build with the self-serve update card.
 - Android delivery additionally needs FCM v1 credentials on EAS (not set up —
   zero Android users; do when a real Android tester exists).
 
