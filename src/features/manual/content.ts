@@ -160,7 +160,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Looking at one client\u2019s money? The Billing tab has a Client row \u2014 tap it and pick a client to see only their invoices, with the unpaid total narrowed to match. Tapping the Balance on a client\u2019s profile jumps there too. "All clients" widens back out.',
+          'Looking at one client\u2019s money? Tap the Balance at the top of their profile \u2014 it unfolds right there into their transactions: every invoice with its status, what\u2019s been collected (tips included), and any held deposit; tap an invoice to open it. The Billing tab also has a Client row \u2014 tap it and pick a client to see only their invoices, with the unpaid total narrowed to match. Tapping the Balance on a client\u2019s profile jumps there too. "All clients" widens back out.',
       },
       {
         kind: 'p',

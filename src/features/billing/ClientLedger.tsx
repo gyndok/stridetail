@@ -2,8 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter, type Href } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
-import { listInvoices } from '@/src/features/billing/api';
-import { listAllDeposits } from '@/src/features/billing/api';
+import { listAllDeposits, listInvoices } from '@/src/features/billing/api';
 import { formatCents, formatIsoDate, invoiceBalance, invoiceNumberLabel, statusChip, sumCents } from '@/src/features/billing/money';
 import { StatusBadge } from '@/src/features/billing/StatusBadge';
 import { supabase } from '@/src/lib/supabase';
