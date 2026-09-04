@@ -166,12 +166,15 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   deeper). FIX: sponsor ran ONE interactive `eas build -p ios` in the app
   terminal — capability synced to the bundle id, new profile generated, AND
   the Apple Push Notifications service key created + assigned (the delivery
-  credential). Rebuild 52b6981c FINISHED, submitted to ASC (build 5).
+  credential). Rebuild 52b6981c FINISHED, submitted to ASC — processed as **build 6** (the ERRORED build e995f8ca consumed number 5; EAS increments at build start).
   Android 9bcbd6ea FINISHED → 0.2.2 (vc 4) UPLOADED to Play internal testing
   2026-09-04 (sponsor, manual). Push delivery on Android still needs FCM v1
   creds on EAS — deferred until a real Android tester exists.
-- Build 5 attached to external "Stridetail Beta" group 2026-09-04 (sponsor) —
+- Build 6 attached to external "Stridetail Beta" group 2026-09-04 (sponsor) —
   repeat-build review, expected quick; testers auto-update on approval.
+- Build 7 (bda238ee) cut Sep 4 night with rounds 5/5b/6a + updates card
+  EMBEDDED (the OTA-on-iOS-27 workaround); swap it into the external group
+  when processed.
 - Android delivery additionally needs FCM v1 credentials on EAS (not set up —
   zero Android users; do when a real Android tester exists).
 
