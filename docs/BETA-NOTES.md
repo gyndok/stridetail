@@ -226,6 +226,23 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   updates" button that downloads AND applies with an in-place restart
   (appUpdates.ts). Retires force-quit-twice for all testers. OTA'd.
 
+## Round 7 — TIPS (sponsor, 2026-09-04 evening) — SHIPPED
+- The problem: $30 recorded on a $25 walk showed a -$5 "credit owed back";
+  the extra was really Kelly's tip. Demo's negative Paid amounts were this.
+- Model: payments.tip_cents beside amount_cents (whose meaning is unchanged —
+  all balance math survives untouched). Tip never counts toward the invoice;
+  record_payment gains p_tip_cents; Record-payment form gains a Tip field;
+  payments list shows "+ $5.00 tip".
+- Payouts: create_payout_statement sweeps unclaimed period tips at **100%**
+  (payout percent applies to wages only) as "Tip — Mon D" items; claimed via
+  payments.tip_statement_id (once, ever). Mixed-walker invoices' tips stay
+  unclaimed rather than guessing a split (fine under invoice-per-visit).
+- POSTGRES LESSON (bit us live): create-or-replace with an added defaulted
+  param = ambiguous OVERLOAD; drop the old signature AND re-pin execute
+  grants on the new one (fresh signature = fresh PUBLIC execute).
+- Demo overpayments reclassified into tips (4 payments). pgTAP 022 (7 tests,
+  suite 779 green); restart-button now explains the iOS "crashed" dialog.
+
 ## Round 6b — billing client focus (sponsor, 2026-09-04 night)
 - Ask: client-profile Balance tap should show THAT client's invoices. V1
   (?client= param) worked on web, failed on iOS; v2 (useGlobalSearchParams)
