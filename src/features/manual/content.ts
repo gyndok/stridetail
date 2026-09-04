@@ -219,6 +219,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
+          'Wondering if you have the latest features? Settings \u2192 App version shows exactly which update you\u2019re running, and "Check for updates" downloads and applies the newest one on the spot \u2014 no restarting dance required.',
+      },
+      {
+        kind: 'p',
+        text:
           'Bad signal is fine. Everything you do — starting, events, photos, finishing — is saved on your phone first and syncs in order when you’re back online. The GPS route keeps recording even if the phone kills the app mid-walk; it picks back up when you reopen it.',
       },
       {

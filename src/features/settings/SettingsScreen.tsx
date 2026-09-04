@@ -16,7 +16,15 @@ import {
 } from '@/src/features/pets/vaccines';
 import { docTypeLabel } from '@/src/features/pets/documents';
 import { Chip } from '@/src/features/schedule/Chip';
+import {
+  applyUpdate,
+  checkAndFetchUpdate,
+  currentUpdateInfo,
+  updateLine,
+  type CheckOutcome,
+} from '@/src/features/settings/appUpdates';
 import { useWalkTheme, type WalkTheme } from '@/src/features/settings/walkTheme';
+import Constants from 'expo-constants';
 import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
@@ -119,6 +127,7 @@ export function SettingsScreen({ extra }: { extra?: ReactNode }) {
           <Text style={{ color: t.colors.inkMuted }}>How everything works, in plain English</Text>
         </Card>
       </Pressable>
+      <AppUpdateCard />
       <Button
         title="Sign out"
         variant="ghost"
@@ -239,6 +248,55 @@ function BrandingCard({
       <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Brand color</Text>
       <BrandColorPicker value={shown} onSelect={(c) => void pick(c)} />
       {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
+    </Card>
+  );
+}
+
+/**
+ * App-version + self-serve OTA card (2026-09-04). One tap checks, downloads,
+ * and offers an in-place restart — retires the "force-quit twice" ritual for
+ * every tester. Shows which bundle is running for support conversations.
+ */
+function AppUpdateCard() {
+  const t = useTheme();
+  const [busy, setBusy] = useState(false);
+  const [outcome, setOutcome] = useState<CheckOutcome | null>(null);
+  const info = currentUpdateInfo();
+  const appVersion = Constants.expoConfig?.version ?? null;
+
+  async function check() {
+    setBusy(true);
+    setOutcome(null);
+    const result = await checkAndFetchUpdate();
+    setOutcome(result);
+    setBusy(false);
+  }
+
+  return (
+    <Card style={{ gap: t.space.sm }}>
+      <Text style={[t.type.label, { color: t.colors.inkMuted }]}>App version</Text>
+      <Text style={{ color: t.colors.ink }}>
+        {appVersion ? `Stridetail ${appVersion}` : 'Stridetail'}
+      </Text>
+      <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>{updateLine(info, appVersion)}</Text>
+      {info.kind !== 'unavailable' ? (
+        outcome?.status === 'ready-to-restart' ? (
+          <Button title="Restart to finish updating" onPress={() => void applyUpdate()} />
+        ) : (
+          <Button
+            title="Check for updates"
+            variant="secondary"
+            onPress={() => void check()}
+            loading={busy}
+          />
+        )
+      ) : null}
+      {outcome?.status === 'up-to-date' ? (
+        <Text style={{ color: t.colors.green }}>You&apos;re up to date.</Text>
+      ) : null}
+      {outcome?.status === 'error' ? (
+        <Text style={{ color: t.colors.danger }}>{outcome.message}</Text>
+      ) : null}
     </Card>
   );
 }
