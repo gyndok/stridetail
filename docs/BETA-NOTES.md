@@ -183,10 +183,15 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   weekend with 2 unneutered males and a female in heat"), or at minimum a
   male/female mark "so the sitter knows to ask". Validates the DoggyLogs sex
   field we dropped at migration (sexes parked in client notes_md).
-- Proposed: pets.sex + pets.fixed + pets.last_heat; chips on the pet form;
-  "Female · spayed" / "Male · INTACT (flagged)" on pet profile + walker visit
-  brief; backfill migrated pets' sexes from the import notes. OTA-able.
-  Awaiting sponsor go.
+- **SHIPPED 2026-09-04 (same day)**: pets.sex/fixed/last_heat; Sex +
+  Spayed/neutered chips on the pet form, "Last heat" field appears for intact
+  females; "Female · spayed" / "Male · INTACT" (warning-highlighted) on the
+  owner pet profile AND the walker visit brief — intact flags, unknown never
+  does. 10 migrated DoggyLogs singles backfilled with their recorded sexes
+  (pairs left null — per-pet sex was ambiguous in combined records). OTA'd to
+  production (runtime 0.2.2 — NOTE: 0.2.1 phones froze at the round-4 OTA when
+  the version bumped; testers on 0.2.2 via TestFlight get this). 1068 jest,
+  765 pgTAP.
 - ALSO SOLVED: Kelly's "No Builds Available" named row is vestigial — her real
   membership is the "Public link — Anonymous" row (15 sessions, iPhone 13).
   Named row safe to delete.
