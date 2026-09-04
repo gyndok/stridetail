@@ -140,6 +140,10 @@ a queued visit_offered row delivered to his LOCK SCREEN on the first cron tick
 ("New visit offer — Margo · 30-Minute Dog Walk — Wed, Sep 2, 11:00 AM. Open to
 accept or decline."), status 'sent', 0 retries. Full chain proven:
 queue → cron → send-push → Expo → APNs → phone, with enrichment.
+BOTH DIRECTIONS verified same session: sponsor accepted a REAL offer push in
+Geff Dog Walker Demo, declined ("Going to the beach") → owner decline push
+sent back to his phone; the co-owner (reviewer@stridetail.com, no tokens) got
+the designed skipped_no_provider — owner fan-out + graceful skip both proven.
 - Her ask: walkers notified "when a call needs to be reviewed and accepted/
   declined" — wish-list #8 landing. Three staff moments wired, all through the
   existing notifications queue (new channel='push', mirror of sms/email):
