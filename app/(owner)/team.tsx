@@ -21,6 +21,7 @@ import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
 
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
+import { errorText } from '@/src/lib/errorText';
 
 type Row = {
   id: string;
@@ -62,7 +63,7 @@ export default function Team() {
       setEditPayout(null);
       await members.refetch();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setPayoutBusy(false);
     }
@@ -97,7 +98,7 @@ export default function Team() {
       setContact('');
       await members.refetch();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -118,7 +119,7 @@ export default function Team() {
       );
       await members.refetch();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setRemoveBusy(false);
     }
@@ -132,7 +133,7 @@ export default function Team() {
       await queueInviteSms(businessId, pendingSms.phone, pendingSms.token);
       setSmsQueued(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setSmsBusy(false);
     }

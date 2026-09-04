@@ -13,6 +13,7 @@ import {
 import { trackDistanceMeters } from '@/src/lib/gps/geo';
 import { getDb } from '@/src/lib/offline/db';
 import { SqliteOutbox } from '@/src/lib/offline/outbox';
+import { errorText } from '@/src/lib/errorText';
 
 const VISIT = 'spike-visit';
 
@@ -53,7 +54,7 @@ export default function GpsSpike() {
         onPress={() =>
           startVisitTracking(VISIT)
             .then(() => setActive(true))
-            .catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e)))
+            .catch((e: unknown) => setErr(errorText(e)))
         }
         disabled={active}
       />

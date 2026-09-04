@@ -33,6 +33,7 @@ import { dateToYmd, roundToNextHour } from '@/src/ui/datetime';
 import { Screen } from '@/src/ui/Screen';
 import { TimeField } from '@/src/ui/TimeField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -178,7 +179,7 @@ export default function NewVisit() {
       }
       router.back();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }

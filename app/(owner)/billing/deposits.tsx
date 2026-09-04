@@ -34,6 +34,7 @@ import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
 
 import type { PaymentMethod } from '@/src/features/billing/types';
+import { errorText } from '@/src/lib/errorText';
 
 /**
  * Deposit ledger (Plan 5 Task 4): held/all toggle over the client-grouped
@@ -41,10 +42,6 @@ import type { PaymentMethod } from '@/src/features/billing/types';
  * (recordDeposit lands straight in held — Task 2 rule), and held-only
  * Refund / Forfeit exits behind destructive confirms.
  */
-
-function errorText(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
 
 export default function DepositsScreen() {
   const t = useTheme();

@@ -15,6 +15,7 @@ import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 const EMPTY_FORM: ClientAccessInput = {
   door: '',
@@ -83,7 +84,7 @@ export default function AccessCodesScreen() {
     try {
       await reveal();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -99,7 +100,7 @@ export default function AccessCodesScreen() {
       setForm(formFromRevealed(codes));
       setEditing(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -115,7 +116,7 @@ export default function AccessCodesScreen() {
       setRevealed(null);
       await hasCodes.refetch();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }

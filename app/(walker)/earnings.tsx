@@ -16,6 +16,7 @@ import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 /**
  * Walker earnings (Plan 6 Task 2): the caller's own finalized/paid payout
@@ -24,10 +25,6 @@ import { useTheme } from '@/src/ui/theme';
  * shared Settings screen — owners land here too and see their own walking
  * earnings, if any.
  */
-
-function errorText(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
 
 export default function EarningsScreen() {
   const t = useTheme();

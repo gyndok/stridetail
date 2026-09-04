@@ -19,6 +19,7 @@ import { dateToYmd, roundToNextHour } from '@/src/ui/datetime';
 import { TextField } from '@/src/ui/TextField';
 import { TimeField } from '@/src/ui/TimeField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 /** Today at local midnight — the date picker's minimum (schedule/new pattern). */
 const startOfToday = () => {
@@ -103,7 +104,7 @@ export default function NewRequest() {
       await qc.invalidateQueries({ queryKey: ['portal-booking-requests', clientId] });
       router.back();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
       setBusy(false);
     }
   }

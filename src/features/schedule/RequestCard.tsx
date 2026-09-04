@@ -24,6 +24,7 @@ import { useTheme } from '@/src/ui/theme';
 
 import { Chip } from './Chip';
 import { pickerContext, type ScheduleMember } from './api';
+import { errorText } from '@/src/lib/errorText';
 
 /**
  * The owner approve/decline card for one pending booking request — extracted
@@ -208,7 +209,7 @@ export function useRequestActions(businessId: string | null) {
       await approveBookingRequest(r.id, walkerId, startUtc);
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusyId(null);
     }
@@ -223,7 +224,7 @@ export function useRequestActions(businessId: string | null) {
       await declineBookingRequest(r.id, trimmed);
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusyId(null);
     }

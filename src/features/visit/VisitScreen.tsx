@@ -69,7 +69,11 @@ import { useTheme } from '@/src/ui/theme';
  */
 
 function errorText(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
+  if (e instanceof Error) return e.message;
+  // Supabase Postgrest/Storage errors are plain objects with .message — never
+  // let them stringify to "[object Object]" (Alexandria's round-5b report).
+  if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message);
+  return String(e);
 }
 
 const STATUS_LABEL: Record<string, string> = {

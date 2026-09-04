@@ -23,6 +23,7 @@ import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 // Window: 26h back covers "earlier today" in any tz (24h local day + DST
 // fall-back hour, with margin); 70 days forward covers the 8-week series
@@ -31,10 +32,6 @@ const LOOKBACK_MS = 26 * 3_600_000;
 const LOOKAHEAD_MS = 70 * 86_400_000;
 // How long the green "accepted" confirmation stays up before it clears itself.
 const ACCEPTED_BANNER_MS = 5_000;
-
-function errorText(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
 
 export default function Today() {
   const t = useTheme();

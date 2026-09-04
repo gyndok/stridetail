@@ -18,6 +18,7 @@ import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 /**
  * Portal pet editor (Plan 8 Task 6): EXACTLY the self-service columns are
@@ -104,7 +105,7 @@ function Editor({ pet }: { pet: PortalPetDetail }) {
       });
       if (!result.canceled && result.assets[0]) upload.mutate(result.assets[0].uri);
     } catch (e) {
-      setPickError(e instanceof Error ? e.message : String(e));
+      setPickError(errorText(e));
     }
   }
 

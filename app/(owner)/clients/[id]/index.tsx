@@ -23,6 +23,7 @@ import { Card } from '@/src/ui/Card';
 import { LockIcon } from '@/src/ui/icons';
 import { Screen } from '@/src/ui/Screen';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 export default function ClientDetail() {
   const t = useTheme();
@@ -63,7 +64,7 @@ export default function ClientDetail() {
       await updateClient(businessId, id, { mg_completed_at: new Date().toISOString() });
       await client.refetch();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : String(e));
+      setActionError(errorText(e));
     } finally {
       setMgBusy(false);
     }
@@ -78,7 +79,7 @@ export default function ClientDetail() {
       setInviteSent(true);
       await client.refetch();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : String(e));
+      setActionError(errorText(e));
     } finally {
       setInviteBusy(false);
     }

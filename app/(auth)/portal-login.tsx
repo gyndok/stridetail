@@ -7,6 +7,7 @@ import { Button } from '@/src/ui/Button';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 /**
  * Pet-parent sign-in (Plan 8 Task 2): passwordless email OTP. Tenant-neutral
@@ -29,7 +30,7 @@ export default function PortalLogin() {
       await requestPortalOtp(email);
       setPhase('code');
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -41,7 +42,7 @@ export default function PortalLogin() {
     try {
       await verifyPortalOtp(email, code);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }

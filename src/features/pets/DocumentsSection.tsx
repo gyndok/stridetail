@@ -23,6 +23,7 @@ import {
   type PickedDocSource,
 } from './documents';
 import { parseDateOnly } from './helpers';
+import { errorText } from '@/src/lib/errorText';
 
 type Props = { businessId: string; petId: string };
 
@@ -48,7 +49,7 @@ export function DocumentsSection({ businessId, petId }: Props) {
       const url = await signedDocumentUrl(doc.storage_path);
       await Linking.openURL(url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     }
   }
 
@@ -65,7 +66,7 @@ export function DocumentsSection({ businessId, petId }: Props) {
               await deleteDocument(businessId, doc);
               await docs.refetch();
             } catch (e) {
-              setError(e instanceof Error ? e.message : String(e));
+              setError(errorText(e));
             }
           })();
         },
@@ -119,7 +120,7 @@ export function DocumentsSection({ businessId, petId }: Props) {
       setDocType('rabies');
       await docs.refetch();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }

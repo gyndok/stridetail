@@ -22,6 +22,7 @@ import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 /**
  * "Up next" hero (Today/navigation redesign, part B): the ONE visit the user
@@ -37,10 +38,6 @@ import { useTheme } from '@/src/ui/theme';
  * kickSync, then the cross-group active href (part A pattern — the active
  * screen exists only in the walker group).
  */
-
-function errorText(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
 
 /** Part A pattern: absolute group-qualified href, valid from either group. */
 const activeHref = (visitId: string): Href => `/(walker)/visit/${visitId}/active` as Href;

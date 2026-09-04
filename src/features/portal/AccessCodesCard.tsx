@@ -10,6 +10,7 @@ import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
 
 import { hasClientAccessSelf, revealClientAccessSelf, setClientAccessSelf } from './accessApi';
+import { errorText } from '@/src/lib/errorText';
 
 const EMPTY_FORM: ClientAccessInput = {
   door: '',
@@ -78,7 +79,7 @@ export function AccessCodesCard({ clientId }: { clientId: string | null }) {
     try {
       await reveal();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -94,7 +95,7 @@ export function AccessCodesCard({ clientId }: { clientId: string | null }) {
       setForm(formFromRevealed(codes));
       setEditing(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -110,7 +111,7 @@ export function AccessCodesCard({ clientId }: { clientId: string | null }) {
       setRevealed(null);
       await hasCodes.refetch();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }

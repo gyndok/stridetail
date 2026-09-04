@@ -24,6 +24,7 @@ import {
   type Visit,
 } from './api';
 import { WalkerPicker } from './WalkerPicker';
+import { errorText } from '@/src/lib/errorText';
 import {
   assignLanes,
   gridBounds,
@@ -152,7 +153,7 @@ function QuickPanel({
     // The unified visit screen (VisitScreen.tsx) reads ['visitDetail', id].
     void queryClient.invalidateQueries({ queryKey: ['visitDetail', visit.id] });
   };
-  const fail = (e: unknown) => setError(e instanceof Error ? e.message : String(e));
+  const fail = (e: unknown) => setError(errorText(e));
   const offerMut = useMutation({
     mutationFn: (walkerId: string) => offerVisit(visit.id, walkerId),
     onSuccess: () => {

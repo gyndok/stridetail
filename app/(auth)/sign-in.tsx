@@ -7,6 +7,7 @@ import { Button } from '@/src/ui/Button';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 export default function SignIn() {
   const t = useTheme();
@@ -21,7 +22,7 @@ export default function SignIn() {
     try {
       await signIn(email, password);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }

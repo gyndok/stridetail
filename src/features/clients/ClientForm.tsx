@@ -8,6 +8,7 @@ import { useTheme } from '@/src/ui/theme';
 import { geocodeAddress } from './geocode';
 import { needsGeocode, parsePhones, phonesToText, validateClient, type ClientFormErrors } from './form';
 import type { Client, ClientInput } from './types';
+import { errorText } from '@/src/lib/errorText';
 
 type Props = {
   /** Prefill for edit mode; omit for a new client. */
@@ -68,7 +69,7 @@ export function ClientForm({ initial, submitLabel, onSubmit, onCancel }: Props) 
         marketing_photos_ok: marketingPhotos,
       });
     } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : String(e));
+      setSubmitError(errorText(e));
     } finally {
       setBusy(false);
     }

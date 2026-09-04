@@ -24,10 +24,7 @@ import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
-
-function errorText(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
+import { errorText } from '@/src/lib/errorText';
 
 /** Small ✕ affordance for deleting a row. */
 function DeleteX({ label, onPress }: { label: string; onPress: () => void }) {

@@ -12,6 +12,7 @@ import { Button } from '@/src/ui/Button';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 /** Device time zone: native calendar first, then the JS runtime (web), never a fixed zone. */
 function deviceTimeZone(): string {
@@ -46,7 +47,7 @@ export default function CreateBusiness() {
       await qc.invalidateQueries({ queryKey: ['memberships'] });
       router.replace('/');
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }

@@ -27,6 +27,7 @@ import { DateField } from '@/src/ui/DateField';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 /**
  * New-invoice flow (Plan 5 Task 4). V1 SIMPLIFICATION (recorded in
@@ -125,7 +126,7 @@ export default function NewInvoice() {
       }
       router.replace(`/billing/${invoiceId}` as Href);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }

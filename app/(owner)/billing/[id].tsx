@@ -38,6 +38,7 @@ import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
 
 import type { PaymentMethod } from '@/src/features/billing/types';
+import { errorText } from '@/src/lib/errorText';
 
 /**
  * Invoice detail (Plan 5 Task 4): lines, totals, payments, and the status-
@@ -47,10 +48,6 @@ import type { PaymentMethod } from '@/src/features/billing/types';
  * the invoice_ready email with the EXISTING token (send_invoice stays
  * drafts-only so nothing can rotate a live link).
  */
-
-function errorText(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
 
 export default function InvoiceDetailScreen() {
   const t = useTheme();

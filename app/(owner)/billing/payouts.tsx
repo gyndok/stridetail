@@ -28,6 +28,7 @@ import { dateToYmd } from '@/src/ui/datetime';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 /**
  * Payout statements (Plan 6 Task 2): per-walker statement list, a "New
@@ -37,10 +38,6 @@ import { useTheme } from '@/src/ui/theme';
  * adjustments and Finalize (walker-visible from then on) / Void (deletes —
  * Task 1 rule); finalized ones take Mark paid.
  */
-
-function errorText(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
 
 export default function PayoutsScreen() {
   const t = useTheme();

@@ -21,6 +21,7 @@ import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 const WALK_THEMES: { key: WalkTheme; label: string }[] = [
   { key: 'warm', label: 'Warm' },
@@ -175,7 +176,7 @@ function RequiredVaccinesCard({
       onSaved();
     } catch (e) {
       setPending(null);
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     }
   }
 
@@ -229,7 +230,7 @@ function BrandingCard({
       onSaved();
     } catch (e) {
       setPending(null);
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     }
   }
 

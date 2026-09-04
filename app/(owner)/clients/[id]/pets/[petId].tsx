@@ -15,6 +15,7 @@ import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 export default function PetProfile() {
   const t = useTheme();
@@ -174,7 +175,7 @@ export default function PetProfile() {
                       router.back();
                     })
                     .catch((e: unknown) => {
-                      setDeleteError(e instanceof Error ? e.message : String(e));
+                      setDeleteError(errorText(e));
                       setConfirmingDelete(false);
                     })
                     .finally(() => setDeleteBusy(false));

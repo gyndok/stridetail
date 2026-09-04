@@ -9,6 +9,7 @@ import { useTheme } from '@/src/ui/theme';
 
 import { birthdateFromAgeInput, parseDateOnly, petAge, validatePet, type PetFormErrors } from './helpers';
 import type { Pet, PetInput } from './types';
+import { errorText } from '@/src/lib/errorText';
 
 type Props = {
   /** Prefill for edit mode; omit for a new pet. */
@@ -71,7 +72,7 @@ export function PetForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
           : await ImagePicker.launchImageLibraryAsync(options);
       if (!result.canceled && result.assets[0]) setPhotoUri(result.assets[0].uri);
     } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : String(e));
+      setSubmitError(errorText(e));
     }
   }
 
@@ -110,7 +111,7 @@ export function PetForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
         photoUri,
       );
     } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : String(e));
+      setSubmitError(errorText(e));
     } finally {
       setBusy(false);
     }

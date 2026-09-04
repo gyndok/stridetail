@@ -31,6 +31,7 @@ import { Card } from '@/src/ui/Card';
 import { Screen } from '@/src/ui/Screen';
 import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
+import { errorText } from '@/src/lib/errorText';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -215,7 +216,7 @@ function BillingSettingsCard({ businessId }: { businessId: string }) {
       setSaved(true);
       void queryClient.invalidateQueries({ queryKey: ['businessBilling', businessId] });
     },
-    onError: (e) => setError(e instanceof Error ? e.message : String(e)),
+    onError: (e) => setError(errorText(e)),
   });
 
   return (
