@@ -207,10 +207,14 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
    call sites (OTA runtime 0.2.2); pgTAP 021 pins grant+policy; BONUS FOUND:
    push_tokens had default anon grants (new-table trap, broke 019's invariant)
    — revoked. 771 pgTAP.
-2. **Per-client price override** ("grandfathered price... can't find where to
-   change it"): pricing is per-SERVICE only today. Round-6 candidate: editable
-   price on New Visit (quick) and/or per-client service overrides (proper).
-   NOT BUILT — needs sponsor/product call.
+2. **Per-client pricing — BOTH OPTIONS SHIPPED 2026-09-04 (round 6a)**:
+   (a) client_prices table (owner-only RLS, anon revoked at birth) + "Custom
+   prices" card on the client profile — per-service override replacing the
+   BASE price (extra-pet charges still stack; past visits/invoices untouched);
+   applied at visit creation AND series expansion (expand-series redeployed
+   override-aware). (b) The New Visit price field is EDITABLE for one-off
+   visits (defaults to override-aware computed price; derived-state drift
+   guard, React-Compiler-lint clean). OTA'd production. 1069 jest, 771 pgTAP.
 3. **Tab-bar "glitch"** (sometimes 4 tabs, sometimes 6): BY DESIGN but
    confusing — the active-walk screens live in the walker route group, so a
    dual-role owner sees the walker shell (4 tabs) while walking and the owner
