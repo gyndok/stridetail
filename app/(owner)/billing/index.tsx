@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -64,6 +64,10 @@ export default function BillingIndex() {
   const router = useRouter();
   const { businessId } = useActiveBusiness();
   const [filter, setFilter] = useState<FilterKey>('all');
+  // Deep-linked client focus (round 6b): a client-profile Balance tap lands on
+  // /billing?client=<id> and sees only that client's invoices, with a
+  // dismissible chip to widen back out.
+  const { client: clientParam } = useLocalSearchParams<{ client?: string }>();
 
   const invoices = useQuery({
     queryKey: ['invoices', businessId],
@@ -79,7 +83,14 @@ export default function BillingIndex() {
   useRefetchOnFocus(deposits.refetch);
 
   const now = new Date();
-  const all = invoices.data ?? [];
+  const everything = invoices.data ?? [];
+  // The client focus narrows EVERYTHING on the screen — list, summary strip —
+  // so "Unpaid" reads as that client's unpaid, matching the balance they came
+  // from. Clearing the chip restores the whole business.
+  const all = clientParam ? everything.filter((i) => i.client_id === clientParam) : everything;
+  const focusedClientName = clientParam
+    ? (all.find((i) => i.client?.name)?.client?.name ?? 'this client')
+    : null;
   const filtered = applyFilter(all, filter);
   const unpaidCents = unpaidTotalCents(all);
   const overdue = overdueCount(all, now);
@@ -109,6 +120,21 @@ export default function BillingIndex() {
           <Text style={{ color: t.colors.inkMuted }}>Walker statements →</Text>
         </Card>
       </Pressable>
+      {clientParam ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.setParams({ client: undefined })}
+        >
+          <Card
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <Text style={{ color: t.colors.ink, fontWeight: '700' }}>
+              Showing {focusedClientName} only
+            </Text>
+            <Text style={{ color: t.colors.primary, fontWeight: '700' }}>Show all ✕</Text>
+          </Card>
+        </Pressable>
+      ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
         {FILTERS.map((f) => (
           <Chip key={f.key} label={f.label} selected={filter === f.key} onPress={() => setFilter(f.key)} />

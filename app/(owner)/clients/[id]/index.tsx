@@ -114,7 +114,10 @@ export default function ClientDetail() {
       {c ? (
         <>
           {balances.isSuccess ? (
-            <Pressable accessibilityRole="button" onPress={() => router.push('/billing' as Href)}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push(`/billing?client=${c.id}` as Href)}
+            >
               <Card
                 style={{
                   flexDirection: 'row',
