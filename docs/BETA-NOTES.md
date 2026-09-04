@@ -134,7 +134,12 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
   hello@stridetail.com (the .app address received no mail), privacy now lists
   short videos + the per-client marketing-photo consent record.
 
-## Round 4 (Alexandra by text, 2026-09-03) — staff push notifications, BUILT 2026-09-04
+## Round 4 (Alexandra by text, 2026-09-03) — staff push, **LIVE-VERIFIED 2026-09-04**
+Sponsor installed 0.2.2(5) internal, allowed notifications, token registered;
+a queued visit_offered row delivered to his LOCK SCREEN on the first cron tick
+("New visit offer — Margo · 30-Minute Dog Walk — Wed, Sep 2, 11:00 AM. Open to
+accept or decline."), status 'sent', 0 retries. Full chain proven:
+queue → cron → send-push → Expo → APNs → phone, with enrichment.
 - Her ask: walkers notified "when a call needs to be reviewed and accepted/
   declined" — wish-list #8 landing. Three staff moments wired, all through the
   existing notifications queue (new channel='push', mirror of sms/email):
