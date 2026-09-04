@@ -197,11 +197,19 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   Named row safe to delete.
 
 ## OTA self-serve (2026-09-04 night — sponsor's stuck update on iOS 27 beta)
-- Sponsor's 0.2.2(5) phone wouldn't apply tonight's OTAs (server verified
-  healthy: channel→branch mapping correct, manifest served to a simulated
-  device). Remedy: DELETE + REINSTALL from TestFlight (clears the on-device
-  updates cache). iOS 27 dev beta not ruled out but OTA worked on the same
-  phone Sep 2.
+- Sponsor's 0.2.2(5) phone wouldn't apply tonight's OTAs — reinstall did NOT
+  fix it. Server exonerated end-to-end: channel→branch mapping correct,
+  manifest served to a simulated device (multipart accept header required —
+  plain accept gets 406), and the eascdn asset 403s during probing were a RED
+  HERRING (Expo requires the expo-updates client's authorization headers;
+  probes get "Unauthorized asset request" by design). Failure is ON-DEVICE;
+  leading suspect: iOS 27 dev beta (OTA worked on the same phone Sep 2 —
+  possibly a newer beta seed since). PRAGMATIC FIX: build 6 cut with
+  everything embedded; the embedded App-version card's Check button will
+  surface the real checkForUpdateAsync error for diagnosis. ALSO UNRESOLVED:
+  Alexandria's 0.2.1(4) screenshots show round-2 features (Remove) but not
+  round-3 (age field) — inconsistent with fetch-latest semantics; watch her
+  device after build 5/6 lands.
 - HARDENING SHIPPED: Settings "App version" card (all roles) — shows the
   running bundle (built-in vs update id + publish time) and a "Check for
   updates" button that downloads AND applies with an in-place restart
