@@ -237,6 +237,10 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   (payout percent applies to wages only) as "Tip — Mon D" items; claimed via
   payments.tip_statement_id (once, ever). Mixed-walker invoices' tips stay
   unclaimed rather than guessing a split (fine under invoice-per-visit).
+- FOLLOW-UP FIX (same night, found while explaining the flow): the tip sweep
+  had a period LOWER bound, so a tip recorded after its period's statement
+  existed could orphan between statements. Sweep now takes any unclaimed tip
+  up to the period end — late tips ride the next statement.
 - POSTGRES LESSON (bit us live): create-or-replace with an added defaulted
   param = ambiguous OVERLOAD; drop the old signature AND re-pin execute
   grants on the new one (fresh signature = fresh PUBLIC execute).
