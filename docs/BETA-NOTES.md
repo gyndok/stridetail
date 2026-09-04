@@ -175,6 +175,22 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
 - Android delivery additionally needs FCM v1 credentials on EAS (not set up —
   zero Android users; do when a real Android tester exists).
 
+## Round 5 candidate (ALEXANDRIA CHALET via TestFlight feedback, 2026-09-04)
+- **FIRST STRANGER ENGAGED**: installed 0.2.1(4) Sep 4 (iPhone 15 Pro, CDT),
+  entering real pets (Bernese "Lola"), sent structured TestFlight feedback w/
+  screenshot. The Nextdoor channel works.
+- Her ask: spayed/neutered checkbox + last-heat for intact females ("spent the
+  weekend with 2 unneutered males and a female in heat"), or at minimum a
+  male/female mark "so the sitter knows to ask". Validates the DoggyLogs sex
+  field we dropped at migration (sexes parked in client notes_md).
+- Proposed: pets.sex + pets.fixed + pets.last_heat; chips on the pet form;
+  "Female · spayed" / "Male · INTACT (flagged)" on pet profile + walker visit
+  brief; backfill migrated pets' sexes from the import notes. OTA-able.
+  Awaiting sponsor go.
+- ALSO SOLVED: Kelly's "No Builds Available" named row is vestigial — her real
+  membership is the "Public link — Anonymous" row (15 sessions, iPhone 13).
+  Named row safe to delete.
+
 ## Round 3 (Alexandra by text, 2026-09-02) — SHIPPED same day
 - **Age instead of birthday** on the pet form ("a lot of people don't know
   their dog's birthday"): one field accepts "3", "3.5", "8 mo", or an exact
