@@ -64,6 +64,7 @@ export default function InvoiceDetailScreen() {
   const [amountText, setAmountText] = useState('');
   const [receivedText, setReceivedText] = useState(() => dateToYmd(new Date()));
   const [memoText, setMemoText] = useState('');
+  const [tipText, setTipText] = useState('');
 
   const invoice = useQuery({
     queryKey: ['invoice', businessId, id],
@@ -114,12 +115,13 @@ export default function InvoiceDetailScreen() {
     onError: fail,
   });
   const payMut = useMutation({
-    mutationFn: (args: { cents: number }) =>
-      recordPayment(id!, method, args.cents, receivedText, memoText.trim() || null),
+    mutationFn: (args: { cents: number; tipCents: number }) =>
+      recordPayment(id!, method, args.cents, receivedText, memoText.trim() || null, args.tipCents),
     onSuccess: () => {
       setPayOpen(false);
       setAmountText('');
       setMemoText('');
+      setTipText('');
       refresh();
     },
     onError: fail,
@@ -180,8 +182,10 @@ export default function InvoiceDetailScreen() {
     setError(null);
     const cents = dollarsStringToCents(amountText);
     if (cents === null || cents <= 0) return setError('Enter a payment amount like 25.00');
+    const tipCents = tipText.trim() ? dollarsStringToCents(tipText) : 0;
+    if (tipCents === null || tipCents < 0) return setError('Enter the tip like 5.00 (or leave it blank)');
     if (!receivedText) return setError('Pick the date the payment was received');
-    payMut.mutate({ cents });
+    payMut.mutate({ cents, tipCents });
   }
 
   const rowBetween = {
@@ -278,6 +282,7 @@ export default function InvoiceDetailScreen() {
                 </View>
                 <Text style={{ color: t.colors.green, fontWeight: '700' }}>
                   {formatCents(p.amount_cents)}
+                  {p.tip_cents > 0 ? ` + ${formatCents(p.tip_cents)} tip` : ''}
                 </Text>
               </View>
             ))}
@@ -308,10 +313,17 @@ export default function InvoiceDetailScreen() {
             ))}
           </View>
           <TextField
-            label="Amount ($)"
+            label="Amount toward invoice ($)"
             value={amountText}
             onChangeText={setAmountText}
             placeholder="25.00"
+            keyboardType="numbers-and-punctuation"
+          />
+          <TextField
+            label="Tip ($, optional — goes to the walker)"
+            value={tipText}
+            onChangeText={setTipText}
+            placeholder="5.00"
             keyboardType="numbers-and-punctuation"
           />
           <DateField label="Received" value={receivedText} onChange={setReceivedText} />

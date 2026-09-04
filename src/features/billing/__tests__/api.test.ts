@@ -310,7 +310,7 @@ describe('rpc wrappers', () => {
     await expect(resendInvoiceEmail('inv-1')).rejects.toThrow('client has no email on file');
   });
 
-  test('recordPayment defaults the memo to null', async () => {
+  test('recordPayment defaults the memo to null and the tip to zero', async () => {
     mockRpcResult = { data: 'pay-1', error: null };
     await recordPayment('inv-1', 'venmo', 2500, '2026-08-25');
     expect(mockRpcLog).toEqual([
@@ -322,6 +322,7 @@ describe('rpc wrappers', () => {
           p_amount_cents: 2500,
           p_received_on: '2026-08-25',
           p_memo: null,
+          p_tip_cents: 0,
         },
       },
     ]);
@@ -368,4 +369,10 @@ describe('rpc wrappers', () => {
     mockRpcResult = { data: null, error: new Error('nope') };
     await expect(sendInvoice('inv-1')).rejects.toThrow('nope');
   });
+});
+
+test('recordPayment passes the tip through (round 7)', async () => {
+  mockRpcResult = { data: 'pay-2', error: null };
+  await recordPayment('inv-1', 'venmo', 2500, '2026-08-25', null, 500);
+  expect(mockRpcLog[0]!.args).toMatchObject({ p_amount_cents: 2500, p_tip_cents: 500 });
 });

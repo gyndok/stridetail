@@ -61,6 +61,8 @@ export type Payment = {
   invoice_id: string;
   method: PaymentMethod;
   amount_cents: number;
+  /** Gratuity portion (round 7): excluded from invoice balance, 100% to the walker. */
+  tip_cents: number;
   received_on: string;
   memo: string | null;
   created_at: string;

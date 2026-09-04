@@ -281,7 +281,13 @@ function AppUpdateCard() {
       <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>{updateLine(info, appVersion)}</Text>
       {info.kind !== 'unavailable' ? (
         outcome?.status === 'ready-to-restart' ? (
-          <Button title="Restart to finish updating" onPress={() => void applyUpdate()} />
+          <>
+            <Button title="Restart to finish updating" onPress={() => void applyUpdate()} />
+            <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
+              The app closes and reopens itself — if your phone shows a &quot;crashed&quot;
+              message afterwards, that&apos;s just how iOS logs the restart; nothing is wrong.
+            </Text>
+          </>
         ) : (
           <Button
             title="Check for updates"

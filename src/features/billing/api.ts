@@ -46,12 +46,12 @@ export const INVOICE_DETAIL_COLUMNS =
   'sent_at, paid_at, revoked_at, notes_md, created_at, updated_at, ' +
   'client:clients(name, phones), ' +
   'items:invoice_items(id, visit_id, description, amount_cents, kind, created_at), ' +
-  'payments:payments(id, method, amount_cents, received_on, memo, created_at)';
+  'payments:payments(id, method, amount_cents, tip_cents, received_on, memo, created_at)';
 
 export type InvoiceDetail = Invoice & {
   client: { name: string; phones: string[] | null } | null;
   items: Pick<InvoiceItem, 'id' | 'visit_id' | 'description' | 'amount_cents' | 'kind' | 'created_at'>[];
-  payments: Pick<Payment, 'id' | 'method' | 'amount_cents' | 'received_on' | 'memo' | 'created_at'>[];
+  payments: Pick<Payment, 'id' | 'method' | 'amount_cents' | 'tip_cents' | 'received_on' | 'memo' | 'created_at'>[];
 };
 
 export async function getInvoice(businessId: string, id: string): Promise<InvoiceDetail> {
@@ -277,6 +277,7 @@ export async function recordPayment(
   amountCents: number,
   receivedOn: string,
   memo?: string | null,
+  tipCents = 0,
 ): Promise<string> {
   return rpc<string>('record_payment', {
     p_invoice: invoiceId,
@@ -284,6 +285,7 @@ export async function recordPayment(
     p_amount_cents: amountCents,
     p_received_on: receivedOn,
     p_memo: memo ?? null,
+    p_tip_cents: tipCents,
   });
 }
 

@@ -165,6 +165,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
+          'Tips: when a client pays extra as a thank-you, record it in the Tip field on Record payment — $30 for a $25 walk is $25 toward the invoice and a $5 tip. The invoice closes cleanly (no confusing credit), and the tip goes to the walker at 100% on their next payout statement, on top of their normal share.',
+      },
+      {
+        kind: 'p',
+        text:
           'Custom prices: some clients have grandfathered or special rates. On the client\u2019s profile, the Custom prices card lists every service — tap one to set that client\u2019s own price. It applies to all their future visits and repeating series (extra-pet charges still add on top); past visits and sent invoices never change. And when booking a one-off visit, the price field is editable right on the New Visit screen for one-time adjustments.',
       },
       {
