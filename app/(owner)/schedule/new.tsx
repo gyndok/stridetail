@@ -6,6 +6,7 @@ import { Text, View } from 'react-native';
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
 import { listClients } from '@/src/features/clients/api';
+import { effectiveBaseCents, listClientPrices } from '@/src/features/billing/clientPrices';
 import { listPets } from '@/src/features/pets/api';
 import {
   fetchVaccineDocs,
@@ -24,13 +25,14 @@ import {
 import { Chip } from '@/src/features/schedule/Chip';
 import { WalkerPicker } from '@/src/features/schedule/WalkerPicker';
 import { localDayWindowUtc } from '@/src/lib/schedule/slotHints';
-import { centsToDollarsString } from '@/src/features/services/form';
+import { centsToDollarsString, dollarsStringToCents } from '@/src/features/services/form';
 import { listServices } from '@/src/features/services/api';
 import { WEEKDAY_LABELS } from '@/src/features/availability/api';
 import { Button } from '@/src/ui/Button';
 import { DateField } from '@/src/ui/DateField';
 import { dateToYmd, roundToNextHour } from '@/src/ui/datetime';
 import { Screen } from '@/src/ui/Screen';
+import { TextField } from '@/src/ui/TextField';
 import { TimeField } from '@/src/ui/TimeField';
 import { useTheme } from '@/src/ui/theme';
 import { errorText } from '@/src/lib/errorText';
@@ -59,6 +61,13 @@ export default function NewVisit() {
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [untilText, setUntilText] = useState('');
   const [walkerId, setWalkerId] = useState<string | null>(null);
+  // Round 6a: the price is EDITABLE for one-off visits. Untouched, it tracks
+  // the computed default (client override ?? service base, + extra pets);
+  // touched, the owner's number wins for this visit only. Derived, not
+  // effect-synced: `priceEditKey` remembers WHICH client+service the manual
+  // text belongs to, so switching either quietly returns to the default.
+  const [priceText, setPriceText] = useState('');
+  const [priceEditKey, setPriceEditKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,6 +91,12 @@ export default function NewVisit() {
     queryKey: ['scheduleMembers', businessId],
     enabled: !!businessId,
     queryFn: () => listActiveMembers(businessId!),
+  });
+  // Round 6a: this client's price overrides (owner-only read).
+  const overrides = useQuery({
+    queryKey: ['clientPrices', businessId, clientId],
+    enabled: !!businessId && !!clientId,
+    queryFn: () => listClientPrices(businessId!, clientId!),
   });
 
   // Required-vaccine warning (wish list #5): fetched per client (all their
@@ -131,7 +146,20 @@ export default function NewVisit() {
     ? { id: slotClientRow.id, lat: slotClientRow.lat ?? null, lng: slotClientRow.lng ?? null }
     : null;
 
-  const price = service && petIds.length > 0 ? priceSnapshotCents(service, petIds.length) : null;
+  const override =
+    (overrides.data ?? []).find((o) => o.service_id === service?.id)?.base_price_cents ?? null;
+  const price =
+    service && petIds.length > 0
+      ? priceSnapshotCents(
+          { ...service, base_price_cents: effectiveBaseCents(override, service.base_price_cents) },
+          petIds.length,
+        )
+      : null;
+  // Untouched (or re-targeted) price field follows the computed default.
+  const priceDefault = price != null ? centsToDollarsString(price) : '';
+  const priceKey = `${clientId ?? ''}|${serviceId ?? ''}`;
+  const priceTouched = priceEditKey === priceKey;
+  const shownPrice = priceTouched ? priceText : priceDefault;
 
   const toggle = (list: string[], id: string) =>
     list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
@@ -149,6 +177,12 @@ export default function NewVisit() {
         return setError('Enter the until date as YYYY-MM-DD');
       // visit_series.walker_id is NOT NULL — a series needs an assigned walker.
       if (!walkerId) return setError('A repeating series needs a walker assigned');
+    }
+    let oneOffPriceCents = price ?? 0;
+    if (repeat === 'off') {
+      const parsed = dollarsStringToCents(shownPrice);
+      if (parsed === null) return setError('Enter the price as dollars, like 25 or 27.50');
+      oneOffPriceCents = parsed;
     }
     setBusy(true);
     try {
@@ -173,7 +207,7 @@ export default function NewVisit() {
           startUtc: window.startUtc,
           endUtc: window.endUtc,
           tz,
-          priceCents: priceSnapshotCents(service, petIds.length),
+          priceCents: oneOffPriceCents,
           walkerId,
         });
       }
@@ -305,10 +339,29 @@ export default function NewVisit() {
         slotClient={slotClient}
       />
 
-      {price != null ? (
+      {price != null && repeat === 'off' ? (
+        <View style={{ gap: t.space.xs }}>
+          <Text style={[t.type.label, { color: t.colors.inkMuted }]}>
+            Price ($){petIds.length > 1 ? ` — ${petIds.length} pets` : ''}
+            {override != null ? ' — uses this client\u2019s custom price' : ''}
+          </Text>
+          <TextField
+            label=""
+            value={shownPrice}
+            onChangeText={(v) => {
+              setPriceEditKey(priceKey);
+              setPriceText(v);
+            }}
+            placeholder={priceDefault}
+            keyboardType="decimal-pad"
+            autoCorrect={false}
+          />
+        </View>
+      ) : null}
+      {price != null && repeat === 'weekly' ? (
         <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>
-          Price: ${centsToDollarsString(price)}
-          {petIds.length > 1 ? ` (${petIds.length} pets)` : ''}
+          Price: ${centsToDollarsString(price)} per visit
+          {override != null ? ' (this client\u2019s custom price)' : ''}
         </Text>
       ) : null}
 

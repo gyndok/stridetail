@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 
+import { ClientPricesCard } from '@/src/features/billing/ClientPricesCard';
 import { balanceView, useClientBalances } from '@/src/features/billing/clientBalances';
 import { useActiveBusiness } from '@/src/features/business/active';
 import {
@@ -192,6 +193,7 @@ export default function ClientDetail() {
               <Text style={{ color: t.colors.ink }}>{c.notes_md}</Text>
             </Card>
           ) : null}
+          <ClientPricesCard businessId={businessId!} clientId={c.id} />
           <Card>
             <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Pets</Text>
             {(pets.data ?? []).map((pet) => {

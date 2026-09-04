@@ -160,6 +160,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
+          'Custom prices: some clients have grandfathered or special rates. On the client\u2019s profile, the Custom prices card lists every service — tap one to set that client\u2019s own price. It applies to all their future visits and repeating series (extra-pet charges still add on top); past visits and sent invoices never change. And when booking a one-off visit, the price field is editable right on the New Visit screen for one-time adjustments.',
+      },
+      {
+        kind: 'p',
+        text:
           'Each client row also shows their money at a glance: a green "$50.00 credit" means you hold their deposit, a red "Owes $30.00" means unpaid invoices, and a settled client shows nothing. The same balance sits at the top of their profile (tap it to jump to Billing) and on the desktop dashboard roster.',
       },
       {

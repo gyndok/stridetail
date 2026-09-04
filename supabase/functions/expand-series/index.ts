@@ -115,7 +115,17 @@ async function expandOne(admin: SupabaseClient, s: SeriesRow, nowMs: number): Pr
   if (memErr) return { seriesId: s.id, inserted: 0, error: memErr.message };
   const status = ownerMem ? 'accepted' : 'offered';
 
-  const price = svc.base_price_cents + svc.extra_pet_price_cents * Math.max(0, s.pet_ids.length - 1);
+  // Round 6a: a per-client override replaces the service BASE price; the
+  // extra-pet formula still applies on top.
+  const { data: override } = await admin
+    .from('client_prices')
+    .select('base_price_cents')
+    .eq('client_id', s.client_id)
+    .eq('service_id', s.service_id)
+    .maybeSingle();
+  const base =
+    (override as { base_price_cents: number } | null)?.base_price_cents ?? svc.base_price_cents;
+  const price = base + svc.extra_pet_price_cents * Math.max(0, s.pet_ids.length - 1);
   const rows = occurrences.map((o) => ({
     business_id: s.business_id,
     client_id: s.client_id,
