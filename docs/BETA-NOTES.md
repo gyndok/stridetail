@@ -209,7 +209,14 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   leading suspect: iOS 27 dev beta (OTA worked on the same phone Sep 2 —
   possibly a newer beta seed since). PRAGMATIC FIX: build 6 cut with
   everything embedded; the embedded App-version card's Check button will
-  surface the real checkForUpdateAsync error for diagnosis. ALSO UNRESOLVED:
+  surface the real checkForUpdateAsync error for diagnosis.
+  **RESOLVED same night:** build 7 (#7 — errored build consumed #5, phone was
+  on #6) installed with everything embedded → fields present; the card's
+  "Check for updates" then FOUND, FETCHED, and APPLIED the next OTA on the
+  SAME iOS 27 phone. Verdict: pipeline healthy; build 6's install had a wedged
+  updates state that survived reinstall. Not iOS 27, not the server. The
+  self-serve card is the permanent remedy — stuck testers self-diagnose in
+  Settings. ALSO UNRESOLVED:
   Alexandria's 0.2.1(4) screenshots show round-2 features (Remove) but not
   round-3 (age field) — inconsistent with fetch-latest semantics; watch her
   device after build 5/6 lands.
