@@ -10,6 +10,7 @@ import { isVisitInvoiced } from '@/src/features/billing/api';
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
 import { marketingPhotosView } from '@/src/features/clients/api';
+import { reproLine } from '@/src/features/pets/helpers';
 import { telUrl } from '@/src/features/clients/form';
 import { petPhotoUrl } from '@/src/features/pets/api';
 import { joinPetNames, reportSmsBody, smsUrl } from '@/src/features/report/deviceSms';
@@ -98,6 +99,7 @@ function PetSection({ pet }: { pet: VisitPetInfo }) {
   });
   const rows = petInstructionRows(pet);
   const speciesLine = [pet.species, pet.breed].filter(Boolean).join(' · ');
+  const repro = reproLine(pet.sex, pet.fixed, pet.last_heat);
   return (
     <Card style={{ gap: t.space.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
@@ -112,6 +114,16 @@ function PetSection({ pet }: { pet: VisitPetInfo }) {
         <View style={{ flexShrink: 1 }}>
           <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>{pet.name}</Text>
           {speciesLine ? <Text style={{ color: t.colors.inkMuted }}>{speciesLine}</Text> : null}
+          {repro ? (
+            <Text
+              style={{
+                color: repro.intact ? t.colors.warning : t.colors.inkMuted,
+                fontWeight: repro.intact ? '700' : '400',
+              }}
+            >
+              {repro.text}
+            </Text>
+          ) : null}
         </View>
       </View>
       {pet.reactivity_md ? (

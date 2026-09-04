@@ -152,7 +152,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         kind: 'steps',
         items: [
           'Add a client: Clients tab → Add client. Name is all that’s required, but add their phone, email, and address while you’re there — the email is what portal invites go to, and the address places them on the map for scheduling.',
-          'Add their pets: open the client, tap Add pet. Species and breed help walkers know what they’re meeting; feeding, medications, allergies, and behavior notes are what a walker sees mid-visit — write them like instructions to a new sitter. Add the vet’s info and a photo too. For age, just type what the client tells you — "3", "8 mo", or an exact birthday like 2023-03-10 if they know it.',
+          'Add their pets: open the client, tap Add pet. Species and breed help walkers know what they’re meeting; feeding, medications, allergies, and behavior notes are what a walker sees mid-visit — write them like instructions to a new sitter. Add the vet’s info and a photo too. For age, just type what the client tells you — "3", "8 mo", or an exact birthday like 2023-03-10 if they know it. Mark the sex and whether the pet is spayed or neutered — an intact pet shows highlighted on the walker’s visit screen so nobody gets surprised, and an intact female can carry a "last heat" date.',
           'Edit anytime: open the client or pet and tap Edit — changes show up for walkers immediately. Made a duplicate pet by accident? Open it and tap Delete pet — it works only for pets with no visit history, so real records can never vanish.',
           'Vaccine records: on the pet’s profile, Add document, pick the type (Rabies, DHPP, FVRCP for cats, and so on) and the expiry date from the certificate.',
         ],

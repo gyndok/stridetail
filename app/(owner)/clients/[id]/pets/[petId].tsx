@@ -8,7 +8,7 @@ import { useActiveBusiness } from '@/src/features/business/active';
 import { telUrl } from '@/src/features/clients/form';
 import { deletePet, getPet, petPhotoUrl, updatePet, uploadPetPhoto } from '@/src/features/pets/api';
 import { DocumentsSection } from '@/src/features/pets/DocumentsSection';
-import { petAge } from '@/src/features/pets/helpers';
+import { petAge, reproLine } from '@/src/features/pets/helpers';
 import { PetForm } from '@/src/features/pets/PetForm';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { Button } from '@/src/ui/Button';
@@ -65,6 +65,7 @@ export default function PetProfile() {
 
   const age = petAge(p?.birthdate ?? null);
   const speciesLine = p ? [p.species, p.breed].filter(Boolean).join(' · ') : null;
+  const repro = p ? reproLine(p.sex, p.fixed, p.last_heat) : null;
 
   return (
     <Screen title={p?.name ?? 'Pet'}>
@@ -95,6 +96,16 @@ export default function PetProfile() {
           <Card>
             <Text style={[t.type.label, { color: t.colors.inkMuted }]}>About</Text>
             {speciesLine ? <Text style={{ color: t.colors.ink }}>{speciesLine}</Text> : null}
+            {repro ? (
+              <Text
+                style={{
+                  color: repro.intact ? t.colors.warning : t.colors.ink,
+                  fontWeight: repro.intact ? '700' : '400',
+                }}
+              >
+                {repro.text}
+              </Text>
+            ) : null}
             {age ? (
               <Text style={{ color: t.colors.ink }}>
                 {age} old{p.birthdate ? ` (born ${p.birthdate})` : ''}

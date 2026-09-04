@@ -95,3 +95,29 @@ export function validatePet(values: {
   }
   return errors;
 }
+
+// ---- sex / spay-neuter line (round 5: first outside-tester feedback —
+// "so the sitter knows to ask") ----
+
+export type ReproLine = { text: string; intact: boolean };
+
+/**
+ * One display line for a pet's reproductive status, shared by the owner pet
+ * profile and the walker visit brief. `intact: true` marks the case the
+ * sitter must know about (rendered as a warning): a pet recorded as NOT
+ * fixed. Unknown fixed-status never flags — absence of data is not a fact.
+ */
+export function reproLine(
+  sex: string | null | undefined,
+  fixed: boolean | null | undefined,
+  lastHeat: string | null | undefined,
+): ReproLine | null {
+  const sexText = sex === 'male' ? 'Male' : sex === 'female' ? 'Female' : null;
+  if (!sexText && fixed == null) return null;
+  const fixedText =
+    fixed === true ? (sex === 'male' ? 'neutered' : 'spayed') : fixed === false ? 'INTACT' : null;
+  const heat =
+    fixed === false && sex === 'female' && lastHeat ? ` — last heat ${lastHeat}` : '';
+  const text = [sexText, fixedText].filter(Boolean).join(' · ') + heat;
+  return { text, intact: fixed === false };
+}

@@ -29,6 +29,9 @@ export type VisitPetInfo = {
   name: string;
   species: string | null;
   breed: string | null;
+  sex: string | null;
+  fixed: boolean | null;
+  last_heat: string | null;
   feeding_md: string | null;
   meds_md: string | null;
   allergies: string | null;
@@ -55,7 +58,7 @@ export type VisitDetail = {
 
 export const VISIT_CLIENT_COLUMNS = 'id, name, phones, address, notes_md, marketing_photos_ok';
 export const VISIT_PET_COLUMNS =
-  'id, name, species, breed, feeding_md, meds_md, allergies, reactivity_md, ' +
+  'id, name, species, breed, sex, fixed, last_heat, feeding_md, meds_md, allergies, reactivity_md, ' +
   'vet_name, vet_phone, vet_address, photo_path';
 export const VISIT_SERVICE_COLUMNS = 'id, name, duration_min, requires_gps';
 

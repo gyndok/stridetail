@@ -6,6 +6,12 @@ export type Pet = {
   name: string;
   species: string | null;
   breed: string | null;
+  /** 'male' | 'female' | null (round 5). */
+  sex: string | null;
+  /** Spayed/neutered; null = unknown (round 5). */
+  fixed: boolean | null;
+  /** Most recent heat, intact females (round 5). 'YYYY-MM-DD'. */
+  last_heat: string | null;
   birthdate: string | null; // date column → 'YYYY-MM-DD'
   feeding_md: string | null;
   meds_md: string | null;
@@ -24,6 +30,9 @@ export type PetInput = {
   name: string;
   species?: string | null;
   breed?: string | null;
+  sex?: string | null;
+  fixed?: boolean | null;
+  last_heat?: string | null;
   birthdate?: string | null;
   feeding_md?: string | null;
   meds_md?: string | null;

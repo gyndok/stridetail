@@ -1,4 +1,4 @@
-import { birthdateFromAgeInput, petAge, storagePetPhotoPath, validatePet } from '../helpers';
+import { birthdateFromAgeInput, petAge, reproLine, storagePetPhotoPath, validatePet } from '../helpers';
 
 // ---- petAge (pure date-only math; `now` injected, no time zone involved) ----
 
@@ -87,4 +87,23 @@ test('birthdateFromAgeInput: exact dates pass through; future/invalid rejected',
   expect(birthdateFromAgeInput('2030-01-01', NOW)).toBeNull();
   expect(birthdateFromAgeInput('2023-02-30', NOW)).toBeNull();
   expect(birthdateFromAgeInput('soon', NOW)).toBeNull();
+});
+
+// ---- reproLine (round 5: first outside-tester feedback) ----
+
+test('reproLine renders spayed/neutered and flags intact', () => {
+  expect(reproLine('female', true, null)).toEqual({ text: 'Female · spayed', intact: false });
+  expect(reproLine('male', true, null)).toEqual({ text: 'Male · neutered', intact: false });
+  expect(reproLine('male', false, null)).toEqual({ text: 'Male · INTACT', intact: true });
+  expect(reproLine('female', false, '2026-08-15')).toEqual({
+    text: 'Female · INTACT — last heat 2026-08-15',
+    intact: true,
+  });
+});
+
+test('reproLine degrades gracefully: sex only, fixed only, nothing at all', () => {
+  expect(reproLine('female', null, null)).toEqual({ text: 'Female', intact: false });
+  expect(reproLine(null, false, null)).toEqual({ text: 'INTACT', intact: true });
+  expect(reproLine(null, null, null)).toBeNull();
+  expect(reproLine(null, null, '2026-08-15')).toBeNull(); // heat without context is noise
 });
