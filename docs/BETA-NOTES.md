@@ -134,6 +134,31 @@ sponsor to research SMS approaches later). GREEN-LIT: #5, #2, #1, and #7 with a
   hello@stridetail.com (the .app address received no mail), privacy now lists
   short videos + the per-client marketing-photo consent record.
 
+## Round 4 (Alexandra by text, 2026-09-03) — staff push notifications, BUILT 2026-09-04
+- Her ask: walkers notified "when a call needs to be reviewed and accepted/
+  declined" — wish-list #8 landing. Three staff moments wired, all through the
+  existing notifications queue (new channel='push', mirror of sms/email):
+  1. visit_offered → push to the offered walker ("Olivia · Walk — Thu, Sep 4,
+     3:00 PM. Open to accept or decline.")
+  2. visit_declined → push to all active owners (walker name + reason)
+  3. booking_request → push to all active owners (client name)
+- Plumbing: push_tokens table (own-rows RLS; sender reads via service role);
+  queue_push definer helper; offer_visit/decline_visit replaced to queue;
+  booking_requests AFTER INSERT trigger; per-minute send-push cron (own vault
+  secret push_cron_secret, aligned to PUSH_CRON_SECRET env); send-push edge fn
+  (claim-race-safe, 1/5/15/60 backoff, DeviceNotRegistered prunes tokens, no
+  tokens = terminal skip). Deployed to hosted; pgTAP 765 green.
+- Client: registerForPush() on staff sign-in in both layouts (permission ask,
+  Expo token upsert); **BINARY-GATED to runtime >= 0.2.2** (expo-notifications
+  is native; 0.2.1 binaries no-op via pushSupportedFor — videoSupport pattern).
+- **0.2.2 CUT**: version bumped, iOS build e995f8ca + Android 9bcbd6ea queued.
+- OPEN RISK: Expo push delivery on iOS needs an APNs push key on EAS. The
+  non-interactive build reuses credentials but cannot CREATE a push key. If
+  test pushes fail with credential errors: sponsor runs
+  `bunx eas-cli credentials -p ios` once (interactive) and lets EAS make one.
+- Android delivery additionally needs FCM v1 credentials on EAS (not set up —
+  zero Android users; do when a real Android tester exists).
+
 ## Round 3 (Alexandra by text, 2026-09-02) — SHIPPED same day
 - **Age instead of birthday** on the pet form ("a lot of people don't know
   their dog's birthday"): one field accepts "3", "3.5", "8 mo", or an exact
