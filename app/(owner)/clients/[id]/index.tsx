@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 
+import { ClientLedger } from '@/src/features/billing/ClientLedger';
 import { ClientPricesCard } from '@/src/features/billing/ClientPricesCard';
 import { balanceView, useClientBalances } from '@/src/features/billing/clientBalances';
 import { useActiveBusiness } from '@/src/features/business/active';
@@ -36,6 +37,8 @@ export default function ClientDetail() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [inviteBusy, setInviteBusy] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
+  // Round 7b: the Balance card expands the client's ledger in place.
+  const [ledgerOpen, setLedgerOpen] = useState(false);
 
   const client = useQuery({
     queryKey: ['client', businessId, id],
@@ -114,10 +117,7 @@ export default function ClientDetail() {
       {c ? (
         <>
           {balances.isSuccess ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push(`/billing?client=${c.id}` as Href)}
-            >
+            <Pressable accessibilityRole="button" onPress={() => setLedgerOpen((v) => !v)}>
               <Card
                 style={{
                   flexDirection: 'row',
@@ -145,6 +145,7 @@ export default function ClientDetail() {
               </Card>
             </Pressable>
           ) : null}
+          {ledgerOpen ? <ClientLedger businessId={businessId!} clientId={c.id} /> : null}
           <Card>
             <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Contact</Text>
             {c.phones.map((phone) => (
