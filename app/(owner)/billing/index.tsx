@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useGlobalSearchParams, useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -66,8 +66,12 @@ export default function BillingIndex() {
   const [filter, setFilter] = useState<FilterKey>('all');
   // Deep-linked client focus (round 6b): a client-profile Balance tap lands on
   // /billing?client=<id> and sees only that client's invoices, with a
-  // dismissible chip to widen back out.
-  const { client: clientParam } = useLocalSearchParams<{ client?: string }>();
+  // dismissible chip to widen back out. GLOBAL search params on purpose:
+  // native tab screens stay mounted, and local params don't refresh when a
+  // push re-enters the live tab with a new query (web was fine, iOS wasn't —
+  // sponsor's report, 2026-09-04).
+  const { client: clientRaw } = useGlobalSearchParams<{ client?: string | string[] }>();
+  const clientParam = Array.isArray(clientRaw) ? clientRaw[0] : clientRaw;
 
   const invoices = useQuery({
     queryKey: ['invoices', businessId],
