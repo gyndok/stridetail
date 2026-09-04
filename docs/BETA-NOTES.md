@@ -196,6 +196,31 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   membership is the "Public link — Anonymous" row (15 sessions, iPhone 13).
   Named row safe to delete.
 
+## Round 5b (ALEXANDRIA's 4-item TestFlight barrage, 2026-09-04 4:31–4:39 PM)
+1. **BUG, FIXED SAME HOUR**: Remove on a SYNCED event failed 42501, rendered
+   "[object Object]". Root cause: round-2 shipped the walker DELETE POLICY on
+   visit_events without the table-level DELETE GRANT (grants and policies are
+   separate layers — same family as the 8/23 revoke-from-public lesson; the
+   family testers never hit it because their removes dequeued from the outbox
+   before sync). Grant applied to hosted (fixed for her 0.2.1 instantly);
+   shared src/lib/errorText.ts unwraps message-bearing objects across all 28
+   call sites (OTA runtime 0.2.2); pgTAP 021 pins grant+policy; BONUS FOUND:
+   push_tokens had default anon grants (new-table trap, broke 019's invariant)
+   — revoked. 771 pgTAP.
+2. **Per-client price override** ("grandfathered price... can't find where to
+   change it"): pricing is per-SERVICE only today. Round-6 candidate: editable
+   price on New Visit (quick) and/or per-client service overrides (proper).
+   NOT BUILT — needs sponsor/product call.
+3. **Tab-bar "glitch"** (sometimes 4 tabs, sometimes 6): BY DESIGN but
+   confusing — the active-walk screens live in the walker route group, so a
+   dual-role owner sees the walker shell (4 tabs) while walking and the owner
+   shell (6) elsewhere. Backlog: unify shells or add a clear "back to owner
+   view" affordance. Explain to testers meanwhile.
+4. **Un-complete a visit** (accidental finish/test visits): completed is
+   terminal by design (report + invoice lines exist). Backlog design: owner
+   "reopen visit" that revokes the report + pulls draft-invoice lines, and/or
+   a walker "abort visit" for accidental starts. Needs design, not a quickie.
+
 ## Round 3 (Alexandra by text, 2026-09-02) — SHIPPED same day
 - **Age instead of birthday** on the pet form ("a lot of people don't know
   their dog's birthday"): one field accepts "3", "3.5", "8 mo", or an exact
