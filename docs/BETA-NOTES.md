@@ -256,7 +256,10 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
 - TYPE GOTCHA: memberships.payout_percent is numeric(5,2) — RETURNS TABLE
   declared int broke with "structure of query does not match"; declare numeric.
 - App-side ledger STILL not rendering on sponsor's device despite updates —
-  BUILD 8 cut with everything embedded (ledger, picker, tips, owed-now).
+  BUILD 8 cut with everything embedded; **VERIFIED WORKING on build 8**.
+  Verdict on the device saga: sponsor's iOS 27 beta applies OTAs
+  unreliably (some yes, some silently dropped) — feature code was always
+  fine. POLICY: sponsor's phone rides binaries; stable-iOS testers ride OTAs.
 
 ## Round 7b — inline client ledger (sponsor, 2026-09-04 evening) — SHIPPED
 - Balance on the client profile now UNFOLDS IN PLACE (no bounce to Billing):
