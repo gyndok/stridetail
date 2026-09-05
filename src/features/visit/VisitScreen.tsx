@@ -12,15 +12,24 @@ import { useMemberships } from '@/src/features/business/useMemberships';
 import { marketingPhotosView } from '@/src/features/clients/api';
 import { reproLine } from '@/src/features/pets/helpers';
 import { telUrl } from '@/src/features/clients/form';
-import { petPhotoUrl } from '@/src/features/pets/api';
+import { listPets, petPhotoUrl } from '@/src/features/pets/api';
 import { joinPetNames, reportSmsBody, smsUrl } from '@/src/features/report/deviceSms';
+import { effectiveBaseCents, listClientPrices } from '@/src/features/billing/clientPrices';
+import { formatCents } from '@/src/features/billing/money';
 import {
   cancelVisit,
+  isEditableStatus,
   listActiveMembers,
   memberName,
   offerVisit,
   pickerContext,
+  priceSnapshotCents,
+  updateVisitDetails,
+  visitInstants,
+  type VisitEditInput,
 } from '@/src/features/schedule/api';
+import { Chip } from '@/src/features/schedule/Chip';
+import { listServices } from '@/src/features/services/api';
 import {
   getReportEmailStatus,
   getVisitReport,
@@ -50,6 +59,7 @@ import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { BillingIcon, LockIcon } from '@/src/ui/icons';
 import { Screen } from '@/src/ui/Screen';
+import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
 
 /**
@@ -318,6 +328,25 @@ export default function VisitScreen() {
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
+  // Edit-in-place (Alexandra, 2026-09-05): recompose pets / service / window
+  // on a not-yet-started visit instead of cancel-and-recreate.
+  const [editOpen, setEditOpen] = useState(false);
+  const [editServiceId, setEditServiceId] = useState<string | null>(null);
+  const [editPetIds, setEditPetIds] = useState<string[]>([]);
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+  const editMut = useMutation({
+    mutationFn: (input: VisitEditInput) => updateVisitDetails(id!, input),
+    onSuccess: () => {
+      setEditOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ['visitDetail', id] });
+      void queryClient.invalidateQueries({ queryKey: ['visits', businessId] });
+      void queryClient.invalidateQueries({ queryKey: ['myVisits'] });
+    },
+    onError: (e) => setEditError(errorText(e)),
+  });
+
   // Role in the active business decides the management block; being the
   // visit's walker_id decides the execution block. Both may be true.
   const isOwnerRole =
@@ -352,6 +381,22 @@ export default function VisitScreen() {
     queryKey: ['visitInvoiced', businessId, v?.id],
     enabled: !!businessId && isOwnerRole && v?.status === 'completed',
     queryFn: () => isVisitInvoiced(businessId!, v!.id),
+  });
+  // Edit-card context, fetched only while the card is open (owner-only data).
+  const editServices = useQuery({
+    queryKey: ['services', businessId],
+    enabled: !!businessId && editOpen,
+    queryFn: () => listServices(businessId!),
+  });
+  const editClientPets = useQuery({
+    queryKey: ['pets', businessId, v?.client_id],
+    enabled: !!businessId && editOpen && !!v?.client_id,
+    queryFn: () => listPets(businessId!, v!.client_id),
+  });
+  const editOverrides = useQuery({
+    queryKey: ['clientPrices', businessId, v?.client_id],
+    enabled: !!businessId && editOpen && !!v?.client_id,
+    queryFn: () => listClientPrices(businessId!, v!.client_id),
   });
   // Completed-visit route map (Plan 7b Task 3): both roles' RLS can read
   // visit_tracks/visit_events for their own visits. Native only — the maps
@@ -448,6 +493,44 @@ export default function VisitScreen() {
   const owner = { role: 'owner' as const, isAssignee: false };
   const canOffer = isOwnerRole && canTransition(v.status, 'offered', owner);
   const canCancel = isOwnerRole && canTransition(v.status, 'cancelled', owner);
+  const canEdit = isOwnerRole && isEditableStatus(v.status);
+
+  const openEdit = () => {
+    setEditServiceId(v.service_id);
+    setEditPetIds(v.pet_ids);
+    setEditDate(formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'yyyy-MM-dd'));
+    setEditTime(formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'HH:mm'));
+    setEditError(null);
+    setEditOpen(true);
+  };
+  const editService = (editServices.data ?? []).find((s) => s.id === editServiceId) ?? null;
+  const editOverride =
+    (editOverrides.data ?? []).find((o) => o.service_id === editServiceId)?.base_price_cents ??
+    null;
+  const editPrice =
+    editService && editPetIds.length > 0
+      ? priceSnapshotCents(
+          {
+            ...editService,
+            base_price_cents: effectiveBaseCents(editOverride, editService.base_price_cents),
+          },
+          editPetIds.length,
+        )
+      : null;
+  function submitEdit() {
+    setEditError(null);
+    if (!editService) return setEditError('Pick a service');
+    if (editPetIds.length === 0) return setEditError('Pick at least one pet');
+    const window = visitInstants(editDate, editTime, editService.duration_min, v!.business_tz);
+    if (!window) return setEditError('Check the date (YYYY-MM-DD) and time (HH:MM)');
+    editMut.mutate({
+      serviceId: editService.id,
+      petIds: editPetIds,
+      priceCents: editPrice ?? 0,
+      startUtc: window.startUtc,
+      endUtc: window.endUtc,
+    });
+  }
 
   const day = formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'EEEE, MMM d, yyyy');
   const start = formatInTimeZone(new Date(v.scheduled_start), v.business_tz, 'HH:mm');
@@ -597,6 +680,59 @@ export default function VisitScreen() {
             />
           ) : null}
         </>
+      ) : null}
+
+      {/* ---- Edit in place (Alexandra): pets / service / window, pre-start ---- */}
+      {canEdit && !editOpen ? (
+        <Button title="Edit visit" variant="secondary" onPress={openEdit} />
+      ) : null}
+      {canEdit && editOpen ? (
+        <Card style={{ gap: t.space.sm }}>
+          <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Edit visit</Text>
+          <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>Service</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
+            {(editServices.data ?? []).map((s) => (
+              <Chip
+                key={s.id}
+                label={s.name}
+                selected={editServiceId === s.id}
+                onPress={() => setEditServiceId(s.id)}
+              />
+            ))}
+          </View>
+          <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>Pets</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
+            {(editClientPets.data ?? []).map((p) => (
+              <Chip
+                key={p.id}
+                label={p.name}
+                selected={editPetIds.includes(p.id)}
+                onPress={() =>
+                  setEditPetIds((cur) =>
+                    cur.includes(p.id) ? cur.filter((x) => x !== p.id) : [...cur, p.id],
+                  )
+                }
+              />
+            ))}
+          </View>
+          <TextField label="Date (YYYY-MM-DD)" value={editDate} onChangeText={setEditDate} />
+          <TextField label="Time (HH:MM)" value={editTime} onChangeText={setEditTime} />
+          {editPrice != null ? (
+            <Text style={{ color: t.colors.ink }}>
+              Price: {formatCents(editPrice)}
+              {editOverride != null ? ' (client price)' : ''}
+            </Text>
+          ) : null}
+          {v.walker_id ? (
+            <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
+              {memberName(members.data ?? [], v.walker_id)} keeps this visit — give them a
+              heads-up if the details changed.
+            </Text>
+          ) : null}
+          {editError ? <Text style={{ color: t.colors.danger }}>{editError}</Text> : null}
+          <Button title="Save changes" onPress={submitEdit} loading={editMut.isPending} />
+          <Button title="Close" variant="ghost" onPress={() => setEditOpen(false)} />
+        </Card>
       ) : null}
 
       {!isOwnerRole && isAssignee && v.status === 'completed' && businessId ? (

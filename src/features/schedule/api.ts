@@ -770,6 +770,46 @@ export async function createVisit(input: VisitInput): Promise<{ id: string }> {
   return { id };
 }
 
+/**
+ * Owner may recompose a visit only before execution starts — once a walker is
+ * out (or the visit is done/cancelled), edits would rewrite history.
+ */
+export function isEditableStatus(status: string): boolean {
+  return status === 'unassigned' || status === 'offered' || status === 'accepted';
+}
+
+export type VisitEditInput = {
+  serviceId: string;
+  petIds: string[];
+  /** Recomputed by the caller: priceSnapshotCents over the override-aware base. */
+  priceCents: number;
+  startUtc: Date;
+  endUtc: Date;
+};
+
+/**
+ * Edit a scheduled visit in place (Alexandra, 2026-09-05: "I would like to be
+ * able to edit the calls so that if I make a mistake in which pets I've
+ * clicked on or what type of call it is then I can change it"). The price
+ * snapshot is re-stamped alongside — a changed service or pet count changes
+ * the money, and invoicing reads only the snapshot. Status and walker are
+ * untouched: an accepted visit stays with its walker, who sees the new
+ * details on their next look. No returning select (column grant).
+ */
+export async function updateVisitDetails(id: string, input: VisitEditInput): Promise<void> {
+  const { error } = await supabase
+    .from('visits')
+    .update({
+      service_id: input.serviceId,
+      pet_ids: input.petIds,
+      price_cents_snapshot: input.priceCents,
+      scheduled_start: input.startUtc.toISOString(),
+      scheduled_end: input.endUtc.toISOString(),
+    })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 /** Move a visit's window. No returning select (column grant). */
 export async function rescheduleVisit(id: string, startUtc: Date, endUtc: Date): Promise<void> {
   const { error } = await supabase

@@ -124,7 +124,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Assigning works like an offer: when you offer a visit to a walker, their phone gets a push notification the moment it lands (each person allows notifications once, when the app asks), and they see it on their Today screen and accept or decline. You get a notification back when a walker declines and when a new booking request arrives. A decline always comes with a reason and puts the visit back in the unassigned pile — which shows up in Needs attention so nothing slips. You can also assign directly when you don’t need the accept step.',
+          'Assigning works like an offer: when you offer a visit to a walker, their phone gets a push notification the moment it lands (each person allows notifications once, when the app asks), and they see it on their Today screen and accept or decline. You get a notification back when a walker declines and when a new booking request arrives. A decline always comes with a reason and puts the visit back in the unassigned pile — which shows up in Needs attention so nothing slips. You can also assign directly when you don’t need the accept step. Made a mistake booking? Open the visit and tap Edit visit to change the pets, the service, or the time — right up until the walk starts. The price updates to match, and if a walker already has the visit they keep it (give them a heads-up about the change).',
       },
       {
         kind: 'p',

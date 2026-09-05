@@ -3,6 +3,17 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Edit visit in place** (2026-09-05, Alexandra: "I'm only able to start or
+  cancel calls once they're put into the schedule... if I make a mistake in
+  which pets I've clicked on or what type of call it is then I can change
+  it"): Edit visit button on the unified visit screen for owner +
+  unassigned/offered/accepted (isEditableStatus — never once started). Card
+  edits service (chips), pets (chips), date/time; price_cents_snapshot is
+  RE-STAMPED via the same override-aware priceSnapshotCents as creation, so
+  invoicing follows. Status/walker untouched — an accepted visit stays with
+  its walker (inline heads-up hint). updateVisitDetails uses the broad owner
+  update policy; no returning select (price column grant). Manual updated.
+  Published for BOTH runtimes (0.2.2 build-8 testers + 0.2.3 build 9).
 - RESOLVED same day: Alexandra's startup crash was a one-time failed launch —
   expo-updates' ErrorRecovery fallback worked and the app opened normally on
   relaunch. No rollback needed; today's OTAs stayed on the channel. Any

@@ -8,7 +8,9 @@ import {
   memberName,
   offerVisit,
   pickerContext,
+  isEditableStatus,
   priceSnapshotCents,
+  updateVisitDetails,
   visitInstants,
   walkerFlags,
   type PickerContext,
@@ -337,4 +339,39 @@ test('pickerContext fetches business rules, window time off, and overlapping ass
   expect(names).toContain('neq');
   expect(names).toContain('lt');
   expect(names).toContain('gt');
+});
+
+// ---- edit in place (Alexandra, 2026-09-05) ----
+
+test('isEditableStatus: pre-start only', () => {
+  expect(isEditableStatus('unassigned')).toBe(true);
+  expect(isEditableStatus('offered')).toBe(true);
+  expect(isEditableStatus('accepted')).toBe(true);
+  expect(isEditableStatus('in_progress')).toBe(false);
+  expect(isEditableStatus('completed')).toBe(false);
+  expect(isEditableStatus('cancelled')).toBe(false);
+});
+
+test('updateVisitDetails re-stamps composition, window, AND the price snapshot', async () => {
+  mockResults.push({ data: null, error: null });
+  await updateVisitDetails('v1', {
+    serviceId: 's2',
+    petIds: ['p1', 'p2'],
+    priceCents: 3500,
+    startUtc: new Date('2026-09-06T14:00:00Z'),
+    endUtc: new Date('2026-09-06T14:30:00Z'),
+  });
+  const q = mockLog[0]!;
+  expect(q.table).toBe('visits');
+  const update = q.steps.find(([n]) => n === 'update')![1][0] as Record<string, unknown>;
+  expect(update).toEqual({
+    service_id: 's2',
+    pet_ids: ['p1', 'p2'],
+    price_cents_snapshot: 3500,
+    scheduled_start: '2026-09-06T14:00:00.000Z',
+    scheduled_end: '2026-09-06T14:30:00.000Z',
+  });
+  expect(q.steps.filter(([n]) => n === 'eq').map(([, a]) => a)).toEqual([['id', 'v1']]);
+  // No returning select: the price column grant rejects it.
+  expect(q.steps.some(([n]) => n === 'select')).toBe(false);
 });
