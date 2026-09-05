@@ -157,6 +157,13 @@ function ActiveVisitBody() {
     if (Platform.OS === 'web' || !id) return;
     const poll = async () => {
       setPendingCount(await new SqliteOutbox(getDb()).countPending(id));
+      // Non-GPS visits never write the local active_visit row, so the timer's
+      // only source is the server's started_at — but the detail query was
+      // fetched BEFORE the start synced and nothing refetched it (Alexandria,
+      // 2026-09-05: timer stuck at --:--:-- with a SYNCED badge). Keep
+      // refetching until it lands.
+      const cached = queryClient.getQueryData<VisitDetail>(['visitDetail', id]);
+      if (!cached?.visit.started_at) void detail.refetch();
       if (requiresGps) {
         const points = await getLocalTrack(id);
         setTrack(points);

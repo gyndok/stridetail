@@ -224,6 +224,19 @@ export async function createInvoice(
   });
 }
 
+/**
+ * Backdate (or re-date) a DRAFT invoice (Alexandria, 2026-09-05: "forgot to
+ * start it 9/4 and it won't let me backdate it"). Plain owner-RLS update —
+ * drafts are pre-send working documents; the status machine is untouched.
+ */
+export async function setInvoiceIssuedOn(invoiceId: string, issuedOn: string): Promise<void> {
+  const { error } = await supabase
+    .from('invoices')
+    .update({ issued_on: issuedOn })
+    .eq('id', invoiceId);
+  if (error) throw error;
+}
+
 /** Manual line (signed cents — negatives are discounts/tips given). */
 export async function addInvoiceItem(
   invoiceId: string,

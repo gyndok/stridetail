@@ -27,7 +27,8 @@ import { WalkerPicker } from '@/src/features/schedule/WalkerPicker';
 import { localDayWindowUtc } from '@/src/lib/schedule/slotHints';
 import { centsToDollarsString, dollarsStringToCents } from '@/src/features/services/form';
 import { listServices } from '@/src/features/services/api';
-import { WEEKDAY_LABELS } from '@/src/features/availability/api';
+import { parseLocalDateTime, WEEKDAY_LABELS } from '@/src/features/availability/api';
+import { formatInTimeZone } from 'date-fns-tz';
 import { Button } from '@/src/ui/Button';
 import { DateField } from '@/src/ui/DateField';
 import { dateToYmd, roundToNextHour } from '@/src/ui/datetime';
@@ -57,6 +58,12 @@ export default function NewVisit() {
   const [petIds, setPetIds] = useState<string[]>([]);
   const [dateText, setDateText] = useState(() => dateToYmd(new Date()));
   const [timeText, setTimeText] = useState(() => roundToNextHour(new Date()));
+  // Optional end override (Alexandria, 2026-09-05: multi-night overnight
+  // stays). Untouched, the end follows date/time/service duration; the
+  // edit-key pattern (like the price field) tracks when it was overridden.
+  const [endEditKey, setEndEditKey] = useState<string | null>(null);
+  const [endDateText, setEndDateText] = useState('');
+  const [endTimeText, setEndTimeText] = useState('');
   const [repeat, setRepeat] = useState<'off' | 'weekly'>('off');
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [untilText, setUntilText] = useState('');
@@ -131,6 +138,18 @@ export default function NewVisit() {
   // useMemo over `service` (possibly-mutated dependency).
   const window = service && tz ? visitInstants(dateText, timeText, service.duration_min, tz) : null;
 
+  // End override plumbing: untouched fields track the duration-derived end.
+  const endKey = `${dateText}|${timeText}|${serviceId ?? ''}`;
+  const endTouched = endEditKey === endKey;
+  const defaultEndDate = window && tz ? formatInTimeZone(window.endUtc, tz, 'yyyy-MM-dd') : '';
+  const defaultEndTime = window && tz ? formatInTimeZone(window.endUtc, tz, 'HH:mm') : '';
+  const shownEndDate = endTouched ? endDateText : defaultEndDate;
+  const shownEndTime = endTouched ? endTimeText : defaultEndTime;
+  const overriddenEndUtc =
+    endTouched && tz
+      ? parseLocalDateTime(`${endDateText.trim()} ${endTimeText.trim()}`, tz)
+      : null;
+
   // Fetched over the visit's whole LOCAL DAY (not just the window) so the
   // picker's tight-transfer flag sees the walker's neighbouring visits; day key
   // doubles as the cache key, so time edits within a day are pure recompute.
@@ -171,6 +190,12 @@ export default function NewVisit() {
     if (!service) return setError('Pick a service');
     if (petIds.length === 0) return setError('Pick at least one pet');
     if (!window) return setError('Pick a date and time');
+    if (repeat === 'off' && endTouched) {
+      if (!overriddenEndUtc) return setError('Check the end date (YYYY-MM-DD) and time (HH:MM)');
+      if (overriddenEndUtc.getTime() <= window.startUtc.getTime()) {
+        return setError('The end must come after the start');
+      }
+    }
     if (repeat === 'weekly') {
       if (weekdays.length === 0) return setError('Pick at least one weekday to repeat on');
       if (untilText.trim() && !ISO_DATE.test(untilText.trim()))
@@ -205,7 +230,7 @@ export default function NewVisit() {
           serviceId: service.id,
           petIds,
           startUtc: window.startUtc,
-          endUtc: window.endUtc,
+          endUtc: endTouched && overriddenEndUtc ? overriddenEndUtc : window.endUtc,
           tz,
           priceCents: oneOffPriceCents,
           walkerId,
@@ -290,8 +315,36 @@ export default function NewVisit() {
       <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
         Times are in the business time zone{tz ? ` (${tz})` : ''}.
       </Text>
-      <DateField label="Date" value={dateText} onChange={setDateText} minimumDate={startOfToday()} />
+      {/* No minimumDate: recording a visit that already happened is legal
+          (Alexandria, 2026-09-05 — "forgot to start it 9/4"). */}
+      <DateField label="Date" value={dateText} onChange={setDateText} />
       <TimeField label="Time" value={timeText} onChange={setTimeText} />
+      {repeat === 'off' ? (
+        <>
+          <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
+            Ends {shownEndDate && shownEndDate !== dateText.trim() ? 'on the date below' : 'the same day'} —
+            change it for multi-day care like overnight stays.
+          </Text>
+          <DateField
+            label="End date"
+            value={shownEndDate}
+            onChange={(v) => {
+              setEndEditKey(endKey);
+              setEndDateText(v);
+              setEndTimeText(shownEndTime);
+            }}
+          />
+          <TimeField
+            label="End time"
+            value={shownEndTime}
+            onChange={(v) => {
+              setEndEditKey(endKey);
+              setEndDateText(shownEndDate);
+              setEndTimeText(v);
+            }}
+          />
+        </>
+      ) : null}
 
       <Text style={[t.type.title, { color: t.colors.ink }]}>Repeat</Text>
       <View style={chipRow}>

@@ -3,6 +3,25 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Alexandria round 3** (2026-09-05 afternoon, three TestFlight reports):
+  1. *Walk timer stuck at --:--:-- with SYNCED badge*: non-GPS visits never
+     write the local active_visit row, and the active screen's detail query
+     was fetched before the start synced and never refetched — the poll now
+     refetches until started_at lands. (Her "mileage" ask: distance only
+     records for services with GPS turned on — settings note, not a bug.)
+  2. *Backdating*: the one-off New-visit date picker dropped its
+     minimumDate (recording a walk that already happened is legal), and a
+     DRAFT invoice's "Issued on" is now an editable DateField (plain
+     owner-RLS update; status machine untouched).
+  3. *Multi-night overnight stays*: one-off visits gain an editable End
+     date/time (edit-key pattern, defaults to start + service duration) — a
+     3-night stay is ONE visit. Pricing stays the flat snapshot (use the
+     price field); per-night pricing is a future policy question.
+  ALSO: build 9 (0.2.3) Release JS boot-VERIFIED on the iOS simulator before
+  testers install (this morning's crash class ruled out). Both build-8
+  phones (sponsor iOS 27 AND Alexandra's stable iOS) refuse 0.2.2 OTAs —
+  server manifest verified correct via probe; client-state wedge. POLICY:
+  binaries are the trusted delivery channel; OTAs are best-effort.
 - **Edit visit in place** (2026-09-05, Alexandra: "I'm only able to start or
   cancel calls once they're put into the schedule... if I make a mistake in
   which pets I've clicked on or what type of call it is then I can change

@@ -15,6 +15,7 @@ import {
   recordPayment,
   refundDeposit,
   removeInvoiceItem,
+  setInvoiceIssuedOn,
   resendInvoiceEmail,
   sendInvoice,
   UNINVOICED_VISIT_COLUMNS,
@@ -375,4 +376,11 @@ test('recordPayment passes the tip through (round 7)', async () => {
   mockRpcResult = { data: 'pay-2', error: null };
   await recordPayment('inv-1', 'venmo', 2500, '2026-08-25', null, 500);
   expect(mockRpcLog[0]!.args).toMatchObject({ p_amount_cents: 2500, p_tip_cents: 500 });
+});
+
+test('setInvoiceIssuedOn re-dates by id with a plain owner-RLS update', async () => {
+  await setInvoiceIssuedOn('inv-1', '2026-09-04');
+  const q = mockLog.find((e) => e.table === 'invoices')!;
+  expect(q.steps.find(([n]) => n === 'update')![1][0]).toEqual({ issued_on: '2026-09-04' });
+  expect(q.steps.filter(([n]) => n === 'eq').map(([, a]) => a)).toEqual([['id', 'inv-1']]);
 });

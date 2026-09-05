@@ -9,6 +9,7 @@ import {
   removePayment,
   removeInvoiceItem,
   resendInvoiceEmail,
+  setInvoiceIssuedOn,
   sendInvoice,
   voidInvoice,
 } from '@/src/features/billing/api';
@@ -99,6 +100,11 @@ export default function InvoiceDetailScreen() {
   });
   const removeMut = useMutation({
     mutationFn: (itemId: string) => removeInvoiceItem(itemId),
+    onSuccess: refresh,
+    onError: fail,
+  });
+  const issuedMut = useMutation({
+    mutationFn: (issuedOn: string) => setInvoiceIssuedOn(id!, issuedOn),
     onSuccess: refresh,
     onError: fail,
   });
@@ -193,7 +199,12 @@ export default function InvoiceDetailScreen() {
           </Text>
           <StatusBadge label={chip.label} tone={chip.tone} />
         </View>
-        <Text style={{ color: t.colors.inkMuted }}>Issued {formatIsoDate(inv.issued_on)}</Text>
+        {inv.status === 'draft' ? (
+          // Drafts can be re-dated — "forgot to start it 9/4" (Alexandria).
+          <DateField label="Issued on" value={inv.issued_on} onChange={(v) => issuedMut.mutate(v)} />
+        ) : (
+          <Text style={{ color: t.colors.inkMuted }}>Issued {formatIsoDate(inv.issued_on)}</Text>
+        )}
         {inv.due_on ? (
           <Text style={{ color: t.colors.inkMuted }}>Due {formatIsoDate(inv.due_on)}</Text>
         ) : null}

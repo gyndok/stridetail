@@ -124,7 +124,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Assigning works like an offer: when you offer a visit to a walker, their phone gets a push notification the moment it lands (each person allows notifications once, when the app asks), and they see it on their Today screen and accept or decline. You get a notification back when a walker declines and when a new booking request arrives. A decline always comes with a reason and puts the visit back in the unassigned pile — which shows up in Needs attention so nothing slips. You can also assign directly when you don’t need the accept step. Made a mistake booking? Open the visit and tap Edit visit to change the pets, the service, or the time — right up until the walk starts. The price updates to match, and if a walker already has the visit they keep it (give them a heads-up about the change).',
+          'Assigning works like an offer: when you offer a visit to a walker, their phone gets a push notification the moment it lands (each person allows notifications once, when the app asks), and they see it on their Today screen and accept or decline. You get a notification back when a walker declines and when a new booking request arrives. A decline always comes with a reason and puts the visit back in the unassigned pile — which shows up in Needs attention so nothing slips. You can also assign directly when you don’t need the accept step. The date can be in the past too — recording a walk that already happened is fine — and one-off visits have an editable end date and time, so a multi-night overnight stay is ONE visit, not one per night. Made a mistake booking? Open the visit and tap Edit visit to change the pets, the service, or the time — right up until the walk starts. The price updates to match, and if a walker already has the visit they keep it (give them a heads-up about the change).',
       },
       {
         kind: 'p',
@@ -266,7 +266,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'The auto-invoice setting (Billing settings) decides what happens when a visit finishes. "Invoice each visit" (the default) creates and sends an invoice for exactly that visit — and its payment section rides the report page the client already got, so there is no second email. "Add to open draft" collects finished visits onto one draft you review and send. "Manual" leaves it all to you.',
+          'The auto-invoice setting (Billing settings) decides what happens when a visit finishes. "Invoice each visit" (the default) creates and sends an invoice for exactly that visit — and its payment section rides the report page the client already got, so there is no second email. "Add to open draft" collects finished visits onto one draft you review and send. "Manual" leaves it all to you. While an invoice is still a draft, its "Issued on" date is editable — backdate it if the invoice should carry an earlier date.',
       },
       {
         kind: 'steps',
