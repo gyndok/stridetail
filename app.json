@@ -3,7 +3,7 @@
     "name": "Stridetail",
     "slug": "stridetail",
     "scheme": "stridetail",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "orientation": "portrait",
     "newArchEnabled": true,
     "icon": "./assets/images/icon.png",
@@ -73,7 +73,7 @@
         {
           "cameraPermission": "Stridetail uses the camera to take pet profile photos.",
           "photosPermission": "Stridetail uses your photo library to pick pet profile photos.",
-          "microphonePermission": "Stridetail records short walk videos (with sound) for the client’s report."
+          "microphonePermission": "Stridetail records short walk videos (with sound) for the client\u2019s report."
         }
       ],
       "expo-secure-store",
