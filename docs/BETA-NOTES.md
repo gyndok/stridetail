@@ -16,7 +16,7 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
   flushes stored reports on the next healthy launch (14-day prune). Dormant
   until `EXPO_PUBLIC_SENTRY_DSN` lands in the EAS production environment —
   sponsor creates the sentry.io project (account creation is his); then one
-  OTA arms it. **Tier 2 for BUILD 9: install @sentry/react-native + its expo
+  OTA arms it. **Tier 2 for BUILD 10 (deferred out of 9 — the build plugin needs a sourcemap auth token set up first): install @sentry/react-native + its expo
   config plugin (native crash handling); init with enableNative only where
   the native module exists.**
 - **Missed visits now visible in Schedule** (2026-09-05, Alexandra's report:
