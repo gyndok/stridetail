@@ -247,6 +247,14 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
 - Demo overpayments reclassified into tips (4 payments). pgTAP 022 (7 tests,
   suite 779 green); restart-button now explains the iOS "crashed" dialog.
 
+## Round 7e — staff report access + walker history (sponsor, 2026-09-04 late) — SHIPPED
+- Walkers had NO path to old visits (Today looked back 26h; Schedule tab is
+  availability). Today gains a collapsed "Past walks" section — last 60 days
+  of completed visits, lazily fetched, tap-through to the visit.
+- Every completed visit now has "View report" for staff: owners in the
+  ReportSection (next to Share), walkers via WalkerReportLink (own-report RLS
+  read; hidden when revoked/unsynced). Opens the exact client-facing page.
+
 ## Round 7d — remove mis-recorded payments (sponsor, 2026-09-04 late) — SHIPPED
 - The last append-only corner closed: every payment row on an invoice gets a
   web-safe Remove (inline two-tap). remove_payment RPC: owner-only, reverts
