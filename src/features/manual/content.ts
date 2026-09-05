@@ -165,6 +165,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
+          'Recorded a payment wrong? Open the invoice \u2014 every payment row has a Remove link. Removing a mis-recorded payment reopens the invoice so you can record the right one (the correction is logged, and a payment whose tip already went out on a payout statement is protected until that statement is voided).',
+      },
+      {
+        kind: 'p',
+        text:
           'How much do I owe my walkers? Billing \u2192 Payouts opens with an "Owed now" card: each team member\u2019s earned-but-not-yet-paid amount \u2014 their percentage of completed walks plus 100% of their tips. Creating a payout statement sweeps exactly that amount onto a statement you can finalize (your walker sees it) and mark paid.',
       },
       {

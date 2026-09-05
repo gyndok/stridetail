@@ -6,6 +6,7 @@ import { Alert, Linking, Pressable, Share, Text, View } from 'react-native';
 import {
   getInvoice,
   recordPayment,
+  removePayment,
   removeInvoiceItem,
   resendInvoiceEmail,
   sendInvoice,
@@ -111,6 +112,16 @@ export default function InvoiceDetailScreen() {
     onSuccess: () => {
       setError(null);
       Alert.alert('Email queued', 'The client will get the invoice link again by email.');
+    },
+    onError: fail,
+  });
+  // Web-safe inline confirm (Alert buttons no-op on web — team.tsx lesson).
+  const [confirmRemovePayId, setConfirmRemovePayId] = useState<string | null>(null);
+  const removePayMut = useMutation({
+    mutationFn: (paymentId: string) => removePayment(paymentId),
+    onSuccess: () => {
+      setConfirmRemovePayId(null);
+      refresh();
     },
     onError: fail,
   });
@@ -280,10 +291,43 @@ export default function InvoiceDetailScreen() {
                   </Text>
                   {p.memo ? <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>{p.memo}</Text> : null}
                 </View>
-                <Text style={{ color: t.colors.green, fontWeight: '700' }}>
-                  {formatCents(p.amount_cents)}
-                  {p.tip_cents > 0 ? ` + ${formatCents(p.tip_cents)} tip` : ''}
-                </Text>
+                <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                  <Text style={{ color: t.colors.green, fontWeight: '700' }}>
+                    {formatCents(p.amount_cents)}
+                    {p.tip_cents > 0 ? ` + ${formatCents(p.tip_cents)} tip` : ''}
+                  </Text>
+                  {confirmRemovePayId === p.id ? (
+                    <View style={{ flexDirection: 'row', gap: t.space.md }}>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => removePayMut.mutate(p.id)}
+                        hitSlop={8}
+                      >
+                        <Text style={{ color: t.colors.danger, fontSize: 12, fontWeight: '700' }}>
+                          Really remove
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => setConfirmRemovePayId(null)}
+                        hitSlop={8}
+                      >
+                        <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>Keep</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Remove this payment"
+                      onPress={() => setConfirmRemovePayId(p.id)}
+                      hitSlop={8}
+                    >
+                      <Text style={{ color: t.colors.danger, fontSize: 12, fontWeight: '700' }}>
+                        Remove
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
               </View>
             ))}
           </Card>

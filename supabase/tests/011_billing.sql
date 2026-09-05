@@ -356,9 +356,9 @@ end $fn$;
 
 select is(
   pg_temp.inv_matrix_mismatches('00000000-0000-0000-0000-000000000021',
-    array['draft->sent', 'sent->paid', 'draft->void', 'sent->void']),
+    array['draft->sent', 'sent->paid', 'paid->sent', 'draft->void', 'sent->void']),
   '{}'::text[],
-  'owner: exactly draft->sent, sent->paid, draft->void, and sent->void are legal');
+  'owner: exactly draft->sent, sent->paid, paid->sent (payment removal), draft->void, and sent->void are legal');
 
 select is(
   pg_temp.inv_matrix_mismatches('00000000-0000-0000-0000-000000000022', '{}'::text[]),
@@ -372,7 +372,7 @@ select is(
 
 select is(
   pg_temp.inv_matrix_mismatches(null,
-    array['draft->sent', 'sent->paid', 'draft->void', 'sent->void']),
+    array['draft->sent', 'sent->paid', 'paid->sent', 'draft->void', 'sent->void']),
   '{}'::text[],
   'elevated (no JWT) skips only the who-check — the transition matrix still applies');
 

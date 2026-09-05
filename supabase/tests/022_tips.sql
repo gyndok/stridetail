@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(13);
 
 -- Round 7: tips. A $30 payment on a $25 invoice = $25 toward the invoice +
 -- $5 tip. The invoice closes at exactly its total (no phantom credit), and
@@ -85,6 +85,39 @@ select results_eq($$
    where walker_id = '00000000-0000-0000-0000-000000000222'
 $$, $$ values (0::bigint, 0::bigint) $$,
   'after the sweep, owed-now drops to zero');
+
+-- ===== remove_payment: mistake correction (round 7d) =====
+-- A second invoice + wrong payment; removing it reverts paid -> sent.
+set local request.jwt.claims to '{}';
+set local role postgres;
+insert into invoices (id, business_id, client_id, number, status, issued_on) values
+  ('00000000-0000-0000-0000-0000002200b2', '00000000-0000-0000-0000-00000022aaaa',
+   '00000000-0000-0000-0000-0000000022c1', 2, 'draft', '2026-09-04');
+insert into invoice_items (business_id, invoice_id, description, amount_cents, kind) values
+  ('00000000-0000-0000-0000-00000022aaaa', '00000000-0000-0000-0000-0000002200b2',
+   'Adjustment', 2000, 'manual');
+update invoices set status = 'sent', sent_at = now()
+ where id = '00000000-0000-0000-0000-0000002200b2';
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-000000000221","role":"authenticated"}';
+
+select lives_ok($$
+  select record_payment('00000000-0000-0000-0000-0000002200b2', 'cash', 2000, '2026-09-04')
+$$, 'a (wrong) payment records and pays the invoice');
+
+select lives_ok($$
+  select remove_payment((select id from payments
+    where invoice_id = '00000000-0000-0000-0000-0000002200b2'))
+$$, 'the owner removes the mis-recorded payment');
+
+select is((select status::text from invoices where id = '00000000-0000-0000-0000-0000002200b2'),
+  'sent', 'removing the payment reverts the invoice paid -> sent');
+
+-- The swept tip from earlier is frozen: its payment cannot be removed.
+select throws_ok($$
+  select remove_payment((select id from payments
+    where invoice_id = '00000000-0000-0000-0000-0000002200b1'))
+$$, null, null, 'a payment whose tip is on a payout statement is frozen');
 
 set local request.jwt.claims to '{}';
 

@@ -289,6 +289,15 @@ export async function recordPayment(
   });
 }
 
+/**
+ * Remove a mis-recorded payment (round 7d). Reverts paid -> sent when the
+ * invoice drops below its total; refuses when the payment's tip is already
+ * on a payout statement. Correction model: remove, then re-record right.
+ */
+export async function removePayment(paymentId: string): Promise<void> {
+  await rpc('remove_payment', { p_payment: paymentId });
+}
+
 /** Releases visit lines for re-invoicing, returns deposits to held, revokes the link. */
 export async function voidInvoice(invoiceId: string): Promise<void> {
   await rpc('void_invoice', { p_invoice: invoiceId });
