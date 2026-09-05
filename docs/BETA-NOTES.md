@@ -3,6 +3,10 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- RESOLVED same day: Alexandra's startup crash was a one-time failed launch —
+  expo-updates' ErrorRecovery fallback worked and the app opened normally on
+  relaunch. No rollback needed; today's OTAs stayed on the channel. Any
+  recurrence now lands in Sentry with the exact update id (entry below).
 - **Crash telemetry, tier 1** (2026-09-05, after Alexandra's build-8 startup
   crash arrived as an expo-updates ErrorRecovery abort with no JS error —
   diagnosis was pure guesswork): `src/lib/crashReport.ts`, no SDK, OTA-safe on
