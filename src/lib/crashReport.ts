@@ -73,13 +73,19 @@ export function buildEnvelope(
     },
     extra: { stack: error.stack ?? null },
   };
+  // No `length` in the item header and a trailing newline: length must be
+  // BYTES (JS string length lies once any non-ASCII appears) and the parser
+  // requires the terminator either way — both learned from a live 400 while
+  // wiring the DSN. Newline-terminated items are safe because JSON.stringify
+  // escapes any newlines inside the payload.
   const eventJson = JSON.stringify(event);
   return (
     JSON.stringify({ event_id: id, sent_at: new Date().toISOString() }) +
     '\n' +
-    JSON.stringify({ type: 'event', length: eventJson.length }) +
+    JSON.stringify({ type: 'event' }) +
     '\n' +
-    eventJson
+    eventJson +
+    '\n'
   );
 }
 

@@ -24,7 +24,8 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://vrxoswukuiaerhwammlh.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyeG9zd3VrdWlhZXJod2FtbWxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MTM2MTQsImV4cCI6MjA4OTI4OTYxNH0.nKYeP7STuIPMjecegu9TBqW1PTkjs8hSoOZHfo9E2ks"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyeG9zd3VrdWlhZXJod2FtbWxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MTM2MTQsImV4cCI6MjA4OTI4OTYxNH0.nKYeP7STuIPMjecegu9TBqW1PTkjs8hSoOZHfo9E2ks",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://f03e66fd50fe96dfe9fac260a62087a3@o4512034647572480.ingest.us.sentry.io/4512034652291072"
       },
       "channel": "production"
     }

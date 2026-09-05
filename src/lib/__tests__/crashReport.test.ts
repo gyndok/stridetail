@@ -35,7 +35,15 @@ describe('buildEnvelope', () => {
       true,
       ctx,
     );
-    const [header, itemHeader, event] = envelope.split('\n').map((l) => JSON.parse(l));
+    // Trailing newline is REQUIRED by the ingest parser (live-tested 400
+    // without it); no `length` in the item header (it must be bytes, and JS
+    // string length lies on non-ASCII).
+    expect(envelope.endsWith('\n')).toBe(true);
+    const [header, itemHeader, event] = envelope
+      .trimEnd()
+      .split('\n')
+      .map((l) => JSON.parse(l));
+    expect(itemHeader).toEqual({ type: 'event' });
     expect(header.event_id).toMatch(/^[0-9a-f]{32}$/);
     expect(itemHeader.type).toBe('event');
     expect(event.level).toBe('fatal');
@@ -52,7 +60,7 @@ describe('buildEnvelope', () => {
       updateId: null,
       isEmbeddedLaunch: true,
     });
-    const event = JSON.parse(envelope.split('\n')[2]!);
+    const event = JSON.parse(envelope.trimEnd().split('\n')[2]!);
     expect(event.level).toBe('error');
     expect(event.tags.update_id).toBe('embedded');
     expect(event.tags.embedded_launch).toBe('true');
