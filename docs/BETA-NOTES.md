@@ -3,6 +3,14 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Venmo pay button dead on client phones** (2026-09-05 evening, Alexandra:
+  client "can press on the Venmo link but it doesn't pull anything up"): the
+  public invoice page's pay button used Linking.openURL → window.open, which
+  iOS Safari silently blocks from RN-web's synthetic press — and Venmo's
+  universal link only reliably opens the app on a REAL navigation anyway. Web
+  now navigates (location.assign; Back returns to the invoice); native keeps
+  openURL. Handle data verified clean (paw-and-whisker). Web-only fix —
+  Vercel deploy is the delivery, no build/OTA needed.
 - **Alexandria round 3** (2026-09-05 afternoon, three TestFlight reports):
   1. *Walk timer stuck at --:--:-- with SYNCED badge*: non-GPS visits never
      write the local active_visit row, and the active screen's detail query

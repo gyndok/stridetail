@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Image, Linking, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Platform, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatCents } from '@/src/features/billing/money';
@@ -113,11 +113,26 @@ function VenmoPayCard({
       <Button
         title={`Pay ${formatCents(totalCents)} with Venmo`}
         disabled={customInvalid}
-        onPress={() =>
-          void Linking.openURL(
-            venmoLink({ handle: venmo.handle, amountCents: venmo.amountCents, note: venmo.note, tipCents })
-          )
-        }
+        onPress={() => {
+          const url = venmoLink({
+            handle: venmo.handle,
+            amountCents: venmo.amountCents,
+            note: venmo.note,
+            tipCents,
+          });
+          // Web: NAVIGATE, never window.open — iOS Safari silently blocks
+          // popups from RN-web's synthetic press (Alexandra's client tapped
+          // and "nothing pulled up", 2026-09-05), and Venmo's universal link
+          // only reliably opens the app on a real navigation anyway. The
+          // invoice page is a terminal page; Back returns to it.
+          if (Platform.OS === 'web') {
+            (globalThis as unknown as { location: { assign(u: string): void } }).location.assign(
+              url,
+            );
+          } else {
+            void Linking.openURL(url);
+          }
+        }}
       />
       {hasMoreOptions ? (
         <Text style={{ color: t.colors.inkMuted, fontSize: 13 }}>

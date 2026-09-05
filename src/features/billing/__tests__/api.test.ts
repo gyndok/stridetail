@@ -39,7 +39,7 @@ jest.mock('@/src/lib/supabase', () => ({
       const entry = { table, steps: [] as Step[] };
       mockLog.push(entry);
       const builder: Record<string, unknown> = {};
-      for (const m of ['select', 'eq', 'not', 'limit', 'order', 'single']) {
+      for (const m of ['select', 'eq', 'not', 'limit', 'order', 'single', 'update']) {
         builder[m] = (...args: unknown[]) => {
           entry.steps.push([m, args]);
           return builder;
