@@ -120,6 +120,7 @@ async function expandOne(admin: SupabaseClient, s: SeriesRow, nowMs: number): Pr
   const { data: override } = await admin
     .from('client_prices')
     .select('base_price_cents')
+    .eq('business_id', s.business_id)
     .eq('client_id', s.client_id)
     .eq('service_id', s.service_id)
     .maybeSingle();
