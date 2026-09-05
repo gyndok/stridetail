@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Platform, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useSession } from '@/src/features/auth/session';
@@ -29,6 +29,8 @@ import { errorText } from '@/src/lib/errorText';
 // fall-back hour, with margin); 70 days forward covers the 8-week series
 // expansion horizon so every open offer is in view.
 const LOOKBACK_MS = 26 * 3_600_000;
+// Past walks (round 7e): how far back the collapsed history reaches.
+const HISTORY_DAYS = 60;
 const LOOKAHEAD_MS = 70 * 86_400_000;
 // How long the green "accepted" confirmation stays up before it clears itself.
 const ACCEPTED_BANNER_MS = 5_000;
@@ -65,6 +67,23 @@ export default function Today() {
         .catch(() => setActiveVisitId(null));
     }, []),
   );
+
+  // Round 7e: "go back and look at a walk done last month" — collapsed
+  // history of the walker's completed visits, fetched only when opened.
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const history = useQuery({
+    queryKey: ['myVisitsPast', businessId],
+    enabled: !!businessId && historyOpen,
+    queryFn: () =>
+      listMyVisits(
+        businessId!,
+        new Date(Date.now() - HISTORY_DAYS * 86_400_000),
+        new Date(),
+      ),
+  });
+  const pastWalks = (history.data ?? [])
+    .filter((v) => v.status === 'completed')
+    .sort((a, b) => b.scheduled_start.localeCompare(a.scheduled_start));
 
   const visits = useQuery({
     queryKey: ['myVisits', businessId],
@@ -229,6 +248,34 @@ export default function Today() {
           />
         ))
       )}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: historyOpen }}
+        onPress={() => setHistoryOpen((v) => !v)}
+        style={({ pressed }: { pressed: boolean }) => ({
+          alignSelf: 'flex-start' as const,
+          paddingVertical: t.space.xs,
+          opacity: pressed ? 0.7 : 1,
+        })}
+      >
+        <Text style={[t.type.title, { color: t.colors.ink }]}>
+          Past walks {historyOpen ? '▴' : '▾'}
+        </Text>
+      </Pressable>
+      {historyOpen ? (
+        history.isLoading ? (
+          <Text style={{ color: t.colors.inkMuted }}>Loading…</Text>
+        ) : pastWalks.length === 0 ? (
+          <Text style={{ color: t.colors.inkMuted }}>
+            No completed walks in the last {HISTORY_DAYS} days.
+          </Text>
+        ) : (
+          pastWalks.map((v) => (
+            <VisitCard key={v.id} visit={v} onPress={() => router.push(`/visit/${v.id}` as Href)} />
+          ))
+        )
+      ) : null}
     </Screen>
   );
 }

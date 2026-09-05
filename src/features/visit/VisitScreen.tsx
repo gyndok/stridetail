@@ -253,6 +253,11 @@ function ReportSection({
       {!r.revoked_at ? (
         <>
           <Button
+            title="View report"
+            variant="secondary"
+            onPress={() => void Linking.openURL(reportLink(r.public_token))}
+          />
+          <Button
             title="Share link"
             variant="secondary"
             onPress={() => void Share.share({ message: reportLink(r.public_token) })}
@@ -575,6 +580,9 @@ export default function VisitScreen() {
         </>
       ) : null}
 
+      {!isOwnerRole && isAssignee && v.status === 'completed' && businessId ? (
+        <WalkerReportLink businessId={businessId} visitId={v.id} />
+      ) : null}
       {isOwnerRole && v.status === 'completed' && businessId ? (
         <ReportSection
           businessId={businessId}
@@ -607,5 +615,27 @@ export default function VisitScreen() {
         <Button title="Cancel visit" variant="ghost" onPress={confirmCancel} loading={cancelMut.isPending} />
       ) : null}
     </Screen>
+  );
+}
+
+/**
+ * Walker's own-report access (round 7e: "the walker would like to go back and
+ * look at a walk done last month"). Walkers read their own visits' report
+ * rows by RLS; the button opens the same page the client got. Revoked or
+ * not-yet-synced reports simply render nothing.
+ */
+function WalkerReportLink({ businessId, visitId }: { businessId: string; visitId: string }) {
+  const report = useQuery({
+    queryKey: ['visitReport', businessId, visitId],
+    queryFn: () => getVisitReport(businessId, visitId),
+  });
+  const r = report.data;
+  if (!r || r.revoked_at) return null;
+  return (
+    <Button
+      title="View report"
+      variant="secondary"
+      onPress={() => void Linking.openURL(reportLink(r.public_token))}
+    />
   );
 }

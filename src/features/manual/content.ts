@@ -244,6 +244,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
+          'Want to revisit an old walk? Today has a "Past walks" section at the bottom \u2014 the last 60 days of your completed visits. Open one and tap "View report" to see exactly the report page the client received, map and photos and all. Owners have the same View report button on every completed visit.',
+      },
+      {
+        kind: 'p',
+        text:
           'Bad signal is fine. Everything you do — starting, events, photos, finishing — is saved on your phone first and syncs in order when you’re back online. The GPS route keeps recording even if the phone kills the app mid-walk; it picks back up when you reopen it.',
       },
       {
