@@ -7,6 +7,7 @@ import { AppState, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initSession } from '@/src/features/auth/session';
+import { flushCrashReports, installCrashReporter } from '@/src/lib/crashReport';
 import { hydrateActiveBusiness, useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
 import { hydrateWalkTheme } from '@/src/features/settings/walkTheme';
@@ -28,6 +29,10 @@ function Providers({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   useEffect(() => {
+    // Crash telemetry first: hook the fatal handler before anything else can
+    // throw, and ship whatever a previous (possibly fatal) launch stored.
+    installCrashReporter();
+    void flushCrashReports();
     void hydrateActiveBusiness();
     void hydrateWalkTheme();
     return initSession();

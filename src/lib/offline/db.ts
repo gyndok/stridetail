@@ -32,6 +32,11 @@ CREATE TABLE IF NOT EXISTS active_visit (
 -- Legacy 'failed' rows (terminal after ten retries, pre review fix #2) are
 -- restored to the queue on every open; nothing writes 'failed' anymore.
 UPDATE outbox SET state = 'pending' WHERE state = 'failed';
+CREATE TABLE IF NOT EXISTS crash_reports (
+  id TEXT PRIMARY KEY,
+  created_at INTEGER NOT NULL,
+  payload TEXT NOT NULL
+);
 `;
 
 export function getDb(): SQLite.SQLiteDatabase {

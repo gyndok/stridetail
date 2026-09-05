@@ -3,6 +3,18 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Crash telemetry, tier 1** (2026-09-05, after Alexandra's build-8 startup
+  crash arrived as an expo-updates ErrorRecovery abort with no JS error —
+  diagnosis was pure guesswork): `src/lib/crashReport.ts`, no SDK, OTA-safe on
+  every deployed binary. Hooks RN's global fatal handler, persists the error
+  to a local crash_reports table FIRST (boot crashes may never get a network
+  tick), best-effort POSTs to Sentry's envelope API via plain fetch, and
+  flushes stored reports on the next healthy launch (14-day prune). Dormant
+  until `EXPO_PUBLIC_SENTRY_DSN` lands in the EAS production environment —
+  sponsor creates the sentry.io project (account creation is his); then one
+  OTA arms it. **Tier 2 for BUILD 9: install @sentry/react-native + its expo
+  config plugin (native crash handling); init with enableNative only where
+  the native module exists.**
 - **Missed visits now visible in Schedule** (2026-09-05, Alexandra's report:
   "1 visit missed — review in Schedule" but "when I open the schedule nothing
   shows up" — the missed visit was Pauline Bitar, Sep 4 7 PM, accepted and

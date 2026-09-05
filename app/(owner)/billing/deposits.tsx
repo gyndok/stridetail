@@ -10,7 +10,6 @@ import {
   listHeldDeposits,
   recordDeposit,
   refundDeposit,
-  type HeldDeposit,
 } from '@/src/features/billing/api';
 import {
   depositStatusChip,
