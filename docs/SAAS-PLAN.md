@@ -191,6 +191,16 @@ f. **Metrics from day one:** signup → wizard completion → first walker invit
    KPI infrastructure the owner dashboard already has, pointed at Stridetail itself.
 g. **The two-sided asset:** every walk report and business page is client-facing surface
    area. Quality bar on those pages IS the marketing budget.
+h. **Sales tax (geographic-expansion gate, added 2026-09-04):** several states tax pet
+   services — HI/NM/SD/WV tax nearly all services; KY/MN/NE/RI tax pet care explicitly;
+   NY/CT/NJ conditionally (per Avalara). Invoices currently have NO tax model: before
+   onboarding a business in a taxing state we need per-business tax config, a
+   taxable-per-service flag, a tax line on invoices/public pages, and a collected-tax
+   report. Signup should capture state and gate accordingly (or at minimum warn).
+   Texas/CA/FL etc. generally exempt walking — P&W unaffected today (her "Overnight
+   stay" nuance referred to her CPA). Two existing designs already help: tips are
+   separated from service revenue (voluntary tips generally non-taxable), and payout
+   statements double as 1099-NEC records for contractors over $600/yr.
 
 ## 6. Sequencing summary
 
