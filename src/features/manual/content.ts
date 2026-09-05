@@ -17,7 +17,7 @@
 import { APP_NAME, PORTAL_LOGIN_URL, SUPPORT_EMAIL, WEB_BASE_URL } from '@/src/lib/brand';
 
 export const MANUAL_VERSION = '1.0';
-export const MANUAL_UPDATED = '2026-09-01';
+export const MANUAL_UPDATED = '2026-09-04';
 
 export type ManualAudience = 'owner' | 'walker' | 'client' | 'all';
 
@@ -160,32 +160,12 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Looking at one client\u2019s money? Tap the Balance at the top of their profile \u2014 it unfolds right there into their transactions: every invoice with its status, what\u2019s been collected (tips included), and any held deposit; tap an invoice to open it. The Billing tab also has a Client row \u2014 tap it and pick a client to see only their invoices, with the unpaid total narrowed to match. Tapping the Balance on a client\u2019s profile jumps there too. "All clients" widens back out.',
-      },
-      {
-        kind: 'p',
-        text:
-          'Recorded a payment wrong? Open the invoice \u2014 every payment row has a Remove link. Removing a mis-recorded payment reopens the invoice so you can record the right one (the correction is logged, and a payment whose tip already went out on a payout statement is protected until that statement is voided).',
-      },
-      {
-        kind: 'p',
-        text:
-          'How much do I owe my walkers? Billing \u2192 Payouts opens with an "Owed now" card: each team member\u2019s earned-but-not-yet-paid amount \u2014 their percentage of completed walks plus 100% of their tips. Creating a payout statement sweeps exactly that amount onto a statement you can finalize (your walker sees it) and mark paid.',
-      },
-      {
-        kind: 'p',
-        text:
-          'Tips: when a client pays extra as a thank-you, record it in the Tip field on Record payment — $30 for a $25 walk is $25 toward the invoice and a $5 tip. The invoice closes cleanly (no confusing credit), and the tip goes to the walker at 100% on their next payout statement, on top of their normal share.',
-      },
-      {
-        kind: 'p',
-        text:
           'Custom prices: some clients have grandfathered or special rates. On the client\u2019s profile, the Custom prices card lists every service — tap one to set that client\u2019s own price. It applies to all their future visits and repeating series (extra-pet charges still add on top); past visits and sent invoices never change. And when booking a one-off visit, the price field is editable right on the New Visit screen for one-time adjustments.',
       },
       {
         kind: 'p',
         text:
-          'Each client row also shows their money at a glance: a green "$50.00 credit" means you hold their deposit, a red "Owes $30.00" means unpaid invoices, and a settled client shows nothing. The same balance sits at the top of their profile (tap it to jump to Billing) and on the desktop dashboard roster.',
+          'Each client row also shows their money at a glance: a green "$50.00 credit" means you hold their deposit, a red "Owes $30.00" means unpaid invoices, and a settled client shows nothing. The same balance sits at the top of their profile — tap it and it unfolds right there into their full transaction history: every invoice with its status and open amount (tap one to open it), what\u2019s been collected including tips, and any held deposit.',
       },
       {
         kind: 'p',
@@ -239,11 +219,6 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Wondering if you have the latest features? Settings \u2192 App version shows exactly which update you\u2019re running, and "Check for updates" downloads and applies the newest one on the spot \u2014 no restarting dance required.',
-      },
-      {
-        kind: 'p',
-        text:
           'Want to revisit an old walk? Today has a "Past walks" section at the bottom \u2014 the last 60 days of your completed visits. Open one and tap "View report" to see exactly the report page the client received, map and photos and all. Owners have the same View report button on every completed visit.',
       },
       {
@@ -266,12 +241,12 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'When a walk finishes, the client gets one email — just one per walk — with a link to their report page. The report shows the route on a map with pins for pee, poop, and photo stops, the photos themselves, and a timeline of everything that happened with times. If billing created an invoice for the visit, an "Invoice & payment" section sits right on the same page.',
+          'When a walk finishes, the client gets one email — just one per walk — with a link to their report page. The report shows the route on a map with pins for pee, poop, photo, and custom Mark stops, the photos themselves, any short videos the walker recorded (they play right on the page), and a timeline of everything that happened with times. If billing created an invoice for the visit, an "Invoice & payment" section sits right on the same page.',
       },
       {
         kind: 'steps',
         items: [
-          'Open the visit to see the report card and its link.',
+          'Open the visit to see the report card. "View report" opens the exact page the client received — walkers have the same button on their own completed visits.',
           'Resend queues the report email again — for a client who lost it.',
           'Revoke turns the link off; anyone opening it afterwards sees that it’s gone.',
           '"Text the client" opens your phone’s Messages app with the report link pre-filled, from your own number — the way you already text clients today.',
@@ -298,14 +273,24 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         items: [
           'Manual invoices: pick the client and a date range — every completed, un-invoiced visit in the range becomes a line item. Add manual lines for extras or discounts.',
           'Deposits you’ve received get recorded as held, and apply themselves to invoices oldest-first.',
-          'When a client pays, open the invoice and Mark paid: method, amount, date, optional memo. If they paid extra as a tip, record the full amount — overpayment is welcome and noted.',
+          'When a client pays, open the invoice and tap Record payment: the method, the amount toward the invoice, and — if they added a thank-you — the Tip in its own field. $30 received for a $25 walk is $25 toward the invoice and a $5 tip; the invoice closes cleanly and the tip is earmarked for the walker.',
           'On the client’s side, the public invoice page shows a Venmo button (when your handle is set) with an optional tip that adjusts the amount. If you set a Zelle or Apple Pay destination, a "More ways to pay" section lists them with the amount to send.',
         ],
       },
       {
         kind: 'p',
         text:
-          'Payouts: build a per-walker statement of their finished visits, finalize it, and Mark paid when you’ve paid them. Walkers see their own finalized statements under Settings → Earnings.',
+          'Payouts: Billing → Payouts opens with an "Owed now" card — each team member\u2019s earned-but-not-yet-paid amount, their percentage of completed walks plus 100% of their tips. Creating a statement sweeps exactly that amount (wage lines and tip lines are itemized); finalize it and your walker sees it under Settings → Earnings; Mark paid when the money has moved.',
+      },
+      {
+        kind: 'p',
+        text:
+          'Recorded a payment wrong? Open the invoice — every payment row has a Remove link. Removing a mis-recorded payment reopens the invoice so you can record the right one. The correction is logged, and a payment whose tip already went out on a payout statement is protected until that statement is voided — money shown to a walker never silently disappears.',
+      },
+      {
+        kind: 'p',
+        text:
+          'Looking at one client at a time? The Billing tab has a Client row — tap it and pick a client to see only their invoices, with the unpaid total narrowed to match; "All clients" widens back out. (The same view lives on the client\u2019s own profile: tap their Balance.)',
       },
       {
         kind: 'tip',
@@ -374,7 +359,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Waiting on an app update: updates install when the app is relaunched. Force-quit the app and reopen it twice — the first launch fetches the update, the second one runs it.',
+          'Wondering if you have the latest features? Settings → App version shows exactly which update you\u2019re running, and "Check for updates" downloads and applies the newest one on the spot. (If your phone flashes a "crashed" message right after the restart, that\u2019s just how iOS logs the relaunch — nothing is wrong.)',
       },
       {
         kind: 'p',
