@@ -260,6 +260,9 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
   Verdict on the device saga: sponsor's iOS 27 beta applies OTAs
   unreliably (some yes, some silently dropped) — feature code was always
   fine. POLICY: sponsor's phone rides binaries; stable-iOS testers ride OTAs.
+- Build 8 attached to the external group 2026-09-04 (supersedes 6/7 for
+  review). On approval, all testers land on the complete accounting build:
+  tips, owed-now, ledger, picker, spay/sex, push, update card.
 
 ## Round 7b — inline client ledger (sponsor, 2026-09-04 evening) — SHIPPED
 - Balance on the client profile now UNFOLDS IN PLACE (no bounce to Billing):
