@@ -412,7 +412,9 @@ function ActiveVisitBody() {
   const offerClientText = (detailNow: VisitDetail) => {
     const goToday = () => router.replace('/today' as Href);
     const phone = detailNow.client?.phones?.[0];
-    if (!phone) {
+    // Web: no device Messages app, and Alert buttons no-op there — the prompt
+    // would strand the walker on this screen. Skip straight home.
+    if (!phone || Platform.OS === 'web') {
       goToday();
       return;
     }
@@ -453,12 +455,10 @@ function ActiveVisitBody() {
     })();
   };
 
-  const onConfirmFinish = () => {
-    Alert.alert('Finish visit?', 'This ends the visit and queues the owner report.', [
-      { text: 'Keep walking', style: 'cancel' },
-      { text: 'Finish', style: 'destructive', onPress: () => void doFinish() },
-    ]);
-  };
+  // The finishOpen card (notes + "Confirm finish" + "Keep walking") IS the
+  // confirmation — the old extra Alert.alert on top of it was redundant and,
+  // worse, a silent no-op on web (buttons never fire there).
+  const onConfirmFinish = () => void doFinish();
 
   const revealedRow = (label: string, value: string | null) =>
     value == null ? null : (

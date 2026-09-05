@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { formatCents } from '@/src/features/billing/money';
 import {
@@ -256,8 +256,13 @@ function StatementDetail({
     queryFn: () => getPayoutStatement(businessId, id),
   });
 
+  // Alert.alert buttons no-op on web (the round-5 lesson) — statement actions
+  // confirm inline instead: first tap arms, the confirm card commits.
+  const [confirming, setConfirming] = useState<'finalize' | 'void' | 'paid' | null>(null);
+
   const refresh = () => {
     setError(null);
+    setConfirming(null);
     void queryClient.invalidateQueries({ queryKey: ['payout', businessId, id] });
     void queryClient.invalidateQueries({ queryKey: ['payouts', businessId] });
       void queryClient.invalidateQueries({ queryKey: ['walkerOwed', businessId] });
@@ -291,37 +296,6 @@ function StatementDetail({
     if (cents === null) return setError('Enter a signed amount like 10.00 or -5.00');
     if (cents === 0) return setError('An adjustment cannot be zero');
     addMut.mutate({ description, cents });
-  }
-
-  function confirmFinalize(totalCents: number) {
-    Alert.alert(
-      'Finalize statement',
-      `Freeze this statement at ${formatCents(totalCents)}? The walker will see it (and its items) from now on.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Finalize', onPress: () => finalizeMut.mutate(id) },
-      ],
-    );
-  }
-  function confirmVoid() {
-    Alert.alert(
-      'Void statement',
-      'Delete this draft? Its visits become available for a future statement.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Void', style: 'destructive', onPress: () => voidMut.mutate(id) },
-      ],
-    );
-  }
-  function confirmPaid(totalCents: number) {
-    Alert.alert(
-      'Mark paid',
-      `Record ${formatCents(totalCents)} as paid out? Send the money in your payment app first.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Mark paid', onPress: () => paidMut.mutate(id) },
-      ],
-    );
   }
 
   const st = detail.data;
@@ -401,22 +375,61 @@ function StatementDetail({
             </Card>
           ) : null}
 
-          {st.status === 'draft' ? (
+          {st.status === 'draft' && confirming === null ? (
             <>
-              <Button
-                title="Finalize"
-                onPress={() => confirmFinalize(st.total_cents)}
-                loading={finalizeMut.isPending}
-              />
-              <Button title="Void" variant="ghost" onPress={confirmVoid} loading={voidMut.isPending} />
+              <Button title="Finalize" onPress={() => setConfirming('finalize')} />
+              <Button title="Void" variant="ghost" onPress={() => setConfirming('void')} />
             </>
           ) : null}
-          {st.status === 'finalized' ? (
-            <Button
-              title="Mark paid"
-              onPress={() => confirmPaid(st.total_cents)}
-              loading={paidMut.isPending}
-            />
+          {st.status === 'draft' && confirming === 'finalize' ? (
+            <Card style={{ gap: t.space.sm }}>
+              <Text style={{ color: t.colors.ink }}>
+                Freeze this statement at {formatCents(st.total_cents)}? The walker will see it
+                (and its items) from now on.
+              </Text>
+              <Button
+                title={`Finalize at ${formatCents(st.total_cents)}`}
+                onPress={() => finalizeMut.mutate(id)}
+                loading={finalizeMut.isPending}
+              />
+              <Button title="Cancel" variant="ghost" onPress={() => setConfirming(null)} />
+            </Card>
+          ) : null}
+          {st.status === 'draft' && confirming === 'void' ? (
+            <Card style={{ gap: t.space.sm }}>
+              <Text style={{ color: t.colors.ink }}>
+                Delete this draft? Its visits become available for a future statement.
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => voidMut.mutate(id)}
+                disabled={voidMut.isPending}
+                hitSlop={8}
+                style={{ alignSelf: 'center', paddingVertical: t.space.sm }}
+              >
+                <Text style={{ color: t.colors.danger, fontWeight: '700' }}>
+                  {voidMut.isPending ? 'Voiding…' : 'Really void'}
+                </Text>
+              </Pressable>
+              <Button title="Keep" variant="ghost" onPress={() => setConfirming(null)} />
+            </Card>
+          ) : null}
+          {st.status === 'finalized' && confirming !== 'paid' ? (
+            <Button title="Mark paid" onPress={() => setConfirming('paid')} />
+          ) : null}
+          {st.status === 'finalized' && confirming === 'paid' ? (
+            <Card style={{ gap: t.space.sm }}>
+              <Text style={{ color: t.colors.ink }}>
+                Record {formatCents(st.total_cents)} as paid out? Send the money in your payment
+                app first.
+              </Text>
+              <Button
+                title={`Mark ${formatCents(st.total_cents)} paid`}
+                onPress={() => paidMut.mutate(id)}
+                loading={paidMut.isPending}
+              />
+              <Button title="Cancel" variant="ghost" onPress={() => setConfirming(null)} />
+            </Card>
           ) : null}
         </>
       ) : null}

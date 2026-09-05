@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import {
   forfeitDeposit,
@@ -77,6 +77,7 @@ export default function DepositsScreen() {
 
   const refresh = () => {
     setError(null);
+    setConfirmDeposit(null);
     void queryClient.invalidateQueries({ queryKey: ['deposits', businessId, 'held'] });
     void queryClient.invalidateQueries({ queryKey: ['deposits', businessId, 'all'] });
   };
@@ -102,26 +103,12 @@ export default function DepositsScreen() {
   const forfeitMut = useMutation({ mutationFn: forfeitDeposit, onSuccess: refresh, onError: fail });
   const refundMut = useMutation({ mutationFn: refundDeposit, onSuccess: refresh, onError: fail });
 
-  function confirmForfeit(d: HeldDeposit) {
-    Alert.alert(
-      'Forfeit deposit',
-      `Keep ${formatCents(d.amount_cents)} per your cancellation policy? The deposit will no longer apply to invoices.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Forfeit', style: 'destructive', onPress: () => forfeitMut.mutate(d.id) },
-      ],
-    );
-  }
-  function confirmRefund(d: HeldDeposit) {
-    Alert.alert(
-      'Refund deposit',
-      `Mark ${formatCents(d.amount_cents)} as returned to the client? Send the money back in your payment app first.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Refund', style: 'destructive', onPress: () => refundMut.mutate(d.id) },
-      ],
-    );
-  }
+  // Alert.alert buttons no-op on web (team.tsx lesson) — refund/forfeit
+  // confirm inline on the deposit card instead.
+  const [confirmDeposit, setConfirmDeposit] = useState<{
+    id: string;
+    kind: 'refund' | 'forfeit';
+  } | null>(null);
 
   function submitRecord() {
     setError(null);
@@ -223,20 +210,44 @@ export default function DepositsScreen() {
                   {d.received_on ? ` · ${formatIsoDate(d.received_on)}` : ''}
                 </Text>
                 {d.memo ? <Text style={{ color: t.colors.inkMuted }}>{d.memo}</Text> : null}
-                {d.status === 'held' ? (
+                {d.status === 'held' && confirmDeposit?.id !== d.id ? (
                   <View style={chipRow}>
                     <Button
                       title="Refund"
                       variant="secondary"
-                      onPress={() => confirmRefund(d)}
-                      loading={refundMut.isPending}
+                      onPress={() => setConfirmDeposit({ id: d.id, kind: 'refund' })}
                     />
                     <Button
                       title="Forfeit"
                       variant="ghost"
-                      onPress={() => confirmForfeit(d)}
-                      loading={forfeitMut.isPending}
+                      onPress={() => setConfirmDeposit({ id: d.id, kind: 'forfeit' })}
                     />
+                  </View>
+                ) : null}
+                {d.status === 'held' && confirmDeposit?.id === d.id ? (
+                  <View style={{ gap: t.space.sm }}>
+                    <Text style={{ color: t.colors.ink }}>
+                      {confirmDeposit.kind === 'refund'
+                        ? `Mark ${formatCents(d.amount_cents)} as returned to the client? Send the money back in your payment app first.`
+                        : `Keep ${formatCents(d.amount_cents)} per your cancellation policy? The deposit will no longer apply to invoices.`}
+                    </Text>
+                    <View style={chipRow}>
+                      <Button
+                        title={confirmDeposit.kind === 'refund' ? 'Really refund' : 'Really forfeit'}
+                        variant="secondary"
+                        onPress={() =>
+                          confirmDeposit.kind === 'refund'
+                            ? refundMut.mutate(d.id)
+                            : forfeitMut.mutate(d.id)
+                        }
+                        loading={refundMut.isPending || forfeitMut.isPending}
+                      />
+                      <Button
+                        title="Cancel"
+                        variant="ghost"
+                        onPress={() => setConfirmDeposit(null)}
+                      />
+                    </View>
                   </View>
                 ) : null}
               </Card>

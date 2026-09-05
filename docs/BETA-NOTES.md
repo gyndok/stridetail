@@ -3,6 +3,19 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Web-safe confirms, full sweep** (2026-09-05, sponsor field report: "the
+  Finalize button does not seem to work" on desktop web): Alert.alert buttons
+  never fire on web (the team.tsx lesson) — this round hunted down EVERY
+  remaining mutation gated behind one and converted it to an inline confirm:
+  payout statement Finalize / Void / Mark paid, invoice Send / Resend / Void,
+  deposit Refund / Forfeit, report Resend / Revoke link, visit Cancel, pet
+  document Remove, and the walker's redundant second finish confirm (deleted —
+  the notes card IS the confirm). Post-action popups became inline notices;
+  the two GPS-denied notices keep the native Alert (it floats above the
+  navigation that follows) and use inline text on web; the walker's post-
+  finish "text the client" offer skips straight home on web (no Messages app
+  there — and its Alert would otherwise strand the walker). Grep proves no
+  web-reachable Alert-gated mutation remains.
 - **Money-review two-bug round** (2026-09-05, from the "Money feature" review
   prompt — full prompt archived at docs/MONEY-HUB-PROMPT.md, both bugs verified
   before touching code):

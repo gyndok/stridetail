@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Linking, Pressable, Share, Text, View } from 'react-native';
+import { Linking, Pressable, Share, Text, View } from 'react-native';
 
 import {
   getInvoice,
@@ -11,7 +11,6 @@ import {
   resendInvoiceEmail,
   sendInvoice,
   voidInvoice,
-  type InvoiceDetail,
 } from '@/src/features/billing/api';
 import {
   formatCents,
@@ -58,6 +57,10 @@ export default function InvoiceDetailScreen() {
   const memberships = useMemberships();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [error, setError] = useState<string | null>(null);
+  // Alert.alert buttons no-op on web (team.tsx lesson) — the send/void/resend
+  // confirms are inline cards, and post-action feedback is an inline notice.
+  const [confirming, setConfirming] = useState<'send' | 'void' | 'resend' | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Record-payment form (visible while status is sent).
   const [payOpen, setPayOpen] = useState(false);
@@ -76,6 +79,8 @@ export default function InvoiceDetailScreen() {
 
   const refresh = () => {
     setError(null);
+    setConfirming(null);
+    setNotice(null);
     void queryClient.invalidateQueries({ queryKey: ['invoice', businessId, id] });
     void queryClient.invalidateQueries({ queryKey: ['invoices', businessId] });
     void queryClient.invalidateQueries({ queryKey: ['deposits', businessId, 'held'] });
@@ -83,21 +88,12 @@ export default function InvoiceDetailScreen() {
   const fail = (e: unknown) => setError(errorText(e));
 
   const sendMut = useMutation({
-    // Re-read after the RPC: the token is minted server-side and the share
-    // offer needs it in hand (invalidation alone would race the Alert).
-    mutationFn: async (): Promise<InvoiceDetail> => {
-      await sendInvoice(id!);
-      return getInvoice(businessId!, id!);
-    },
-    onSuccess: (fresh) => {
+    mutationFn: () => sendInvoice(id!),
+    onSuccess: () => {
       refresh();
-      if (fresh.public_token) {
-        const link = invoiceLink(fresh.public_token);
-        Alert.alert('Invoice sent', 'The client gets the payment link by email. Share it too?', [
-          { text: 'Done', style: 'cancel' },
-          { text: 'Share link', onPress: () => void Share.share({ message: link }) },
-        ]);
-      }
+      // The refreshed screen shows Share link / Text the client below, so the
+      // old post-send share prompt is now just a notice.
+      setNotice('Invoice sent — the client gets the payment link by email.');
     },
     onError: fail,
   });
@@ -111,7 +107,8 @@ export default function InvoiceDetailScreen() {
     mutationFn: () => resendInvoiceEmail(id!),
     onSuccess: () => {
       setError(null);
-      Alert.alert('Email queued', 'The client will get the invoice link again by email.');
+      setConfirming(null);
+      setNotice('Email queued — the client will get the invoice link again.');
     },
     onError: fail,
   });
@@ -167,28 +164,6 @@ export default function InvoiceDetailScreen() {
     (a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id),
   );
 
-  function confirmSend() {
-    Alert.alert('Send invoice', 'Email the client a link to view and pay this invoice?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Send', onPress: () => sendMut.mutate() },
-    ]);
-  }
-  function confirmVoid() {
-    Alert.alert(
-      'Void invoice',
-      'Visits become invoiceable again, applied deposits return to held, and the public link stops working. This cannot be undone.',
-      [
-        { text: 'Keep invoice', style: 'cancel' },
-        { text: 'Void', style: 'destructive', onPress: () => voidMut.mutate() },
-      ],
-    );
-  }
-  function confirmResend() {
-    Alert.alert('Resend email', 'Email the client the invoice link again? The link stays the same.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Resend', onPress: () => resendMut.mutate() },
-    ]);
-  }
   function submitPayment() {
     setError(null);
     const cents = dollarsStringToCents(amountText);
@@ -335,9 +310,19 @@ export default function InvoiceDetailScreen() {
       ) : null}
 
       {error ? <Text style={{ color: t.colors.danger }}>{error}</Text> : null}
+      {notice ? <Text style={{ color: t.colors.green }}>{notice}</Text> : null}
 
-      {inv.status === 'draft' ? (
-        <Button title="Send invoice" onPress={confirmSend} loading={sendMut.isPending} />
+      {inv.status === 'draft' && confirming !== 'send' ? (
+        <Button title="Send invoice" onPress={() => setConfirming('send')} />
+      ) : null}
+      {inv.status === 'draft' && confirming === 'send' ? (
+        <Card style={{ gap: t.space.sm }}>
+          <Text style={{ color: t.colors.ink }}>
+            Email the client a link to view and pay this invoice?
+          </Text>
+          <Button title="Send it" onPress={() => sendMut.mutate()} loading={sendMut.isPending} />
+          <Button title="Cancel" variant="ghost" onPress={() => setConfirming(null)} />
+        </Card>
       ) : null}
 
       {inv.status === 'sent' && !payOpen ? (
@@ -380,12 +365,25 @@ export default function InvoiceDetailScreen() {
       {shareable && link ? (
         <>
           {inv.status === 'sent' || inv.status === 'paid' ? (
-            <Button
-              title="Resend email"
-              variant="secondary"
-              onPress={confirmResend}
-              loading={resendMut.isPending}
-            />
+            confirming === 'resend' ? (
+              <Card style={{ gap: t.space.sm }}>
+                <Text style={{ color: t.colors.ink }}>
+                  Email the client the invoice link again? The link stays the same.
+                </Text>
+                <Button
+                  title="Resend"
+                  onPress={() => resendMut.mutate()}
+                  loading={resendMut.isPending}
+                />
+                <Button title="Cancel" variant="ghost" onPress={() => setConfirming(null)} />
+              </Card>
+            ) : (
+              <Button
+                title="Resend email"
+                variant="secondary"
+                onPress={() => setConfirming('resend')}
+              />
+            )
           ) : null}
           <Button
             title="Share link"
@@ -406,8 +404,28 @@ export default function InvoiceDetailScreen() {
         </>
       ) : null}
 
-      {editable ? (
-        <Button title="Void invoice" variant="ghost" onPress={confirmVoid} loading={voidMut.isPending} />
+      {editable && confirming !== 'void' ? (
+        <Button title="Void invoice" variant="ghost" onPress={() => setConfirming('void')} />
+      ) : null}
+      {editable && confirming === 'void' ? (
+        <Card style={{ gap: t.space.sm }}>
+          <Text style={{ color: t.colors.ink }}>
+            Visits become invoiceable again, applied deposits return to held, and the public link
+            stops working. This cannot be undone.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => voidMut.mutate()}
+            disabled={voidMut.isPending}
+            hitSlop={8}
+            style={{ alignSelf: 'center', paddingVertical: t.space.sm }}
+          >
+            <Text style={{ color: t.colors.danger, fontWeight: '700' }}>
+              {voidMut.isPending ? 'Voiding…' : 'Really void'}
+            </Text>
+          </Pressable>
+          <Button title="Keep invoice" variant="ghost" onPress={() => setConfirming(null)} />
+        </Card>
       ) : null}
     </Screen>
   );

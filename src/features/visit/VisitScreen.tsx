@@ -161,7 +161,7 @@ function PetSection({ pet }: { pet: VisitPetInfo }) {
  * Report card for a completed visit (moved intact from the old owner
  * schedule/[id].tsx): email delivery line (the live channel — sms is dormant),
  * Share link, device-composed Text, Resend email and Revoke through the
- * audited owner RPCs behind Alert confirms.
+ * audited owner RPCs behind inline web-safe confirms.
  */
 function ReportSection({
   businessId,
@@ -197,8 +197,11 @@ function ReportSection({
     queryKey: ['reportPetNames', businessId, visitId],
     queryFn: () => listPetNames(petIds),
   });
+  // Alert.alert buttons no-op on web (team.tsx lesson) — confirm inline.
+  const [confirming, setConfirming] = useState<'resend' | 'revoke' | null>(null);
   const refresh = () => {
     setError(null);
+    setConfirming(null);
     void queryClient.invalidateQueries({ queryKey: ['visitReport', businessId, visitId] });
     void queryClient.invalidateQueries({ queryKey: ['visitReportEmail', businessId, visitId] });
   };
@@ -215,23 +218,6 @@ function ReportSection({
           {report.isPending ? 'Loading…' : 'No report for this visit.'}
         </Text>
       </Card>
-    );
-  }
-
-  function confirmResend() {
-    Alert.alert('Resend report', 'Send the report link to the client again by email?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Resend', onPress: () => resendMut.mutate() },
-    ]);
-  }
-  function confirmRevoke() {
-    Alert.alert(
-      'Revoke report link',
-      'The link stops working immediately for anyone who has it. This cannot be undone.',
-      [
-        { text: 'Keep link', style: 'cancel' },
-        { text: 'Revoke', style: 'destructive', onPress: () => revokeMut.mutate() },
-      ],
     );
   }
 
@@ -281,8 +267,38 @@ function ReportSection({
               }
             />
           ) : null}
-          <Button title="Resend email" variant="secondary" onPress={confirmResend} loading={resendMut.isPending} />
-          <Button title="Revoke link" variant="ghost" onPress={confirmRevoke} loading={revokeMut.isPending} />
+          {confirming === 'resend' ? (
+            <Card style={{ gap: t.space.sm }}>
+              <Text style={{ color: t.colors.ink }}>
+                Send the report link to the client again by email?
+              </Text>
+              <Button title="Resend" onPress={() => resendMut.mutate()} loading={resendMut.isPending} />
+              <Button title="Cancel" variant="ghost" onPress={() => setConfirming(null)} />
+            </Card>
+          ) : (
+            <Button title="Resend email" variant="secondary" onPress={() => setConfirming('resend')} />
+          )}
+          {confirming === 'revoke' ? (
+            <Card style={{ gap: t.space.sm }}>
+              <Text style={{ color: t.colors.ink }}>
+                The link stops working immediately for anyone who has it. This cannot be undone.
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => revokeMut.mutate()}
+                disabled={revokeMut.isPending}
+                hitSlop={8}
+                style={{ alignSelf: 'center', paddingVertical: t.space.sm }}
+              >
+                <Text style={{ color: t.colors.danger, fontWeight: '700' }}>
+                  {revokeMut.isPending ? 'Revoking…' : 'Really revoke'}
+                </Text>
+              </Pressable>
+              <Button title="Keep link" variant="ghost" onPress={() => setConfirming(null)} />
+            </Card>
+          ) : (
+            <Button title="Revoke link" variant="ghost" onPress={() => setConfirming('revoke')} />
+          )}
         </>
       ) : null}
     </>
@@ -369,6 +385,8 @@ export default function VisitScreen() {
     },
     onError: (e) => setManageError(errorText(e)),
   });
+  // Alert.alert buttons no-op on web (team.tsx lesson) — cancel confirms inline.
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
   const gate = v ? canStart(v.status) : null;
 
@@ -388,11 +406,19 @@ export default function VisitScreen() {
         try {
           await startVisitTracking(v.id);
         } catch (e) {
-          // Permission denied: the visit is still started — only the route is lost.
-          Alert.alert(
-            'GPS not recording',
-            `${errorText(e)}\n\nThe visit has still started; the route will not be recorded.`,
-          );
+          // Permission denied: the visit is still started — only the route is
+          // lost. Native keeps the Alert (it floats above the navigation that
+          // follows); web gets inline text since Alert never renders there.
+          if (Platform.OS === 'web') {
+            setStartError(
+              `GPS not recording — ${errorText(e)}. The visit has still started; the route will not be recorded.`,
+            );
+          } else {
+            Alert.alert(
+              'GPS not recording',
+              `${errorText(e)}\n\nThe visit has still started; the route will not be recorded.`,
+            );
+          }
         }
       }
       kickSync();
@@ -403,13 +429,6 @@ export default function VisitScreen() {
       setStarting(false);
     }
   };
-
-  function confirmCancel() {
-    Alert.alert('Cancel visit', 'Cancel this visit? The walker will no longer see it.', [
-      { text: 'Keep visit', style: 'cancel' },
-      { text: 'Cancel visit', style: 'destructive', onPress: () => cancelMut.mutate() },
-    ]);
-  }
 
   if (!v) {
     return (
@@ -611,8 +630,27 @@ export default function VisitScreen() {
       ) : null}
 
       {manageError ? <Text style={{ color: t.colors.danger }}>{manageError}</Text> : null}
-      {canCancel ? (
-        <Button title="Cancel visit" variant="ghost" onPress={confirmCancel} loading={cancelMut.isPending} />
+      {canCancel && !confirmCancelOpen ? (
+        <Button title="Cancel visit" variant="ghost" onPress={() => setConfirmCancelOpen(true)} />
+      ) : null}
+      {canCancel && confirmCancelOpen ? (
+        <Card style={{ gap: t.space.sm }}>
+          <Text style={{ color: t.colors.ink }}>
+            Cancel this visit? The walker will no longer see it.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => cancelMut.mutate()}
+            disabled={cancelMut.isPending}
+            hitSlop={8}
+            style={{ alignSelf: 'center', paddingVertical: t.space.sm }}
+          >
+            <Text style={{ color: t.colors.danger, fontWeight: '700' }}>
+              {cancelMut.isPending ? 'Cancelling…' : 'Really cancel'}
+            </Text>
+          </Pressable>
+          <Button title="Keep visit" variant="ghost" onPress={() => setConfirmCancelOpen(false)} />
+        </Card>
       ) : null}
     </Screen>
   );

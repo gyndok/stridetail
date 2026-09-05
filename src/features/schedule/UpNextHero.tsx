@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, Text, View } from 'react-native';
 
 import {
   acceptVisit,
@@ -99,11 +99,19 @@ function useVisitActionRunner(businessId: string | null) {
         try {
           await startVisitTracking(v.id);
         } catch (e) {
-          // Permission denied: the visit is still started — only the route is lost.
-          Alert.alert(
-            'GPS not recording',
-            `${errorText(e)}\n\nThe visit has still started; the route will not be recorded.`,
-          );
+          // Permission denied: the visit is still started — only the route is
+          // lost. Native keeps the Alert (it floats above the navigation that
+          // follows); web gets inline text since Alert never renders there.
+          if (Platform.OS === 'web') {
+            setError(
+              `GPS not recording — ${errorText(e)}. The visit has still started; the route will not be recorded.`,
+            );
+          } else {
+            Alert.alert(
+              'GPS not recording',
+              `${errorText(e)}\n\nThe visit has still started; the route will not be recorded.`,
+            );
+          }
         }
       }
       kickSync();

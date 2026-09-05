@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { Alert, Linking, Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { Button } from '@/src/ui/Button';
@@ -53,25 +53,17 @@ export function DocumentsSection({ businessId, petId }: Props) {
     }
   }
 
-  function confirmDelete(doc: PetDocument) {
-    Alert.alert('Delete document', `Delete this ${docTypeLabel(doc.type)} document?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          void (async () => {
-            setError(null);
-            try {
-              await deleteDocument(businessId, doc);
-              await docs.refetch();
-            } catch (e) {
-              setError(errorText(e));
-            }
-          })();
-        },
-      },
-    ]);
+  // Two-tap delete confirm (Alert.alert buttons no-op on web — team.tsx lesson).
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  async function doDelete(doc: PetDocument) {
+    setError(null);
+    try {
+      await deleteDocument(businessId, doc);
+      setConfirmDeleteId(null);
+      await docs.refetch();
+    } catch (e) {
+      setError(errorText(e));
+    }
   }
 
   async function pickAndUpload(kind: 'camera' | 'library' | 'pdf') {
@@ -160,13 +152,34 @@ export function DocumentsSection({ businessId, petId }: Props) {
             {state === 'warning' ? (
               <Text style={[t.type.label, { color: t.colors.warning }]}>Expires soon</Text>
             ) : null}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Delete ${docTypeLabel(doc.type)} document`}
-              onPress={() => confirmDelete(doc)}
-            >
-              <Text style={{ color: t.colors.danger, fontSize: 12 }}>Remove</Text>
-            </Pressable>
+            {confirmDeleteId === doc.id ? (
+              <View style={{ flexDirection: 'row', gap: t.space.md }}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void doDelete(doc)}
+                  hitSlop={8}
+                >
+                  <Text style={{ color: t.colors.danger, fontSize: 12, fontWeight: '700' }}>
+                    Really delete
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setConfirmDeleteId(null)}
+                  hitSlop={8}
+                >
+                  <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>Keep</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Delete ${docTypeLabel(doc.type)} document`}
+                onPress={() => setConfirmDeleteId(doc.id)}
+              >
+                <Text style={{ color: t.colors.danger, fontSize: 12 }}>Remove</Text>
+              </Pressable>
+            )}
           </View>
         );
       })}
