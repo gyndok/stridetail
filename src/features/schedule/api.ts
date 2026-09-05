@@ -372,6 +372,15 @@ export function needsAttention(v: { status: string; decline_reason: string | nul
 export const MISSED_GRACE_MS = 3_600_000;
 
 /**
+ * How far back the Today AND Schedule queries reach: 26 h catches all of
+ * today's local day in any tz (24 h day + DST hour, with margin). One shared
+ * constant — Alexandra's 2026-09-05 report was the two screens disagreeing:
+ * Today's alert counted a missed visit from yesterday evening while Schedule
+ * queried from now() forward and could never show it.
+ */
+export const MISSED_LOOKBACK_MS = 26 * 3_600_000;
+
+/**
  * Missed visits (backlog item 2026-08-25): accepted or offered rows whose
  * scheduled_end passed more than an hour before now and were never started —
  * they silently vanish from the hero/rest-of-day filters otherwise. Both
@@ -392,6 +401,25 @@ export function missedVisits<T extends { status: string; scheduled_start: string
         new Date(v.scheduled_end).getTime() < cutoff,
     )
     .sort((a, b) => a.scheduled_start.localeCompare(b.scheduled_start));
+}
+
+/**
+ * Split a lookback-widened schedule window for display: `missed` gets its own
+ * red section, `listable` feeds the normal day groups — current and future
+ * visits plus anything whose window ended inside the grace hour (a late walk
+ * still counts as "now"), with past-day noise (yesterday's completed rows the
+ * lookback drags in) filtered out.
+ */
+export function splitScheduleWindow<
+  T extends { id: string; status: string; scheduled_start: string; scheduled_end: string },
+>(visits: T[], nowUtc: Date): { missed: T[]; listable: T[] } {
+  const missed = missedVisits(visits, nowUtc);
+  const missedIds = new Set(missed.map((v) => v.id));
+  const cutoff = nowUtc.getTime() - MISSED_GRACE_MS;
+  const listable = visits.filter(
+    (v) => !missedIds.has(v.id) && new Date(v.scheduled_end).getTime() >= cutoff,
+  );
+  return { missed, listable };
 }
 
 // ---- Notification delivery surfacing (Plan 4 Task 6; email-only since the

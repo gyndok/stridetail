@@ -6,6 +6,7 @@ import {
   joinServices,
   listMyVisits,
   missedVisits,
+  splitScheduleWindow,
   partitionWalkerDay,
   pickUpNext,
   restOfDay,
@@ -311,6 +312,27 @@ test('missedVisits: in_progress, completed, cancelled, unassigned are never miss
 
 test('missedVisits: a visit still inside (or before) its window is never missed', () => {
   expect(missedVisits([mv('future', 'accepted', -120)], NOW)).toEqual([]);
+});
+
+// ---- splitScheduleWindow (Alexandra's 2026-09-05 report: the missed alert
+// pointed at a Schedule that queried from now() and could never show it) ----
+
+test('splitScheduleWindow: missed goes to its own bucket, upcoming stays listable', () => {
+  const rows = [
+    mv('missed', 'accepted', 61), // yesterday-style: unstarted, window long gone
+    mv('future', 'accepted', -120),
+    mv('grace', 'accepted', 30), // ended 30 min ago — still "now", not missed
+  ];
+  const { missed, listable } = splitScheduleWindow(rows, NOW);
+  expect(missed.map((v) => v.id)).toEqual(['missed']);
+  expect(listable.map((v) => v.id).sort()).toEqual(['future', 'grace']);
+});
+
+test('splitScheduleWindow: lookback noise (old completed/cancelled rows) is dropped', () => {
+  const rows = [mv('done', 'completed', 600), mv('gone', 'cancelled', 600), mv('up', 'accepted', -60)];
+  const { missed, listable } = splitScheduleWindow(rows, NOW);
+  expect(missed).toEqual([]);
+  expect(listable.map((v) => v.id)).toEqual(['up']);
 });
 
 // ---- serviceRequiresGps (hero Start needs the flag; price-free view) ----

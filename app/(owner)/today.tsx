@@ -9,6 +9,7 @@ import { useActiveBusiness } from '@/src/features/business/active';
 import {
   listProblemNotifications,
   listVisits,
+  MISSED_LOOKBACK_MS,
   missedVisits,
   notificationIssueLabel,
   pickUpNext,
@@ -31,11 +32,11 @@ import { useTheme } from '@/src/ui/theme';
 // the rest of their own day. The business-wide view lives in Schedule — the
 // by-walker Team grouping and the "My visits" mode toggle are gone.
 //
-// One query serves everything: 26h back catches all of today's local day in
-// any tz (24h day + DST hour, with margin); 14 days forward matches the
-// schedule list's upcoming window for the needs-attention triage, and gives
-// the hero its any-day-forward reach.
-const LOOKBACK_MS = 26 * 3_600_000;
+// One query serves everything: MISSED_LOOKBACK_MS back catches all of today's
+// local day in any tz (shared with Schedule so its Missed section always shows
+// what this screen's alert counted); 14 days forward matches the schedule
+// list's upcoming window for the needs-attention triage, and gives the hero
+// its any-day-forward reach.
 const LOOKAHEAD_MS = 14 * 86_400_000;
 
 const STATUS_LABELS: Record<string, string> = {
@@ -67,7 +68,7 @@ function MobileToday() {
     enabled: !!businessId,
     queryFn: () =>
       listVisits(businessId!, {
-        fromUtc: new Date(Date.now() - LOOKBACK_MS),
+        fromUtc: new Date(Date.now() - MISSED_LOOKBACK_MS),
         toUtc: new Date(Date.now() + LOOKAHEAD_MS),
       }),
   });

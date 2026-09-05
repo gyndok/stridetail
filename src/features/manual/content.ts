@@ -79,7 +79,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'On your phone, Today is your morning glance. A "Needs attention" strip appears at the top only when something actually needs you: visits nobody is assigned to, offers a walker declined, and new booking requests. Below it, the "Up next" card shows your own next visit — with an "Instructions & codes" shortcut straight into the visit — followed by the rest of your day.',
+          'On your phone, Today is your morning glance. A "Needs attention" strip appears at the top only when something actually needs you: visits nobody is assigned to, offers a walker declined, new booking requests, and missed visits — a visit whose time window passed over an hour ago without the walker starting it. Tapping a missed alert opens Schedule, where a red "Missed" section at the top lists each one; open it to cancel or rebook. Below it, the "Up next" card shows your own next visit — with an "Instructions & codes" shortcut straight into the visit — followed by the rest of your day.',
       },
       {
         kind: 'p',

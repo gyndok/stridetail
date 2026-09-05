@@ -3,6 +3,16 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Missed visits now visible in Schedule** (2026-09-05, Alexandra's report:
+  "1 visit missed — review in Schedule" but "when I open the schedule nothing
+  shows up" — the missed visit was Pauline Bitar, Sep 4 7 PM, accepted and
+  never started): Today's alert scans 26 h back but Schedule queried from
+  now() FORWARD — a missed visit, being past, could never appear where its
+  alert pointed. Schedule now shares the same lookback constant
+  (MISSED_LOOKBACK_MS in schedule/api) and renders a red "Missed" section at
+  the top (client · day · time · walker, tap-through to the visit to cancel or
+  rebook); splitScheduleWindow keeps lookback noise (old completed rows) out
+  of the day groups while letting in-grace late walks show. Manual updated.
 - **Web-safe confirms, full sweep** (2026-09-05, sponsor field report: "the
   Finalize button does not seem to work" on desktop web): Alert.alert buttons
   never fire on web (the team.tsx lesson) — this round hunted down EVERY

@@ -13,8 +13,11 @@ import {
   listProblemNotifications,
   listVisits,
   memberName,
+  MISSED_LOOKBACK_MS,
   needsAttention,
   problemVisitIds,
+  splitScheduleWindow,
+  visitDayLabel,
   visitTimeRange,
   type Visit,
 } from '@/src/features/schedule/api';
@@ -68,12 +71,14 @@ export default function ScheduleIndex() {
     memberships.data?.find((m) => m.business_id === businessId)?.business.time_zone ?? null;
   const weekMode = desktop && view === 'week';
 
+  // Lookback matches Today's needs-attention window: a missed visit is by
+  // definition in the past, and this screen is where its alert points.
   const visits = useQuery({
     queryKey: ['visits', businessId, 'upcoming'],
     enabled: !!businessId,
     queryFn: () =>
       listVisits(businessId!, {
-        fromUtc: new Date(),
+        fromUtc: new Date(Date.now() - MISSED_LOOKBACK_MS),
         toUtc: new Date(Date.now() + UPCOMING_DAYS * 86_400_000),
       }),
   });
@@ -99,10 +104,34 @@ export default function ScheduleIndex() {
   });
   useRefetchOnFocus(visits.refetch);
 
-  const filtered = applyFilter(visits.data ?? [], filter);
+  const { missed, listable } = splitScheduleWindow(visits.data ?? [], new Date());
+  const filtered = applyFilter(listable, filter);
   const groups = groupVisitsByLocalDay(filtered);
   const problemVisits = problemVisitIds(notifications.data ?? []);
   const pendingRequests = bookingRequests.data?.length ?? 0;
+  // The section Today's "visit missed — review in Schedule" alert lands on.
+  const missedCard =
+    missed.length > 0 ? (
+      <Card style={{ gap: t.space.sm }}>
+        <Text style={[t.type.label, { color: t.colors.danger }]}>Missed</Text>
+        {missed.map((v) => (
+          <Pressable
+            key={v.id}
+            accessibilityRole="button"
+            onPress={() => router.push(`/schedule/${v.id}` as Href)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
+            <Text style={{ color: t.colors.ink, fontWeight: '700' }}>
+              {v.client?.name ?? 'Client'} · {visitDayLabel(v)} · {visitTimeRange(v)}
+            </Text>
+            <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
+              {v.walker_id ? memberName(members.data ?? [], v.walker_id) : 'Unassigned'} never
+              started this visit — open it to cancel or rebook.
+            </Text>
+          </Pressable>
+        ))}
+      </Card>
+    ) : null;
   const requestsEntry =
     pendingRequests > 0 ? (
       <Button
@@ -117,6 +146,7 @@ export default function ScheduleIndex() {
       <Screen title="Schedule">
         <Button title="New visit" onPress={() => router.push('/schedule/new' as Href)} />
         {requestsEntry}
+        {missedCard}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
           <Chip label="List" selected={false} onPress={() => setView('list')} />
           <Chip label="Week" selected onPress={() => setView('week')} />
@@ -134,6 +164,7 @@ export default function ScheduleIndex() {
     <Screen title="Schedule">
       <Button title="New visit" onPress={() => router.push('/schedule/new' as Href)} />
       {requestsEntry}
+      {missedCard}
       {desktop ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
           <Chip label="List" selected onPress={() => setView('list')} />
