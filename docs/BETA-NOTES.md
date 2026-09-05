@@ -3,6 +3,31 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **External code-review fixes, all 5 findings** (2026-09-05, review doc "stridetail
+  review 952026" at commit cc569be — both P1s verified real before touching code):
+  1. *Cross-business price overrides (P1)*: composite FKs `(client_id, business_id)`
+     and `(service_id, business_id)` on client_prices (unique pairs added on
+     clients/services); expand-series now also filters overrides by business_id.
+     Migration `..09_client_prices_tenant`, pgTAP 023.
+  2. *Offline outbox black hole (P1)*: retryable failures no longer go terminal
+     after 10 attempts — items retry forever under the capped (5 min) backoff and
+     stay visible in pending counts; legacy 'failed' rows restored to 'pending' on
+     every db open. Strict FIFO still blocks later work behind a stuck head item.
+  3. *Sync stalls after an offline finish (P2)*: the 30 s interval now runs on
+     `hasPendingWork()` (active visit OR non-empty outbox), not just the active
+     marker that stopVisitTracking clears.
+  4. *Offline walks lost their real times (P2)*: start/finish payloads stamp the
+     device instant; `start_visit`/`finish_visit` accept validated
+     `p_started_at`/`p_finished_at` (fallback-to-now on absent/unreasonable, finish
+     clamped ≥ start, old call shapes fine — old signatures DROPPED to dodge the
+     overload gotcha). Migration `..10_offline_timestamps`, pgTAP 024. A 30-min
+     offline walk uploaded late now reports 30 min, not seconds.
+  5. *Delete-vs-in-flight-upload race (P2)*: a local event removal also enqueues a
+     `visit.event.delete` tombstone op — FIFO puts it after any copy a running
+     drain uploads; zero-row server delete is a clean no-op.
+  1080 jest + 799 pgTAP green. Client half is OTA-able (no native changes); server
+  half MUST be applied to hosted before the OTA publishes (old server rejects the
+  new RPC arg names).
 - **Walker removal / invite revoke** (2026-09-01, sponsor request): Team tab gains
   Remove from team + Revoke invite. RPC `remove_walker` — future offered/accepted
   visits return to the pool, history keeps the walker, blocked mid-visit, audited.

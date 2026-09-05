@@ -12,12 +12,15 @@ function setup() {
   return { outbox, kick, deps: { outbox, kick } };
 }
 
-test('appendVisitStart enqueues visit.start and kicks the sync worker', async () => {
+test('appendVisitStart enqueues visit.start with the device instant and kicks the sync worker', async () => {
   const { outbox, kick, deps } = setup();
   await appendVisitStart('v1', deps);
   const [item] = await outbox.nextPending();
   expect(item!.kind).toBe('visit.start');
-  expect(item!.payload).toEqual({ visitId: 'v1' });
+  const payload = item!.payload as { visitId: string; startedAt: string };
+  expect(payload.visitId).toBe('v1');
+  // Review fix #4: the real tap instant rides the payload for delayed uploads.
+  expect(Number.isFinite(Date.parse(payload.startedAt))).toBe(true);
   expect(kick).toHaveBeenCalledTimes(1);
 });
 
@@ -62,14 +65,17 @@ test('two events get distinct clientUuids; optional fields are omitted when abse
   expect((items[1]!.payload as { photoLocalUri: string }).photoLocalUri).toBe('file:///p.jpg');
 });
 
-test('appendVisitFinish carries the private notes only when given', async () => {
+test('appendVisitFinish stamps the finish instant and carries notes only when given', async () => {
   const { outbox, kick, deps } = setup();
   await appendVisitFinish('v1', 'left the key under the mat', deps);
   await appendVisitFinish('v2', undefined, deps);
   const items = await outbox.nextPending();
   expect(items[0]!.kind).toBe('visit.finish');
-  expect(items[0]!.payload).toEqual({ visitId: 'v1', privateNotes: 'left the key under the mat' });
-  expect(items[1]!.payload).toEqual({ visitId: 'v2' });
+  const first = items[0]!.payload as { visitId: string; privateNotes: string; finishedAt: string };
+  expect(first.visitId).toBe('v1');
+  expect(first.privateNotes).toBe('left the key under the mat');
+  expect(Number.isFinite(Date.parse(first.finishedAt))).toBe(true);
+  expect(items[1]!.payload as object).not.toHaveProperty('privateNotes');
   expect(kick).toHaveBeenCalledTimes(2);
 });
 
@@ -98,16 +104,20 @@ function mockDeleteChain(result: { data: unknown; error: unknown }) {
   return calls;
 }
 
-test('deleteVisitEvent dequeues a still-pending event locally, never touching the server', async () => {
+test('deleteVisitEvent dequeues a still-pending event locally and queues a tombstone', async () => {
   const { outbox, deps } = setup();
   const payload = await appendVisitEvent({ visitId: 'v1', businessId: 'b1', type: 'pee' }, deps);
   (supabase as unknown as { from: unknown }).from = jest.fn(() => {
-    throw new Error('server must not be called');
+    throw new Error('server must not be called synchronously');
   });
   await expect(
     deleteVisitEvent({ clientUuid: payload.clientUuid, visitId: 'v1' }, deps),
   ).resolves.toBe('local');
-  expect(await outbox.countPending('v1')).toBe(0);
+  // Review fix #5: the pending insert is gone, replaced by a queued server-side
+  // delete that drains AFTER any copy a running drain may still upload.
+  const pending = await outbox.nextPending();
+  expect(pending.map((i) => i.kind)).toEqual(['visit.event.delete']);
+  expect(pending[0]!.payload).toEqual({ visitId: 'v1', clientUuid: payload.clientUuid });
 });
 
 test('deleteVisitEvent falls through to a server delete scoped by client_uuid and visit', async () => {

@@ -17,7 +17,7 @@
 import { APP_NAME, PORTAL_LOGIN_URL, SUPPORT_EMAIL, WEB_BASE_URL } from '@/src/lib/brand';
 
 export const MANUAL_VERSION = '1.0';
-export const MANUAL_UPDATED = '2026-09-04';
+export const MANUAL_UPDATED = '2026-09-05';
 
 export type ManualAudience = 'owner' | 'walker' | 'client' | 'all';
 
@@ -224,7 +224,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Bad signal is fine. Everything you do — starting, events, photos, finishing — is saved on your phone first and syncs in order when you’re back online. The GPS route keeps recording even if the phone kills the app mid-walk; it picks back up when you reopen it.',
+          'Bad signal is fine. Everything you do — starting, events, photos, finishing — is saved on your phone first and syncs in order when you’re back online — and it keeps retrying until it gets through, so nothing is ever lost to a bad cell day. Your walk’s start and finish times are the moments you actually tapped them, even when the upload happens much later. The GPS route keeps recording even if the phone kills the app mid-walk; it picks back up when you reopen it.',
       },
       {
         kind: 'tip',

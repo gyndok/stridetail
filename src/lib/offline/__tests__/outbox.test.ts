@@ -11,14 +11,16 @@ test('items come back oldest first and only while pending', async () => {
   expect(await box.countPending()).toBe(1);
 });
 
-test('failed items retry until ten attempts then stop', async () => {
+test('retryable failures count attempts but never remove an item from the queue', async () => {
+  // Review fix #2: the old ten-attempt terminal state silently stranded
+  // offline walks (not pending, not counted as an error, never retried).
   const box = new MemoryOutbox(() => 1);
   const a = await box.enqueue('visit.finish', {});
-  for (let i = 0; i < 9; i++) await box.markFailed(a.id);
+  for (let i = 0; i < 25; i++) await box.markFailed(a.id);
   expect(await box.countPending()).toBe(1);
-  await box.markFailed(a.id);
-  expect(await box.countPending()).toBe(0);
-  expect((await box.nextPending()).length).toBe(0);
+  const [item] = await box.nextPending();
+  expect(item!.attempts).toBe(25);
+  expect(item!.state).toBe('pending');
 });
 
 test('markError parks an item outside the pending queue and counts it', async () => {

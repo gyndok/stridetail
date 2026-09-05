@@ -4,6 +4,7 @@ import {
   classifySyncError,
   createKicker,
   drainOutbox,
+  hasPendingWork,
   SyncError,
   toSyncError,
   type SyncApi,
@@ -27,14 +28,17 @@ function fakeApi() {
     if (q?.length) throw q.shift();
   };
   const api: SyncApi = {
-    async startVisit(v) {
-      record('startVisit', [v]);
+    async startVisit(v, at) {
+      record('startVisit', [v, at]);
     },
-    async finishVisit(v, n) {
-      record('finishVisit', [v, n]);
+    async finishVisit(v, n, at) {
+      record('finishVisit', [v, n, at]);
     },
     async insertEvent(r) {
       record('insertEvent', [r]);
+    },
+    async deleteEvent(c, v) {
+      record('deleteEvent', [c, v]);
     },
     async pushTrack(v, s) {
       record('pushTrack', [v, s]);
@@ -71,7 +75,7 @@ function setup() {
 
 test('drains every kind in strict insertion order with the mapped server calls', async () => {
   const { box, tick, calls, drain } = setup();
-  await box.enqueue('visit.start', { visitId: 'v1' });
+  await box.enqueue('visit.start', { visitId: 'v1', startedAt: '2026-09-05T13:00:00.000Z' });
   tick();
   await box.enqueue('visit.event', eventPayload({ petId: 'p1', text: 'good boy' }));
   tick();
@@ -81,13 +85,18 @@ test('drains every kind in strict insertion order with the mapped server calls',
     points: [{ t: 1, lat: 0, lng: 0, acc: 5 }],
   });
   tick();
-  await box.enqueue('visit.finish', { visitId: 'v1', privateNotes: 'gate latch loose' });
+  await box.enqueue('visit.finish', {
+    visitId: 'v1',
+    privateNotes: 'gate latch loose',
+    finishedAt: '2026-09-05T13:30:00.000Z',
+  });
 
   const result = await drain();
   expect(result).toEqual({ sent: 4, errored: 0, stopped: 'empty' });
   expect(await box.countPending()).toBe(0);
   expect(calls.map((c) => c.op)).toEqual(['startVisit', 'insertEvent', 'pushTrack', 'finishVisit']);
-  expect(calls[0]!.args).toEqual(['v1']);
+  // Review fix #4: the device instants ride through to the RPCs.
+  expect(calls[0]!.args).toEqual(['v1', '2026-09-05T13:00:00.000Z']);
   expect(calls[1]!.args).toEqual([
     {
       business_id: 'b1',
@@ -105,7 +114,17 @@ test('drains every kind in strict insertion order with the mapped server calls',
     'v1',
     [{ segmentNo: 1, points: [{ t: 1, lat: 0, lng: 0, acc: 5 }], clientUuid: track.id }],
   ]);
-  expect(calls[3]!.args).toEqual(['v1', 'gate latch loose']);
+  expect(calls[3]!.args).toEqual(['v1', 'gate latch loose', '2026-09-05T13:30:00.000Z']);
+});
+
+test('payloads queued by older code (no instants) pass undefined through', async () => {
+  const { box, tick, calls, drain } = setup();
+  await box.enqueue('visit.start', { visitId: 'v1' });
+  tick();
+  await box.enqueue('visit.finish', { visitId: 'v1' });
+  await drain();
+  expect(calls[0]!.args).toEqual(['v1', undefined]);
+  expect(calls[1]!.args).toEqual(['v1', undefined, undefined]);
 });
 
 test('a track payload that carries its own clientUuid keeps it', async () => {
@@ -245,17 +264,100 @@ test('isOnline false short-circuits the drain', async () => {
   expect(calls).toEqual([]);
 });
 
-test('an item that always fails retryably gives up after MAX_ATTEMPTS', async () => {
+test('an item that fails retryably many times NEVER leaves the queue (review fix #2)', async () => {
+  // The old behavior went terminal ('failed') after ten attempts, silently
+  // stranding an offline walk with zero pending items and zero visible errors.
   const { box, failNext, drain } = setup();
   await box.enqueue('visit.start', { visitId: 'v1' });
   let now = 10_000;
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 15; i++) {
     failNext('startVisit', new SyncError('down', 500));
     expect((await drain(now)).stopped).toBe('retryable');
     now += backoffMs(i + 1) + 1;
   }
-  expect(await box.countPending()).toBe(0); // state 'failed', no longer drained
-  expect(await drain(now)).toEqual({ sent: 0, errored: 0, stopped: 'empty' });
+  expect(await box.countPending()).toBe(1); // still visible, still retryable
+  expect((await box.nextPending())[0]!.attempts).toBe(15);
+  // Connectivity returns: the very next drain past backoff delivers it.
+  expect(await drain(now)).toEqual({ sent: 1, errored: 0, stopped: 'empty' });
+  expect(await box.countPending()).toBe(0);
+});
+
+test('a stuck head item keeps blocking later work rather than discarding it', async () => {
+  // Dependent-ordering guarantee from the same fix: a failing start must never
+  // let the visit's later events upload around it or vanish.
+  const { box, tick, calls, failNext, drain } = setup();
+  await box.enqueue('visit.start', { visitId: 'v1' });
+  tick();
+  await box.enqueue('visit.event', eventPayload());
+  let now = 50_000;
+  for (let i = 0; i < 12; i++) {
+    failNext('startVisit', new SyncError('down', 500));
+    await drain(now);
+    now += backoffMs(i + 1) + 1;
+  }
+  expect(calls.every((c) => c.op === 'startVisit')).toBe(true); // event never jumped the queue
+  expect(await box.countPending()).toBe(2);
+});
+
+test('visit.event.delete drains through api.deleteEvent', async () => {
+  const { box, calls, drain } = setup();
+  await box.enqueue('visit.event.delete', { visitId: 'v1', clientUuid: 'cu-9' });
+  expect(await drain()).toEqual({ sent: 1, errored: 0, stopped: 'empty' });
+  expect(calls).toEqual([{ op: 'deleteEvent', args: ['cu-9', 'v1'] }]);
+});
+
+test('an event deleted while its upload is in flight is removed from the server afterwards', async () => {
+  // Review fix #5 reproduction: the drain has read the item into memory and is
+  // mid-upload when the walker taps Remove. The local row disappears and the
+  // deletion reports success — but the server still receives the copy. The
+  // queued tombstone (FIFO, enqueued after) must clean it up.
+  let t = 1000;
+  const box = new MemoryOutbox(() => t++);
+  const ops: string[] = [];
+  let release!: () => void;
+  const gate = new Promise<void>((r) => {
+    release = r;
+  });
+  const api: SyncApi = {
+    async startVisit() {},
+    async finishVisit() {},
+    async insertEvent() {
+      ops.push('insertEvent');
+      await gate;
+    },
+    async deleteEvent() {
+      ops.push('deleteEvent');
+    },
+    async pushTrack() {},
+    async uploadPhoto() {
+      return 'p';
+    },
+  };
+  await box.enqueue('visit.event', eventPayload({ clientUuid: 'cu-race' }));
+  const draining = drainOutbox({ outbox: box, api, retrySchedule: new Map() });
+  while (!ops.includes('insertEvent')) await new Promise((r) => setTimeout(r, 0));
+
+  expect(await box.removePendingEvent('cu-race')).toBe(true); // "deleted" locally
+  await box.enqueue('visit.event.delete', { visitId: 'v1', clientUuid: 'cu-race' });
+  release();
+  await draining;
+  expect(ops).toEqual(['insertEvent', 'deleteEvent']); // the tombstone ran after the upload
+});
+
+describe('hasPendingWork (review fix #3: retries outlive the active visit)', () => {
+  test('true while a visit is locally active', async () => {
+    const box = new MemoryOutbox(() => 1);
+    expect(await hasPendingWork({ activeVisit: async () => true, outbox: box })).toBe(true);
+  });
+  test('true when the queue holds work after the active marker is gone', async () => {
+    const box = new MemoryOutbox(() => 1);
+    await box.enqueue('visit.finish', { visitId: 'v1' }); // the offline finish itself
+    expect(await hasPendingWork({ activeVisit: async () => false, outbox: box })).toBe(true);
+  });
+  test('false when idle', async () => {
+    const box = new MemoryOutbox(() => 1);
+    expect(await hasPendingWork({ activeVisit: async () => false, outbox: box })).toBe(false);
+  });
 });
 
 describe('classifySyncError / toSyncError / backoffMs', () => {

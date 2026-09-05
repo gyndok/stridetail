@@ -42,7 +42,16 @@ export type VisitEventType =
   | 'video'
   | 'finished';
 
-export type VisitStartPayload = { visitId: string };
+export type VisitStartPayload = {
+  visitId: string;
+  /**
+   * ISO instant the walker actually tapped Start (device clock) — review fix
+   * #4: without it a delayed offline upload got server now() and a 30-minute
+   * walk could report as seconds. Optional: payloads queued by older code
+   * lack it, and the server falls back to now().
+   */
+  startedAt?: string;
+};
 export type VisitEventPayload = {
   visitId: string;
   businessId: string;
@@ -70,7 +79,19 @@ export type VisitTrackPayload = {
   points: TrackPoint[];
   clientUuid?: string;
 };
-export type VisitFinishPayload = { visitId: string; privateNotes?: string };
+export type VisitFinishPayload = {
+  visitId: string;
+  privateNotes?: string;
+  /** ISO instant of the actual finish tap — same contract as startedAt. */
+  finishedAt?: string;
+};
+/**
+ * Server-side removal of an event whose local outbox copy was deleted while a
+ * drain might have been uploading it (review fix #5). FIFO order guarantees
+ * this runs after any such upload; deleting a row the server never got is a
+ * clean zero-row no-op.
+ */
+export type VisitEventDeletePayload = { visitId: string; clientUuid: string };
 
 // ===== errors and classification =====
 
@@ -136,9 +157,11 @@ export type VisitEventRow = {
 };
 
 export type SyncApi = {
-  startVisit(visitId: string): Promise<void>;
-  finishVisit(visitId: string, privateNotes?: string): Promise<void>;
+  startVisit(visitId: string, startedAt?: string): Promise<void>;
+  finishVisit(visitId: string, privateNotes?: string, finishedAt?: string): Promise<void>;
   insertEvent(row: VisitEventRow): Promise<void>;
+  /** Idempotent by design: zero rows deleted is success (the insert never landed). */
+  deleteEvent(clientUuid: string, visitId: string): Promise<void>;
   pushTrack(
     visitId: string,
     segments: { segmentNo: number; points: TrackPoint[]; clientUuid: string }[],
@@ -154,15 +177,27 @@ export type SyncApi = {
 };
 
 export const defaultSyncApi: SyncApi = {
-  async startVisit(visitId) {
-    const { error, status } = await supabase.rpc('start_visit', { p_visit: visitId });
+  async startVisit(visitId, startedAt) {
+    const { error, status } = await supabase.rpc('start_visit', {
+      p_visit: visitId,
+      p_started_at: startedAt ?? null,
+    });
     if (error) throw toSyncError(error, status);
   },
-  async finishVisit(visitId, privateNotes) {
+  async finishVisit(visitId, privateNotes, finishedAt) {
     const { error, status } = await supabase.rpc('finish_visit', {
       p_visit: visitId,
       p_private_notes: privateNotes ?? null,
+      p_finished_at: finishedAt ?? null,
     });
+    if (error) throw toSyncError(error, status);
+  },
+  async deleteEvent(clientUuid, visitId) {
+    const { error, status } = await supabase
+      .from('visit_events')
+      .delete()
+      .eq('client_uuid', clientUuid)
+      .eq('visit_id', visitId);
     if (error) throw toSyncError(error, status);
   },
   async insertEvent(row) {
@@ -193,12 +228,17 @@ async function performItem(item: OutboxItem, api: SyncApi): Promise<void> {
   switch (item.kind) {
     case 'visit.start': {
       const p = item.payload as VisitStartPayload;
-      await api.startVisit(p.visitId);
+      await api.startVisit(p.visitId, p.startedAt);
       return;
     }
     case 'visit.finish': {
       const p = item.payload as VisitFinishPayload;
-      await api.finishVisit(p.visitId, p.privateNotes);
+      await api.finishVisit(p.visitId, p.privateNotes, p.finishedAt);
+      return;
+    }
+    case 'visit.event.delete': {
+      const p = item.payload as VisitEventDeletePayload;
+      await api.deleteEvent(p.clientUuid, p.visitId);
       return;
     }
     case 'visit.track': {
@@ -339,10 +379,25 @@ export const kickSync: () => void = createKicker(() =>
   drainOutbox({ outbox: new SqliteOutbox(getDb()), api: defaultSyncApi }),
 );
 
-/** Read-only check of the Plan-1 active_visit table (drives the 30 s sync interval). */
+/** Read-only check of the Plan-1 active_visit table. */
 export async function hasActiveVisit(): Promise<boolean> {
   const row = await getDb().getFirstAsync<{ visit_id: string }>(
     'SELECT visit_id FROM active_visit WHERE id = 1',
   );
   return row != null;
+}
+
+/**
+ * Drives the 30 s sync interval (review fix #3): the interval used to run only
+ * while a visit was locally ACTIVE, but stopVisitTracking clears that marker
+ * before the queued finish has necessarily reached the server — an offline
+ * finish then had no scheduled retry while the app stayed foregrounded. Retry
+ * as long as there is pending WORK, active visit or not.
+ */
+export async function hasPendingWork(
+  deps: { activeVisit?: () => Promise<boolean>; outbox?: OutboxStore } = {},
+): Promise<boolean> {
+  if (await (deps.activeVisit ?? hasActiveVisit)()) return true;
+  const outbox = deps.outbox ?? new SqliteOutbox(getDb());
+  return (await outbox.countPending()) > 0;
 }

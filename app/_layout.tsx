@@ -12,7 +12,7 @@ import { useMemberships } from '@/src/features/business/useMemberships';
 import { hydrateWalkTheme } from '@/src/features/settings/walkTheme';
 import { setSegmentRollListener } from '@/src/lib/gps/controller';
 import { persistOptions } from '@/src/lib/offline/queryPersister';
-import { hasActiveVisit, kickSync } from '@/src/lib/offline/sync';
+import { hasPendingWork, kickSync } from '@/src/lib/offline/sync';
 import { ThemeProvider } from '@/src/ui/theme';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 1 } } });
@@ -42,7 +42,9 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
   // Outbox sync triggers (Plan 4 Task 3): drain on launch, on foreground, after
-  // every GPS segment roll, and every 30 s while a visit is locally active.
+  // every GPS segment roll, and every 30 s while there is pending work — an
+  // active visit OR anything still queued (review fix #3: an offline finish
+  // clears the active marker, but its upload still needs retries).
   // No netinfo dependency — a kick while offline just fails fast and backs off.
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -52,8 +54,8 @@ export default function RootLayout() {
       if (state === 'active') kickSync();
     });
     const interval = setInterval(() => {
-      void hasActiveVisit().then((active) => {
-        if (active) kickSync();
+      void hasPendingWork().then((pending) => {
+        if (pending) kickSync();
       });
     }, ACTIVE_VISIT_SYNC_INTERVAL_MS);
     return () => {

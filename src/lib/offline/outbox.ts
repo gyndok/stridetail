@@ -1,11 +1,20 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
 
-export type OutboxKind = 'visit.start' | 'visit.event' | 'visit.track' | 'visit.finish';
+export type OutboxKind =
+  | 'visit.start'
+  | 'visit.event'
+  | 'visit.event.delete'
+  | 'visit.track'
+  | 'visit.finish';
 /**
- * 'failed' = gave up after MAX_ATTEMPTS retryable failures;
  * 'error'  = parked by the sync worker on a permanent (non-retryable) server
  *            rejection — kept for surfacing in the UI, never retried.
+ * 'failed' = LEGACY. Retryable failures used to go terminal after ten
+ *            attempts, silently stranding offline walks (review fix #2,
+ *            2026-09-05). They now retry forever under the capped backoff;
+ *            rows stored as 'failed' by old code are restored to 'pending'
+ *            on every db open (see LOCAL_SCHEMA). Nothing writes it anymore.
  */
 export type OutboxState = 'pending' | 'sent' | 'failed' | 'error';
 export type OutboxItem = {
@@ -17,12 +26,11 @@ export type OutboxItem = {
   state: OutboxState;
 };
 
-export const MAX_ATTEMPTS = 10;
-
 export interface OutboxStore {
   enqueue(kind: OutboxKind, payload: unknown, id?: string): Promise<OutboxItem>;
   nextPending(limit?: number): Promise<OutboxItem[]>;
   markSent(id: string): Promise<void>;
+  /** Count a retryable failure. The item stays pending — backoff caps the rate. */
   markFailed(id: string): Promise<void>;
   markError(id: string): Promise<void>;
   /** With visitId: only items whose payload targets that visit (sync badge). */
@@ -60,7 +68,6 @@ export class MemoryOutbox implements OutboxStore {
     const i = this.items.get(id);
     if (!i) return;
     i.attempts += 1;
-    if (i.attempts >= MAX_ATTEMPTS) i.state = 'failed';
   }
   async markError(id: string) {
     const i = this.items.get(id);
@@ -131,11 +138,9 @@ export class SqliteOutbox implements OutboxStore {
     await this.db.runAsync("UPDATE outbox SET state = 'sent' WHERE id = $id", { $id: id });
   }
   async markFailed(id: string) {
-    await this.db.runAsync(
-      `UPDATE outbox SET attempts = attempts + 1,
-         state = CASE WHEN attempts + 1 >= $max THEN 'failed' ELSE state END WHERE id = $id`,
-      { $id: id, $max: MAX_ATTEMPTS },
-    );
+    await this.db.runAsync('UPDATE outbox SET attempts = attempts + 1 WHERE id = $id', {
+      $id: id,
+    });
   }
   async markError(id: string) {
     await this.db.runAsync("UPDATE outbox SET state = 'error' WHERE id = $id", { $id: id });

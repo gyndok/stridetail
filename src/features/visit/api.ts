@@ -5,6 +5,7 @@ import { getDb } from '@/src/lib/offline/db';
 import { SqliteOutbox, type OutboxItem, type OutboxStore } from '@/src/lib/offline/outbox';
 import {
   kickSync,
+  type VisitEventDeletePayload,
   type VisitEventPayload,
   type VisitEventType,
   type VisitFinishPayload,
@@ -29,7 +30,9 @@ export async function appendVisitStart(
   deps: VisitOutboxDeps = {},
 ): Promise<OutboxItem> {
   const { outbox, kick } = resolve(deps);
-  const payload: VisitStartPayload = { visitId };
+  // Stamp the device instant now — a delayed upload must keep the real start
+  // time (review fix #4); the server validates and falls back to now().
+  const payload: VisitStartPayload = { visitId, startedAt: new Date().toISOString() };
   const item = await outbox.enqueue('visit.start', payload);
   kick();
   return item;
@@ -70,10 +73,14 @@ export async function appendVisitEvent(
 
 /**
  * Delete a mis-logged event (wish list #2). Outbox first: a still-pending item
- * is simply dequeued (the server never saw it). Otherwise delete the server
- * row by client_uuid under the walker's delete policy (own running visit,
- * non-structural types). Zero rows deleted with nothing in the outbox means
- * the item is mid-flight or the visit already finished — surface it honestly.
+ * is dequeued — but the drain worker may ALREADY hold a copy of it in memory
+ * and upload it after we return (review fix #5). So a local removal also
+ * queues a visit.event.delete op: FIFO order puts it after any such upload,
+ * and deleting a row the server never received is a clean zero-row no-op.
+ * Otherwise delete the server row by client_uuid under the walker's delete
+ * policy (own running visit, non-structural types). Zero rows deleted with
+ * nothing in the outbox means the item is mid-flight or the visit already
+ * finished — surface it honestly.
  * A deleted photo event leaves its stored object orphaned on purpose: the
  * report reads events rows, never the bucket, and storage delete rights don't
  * extend to walkers.
@@ -82,8 +89,16 @@ export async function deleteVisitEvent(
   args: { clientUuid: string; visitId: string },
   deps: VisitOutboxDeps = {},
 ): Promise<'local' | 'server'> {
-  const { outbox } = resolve(deps);
-  if (await outbox.removePendingEvent(args.clientUuid)) return 'local';
+  const { outbox, kick } = resolve(deps);
+  if (await outbox.removePendingEvent(args.clientUuid)) {
+    const tombstone: VisitEventDeletePayload = {
+      visitId: args.visitId,
+      clientUuid: args.clientUuid,
+    };
+    await outbox.enqueue('visit.event.delete', tombstone);
+    kick();
+    return 'local';
+  }
   const { data, error } = await supabase
     .from('visit_events')
     .delete()
@@ -105,6 +120,7 @@ export async function appendVisitFinish(
   const { outbox, kick } = resolve(deps);
   const payload: VisitFinishPayload = {
     visitId,
+    finishedAt: new Date().toISOString(),
     ...(privateNotes !== undefined && { privateNotes }),
   };
   const item = await outbox.enqueue('visit.finish', payload);
