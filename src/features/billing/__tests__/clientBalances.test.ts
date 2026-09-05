@@ -78,12 +78,22 @@ describe('clientBalances', () => {
     ],
   };
 
-  test('nets held deposits against outstanding sent balances, per client', () => {
+  test('keeps owed and held APART, per client — deposits never hide debt', () => {
+    // Money-review fix B: client b owes 4000 AND we hold 2000; the old signed
+    // net (-2000) understated the debt, and a larger deposit hid it entirely.
     const balances = clientBalances(inputs);
-    expect(balances.get('a')).toBe(6000); // two deposits, nothing owed
-    expect(balances.get('b')).toBe(-2000); // 2000 held − (5000 − 1000) owed
-    expect(balances.get('c')).toBe(-3000); // two unpaid invoices
+    expect(balances.get('a')).toEqual({ owedCents: 0, heldCents: 6000 });
+    expect(balances.get('b')).toEqual({ owedCents: 4000, heldCents: 2000 });
+    expect(balances.get('c')).toEqual({ owedCents: 3000, heldCents: 0 });
     expect(balances.get('d')).toBeUndefined(); // no billing rows at all
+  });
+
+  test('a deposit larger than the debt still shows the unpaid invoice', () => {
+    const balances = clientBalances({
+      heldDeposits: [{ client_id: 'e', amount_cents: 5000 }],
+      sentInvoices: [{ client_id: 'e', items: [{ amount_cents: 2500 }], payments: [] }],
+    });
+    expect(balances.get('e')).toEqual({ owedCents: 2500, heldCents: 5000 });
   });
 
   test('empty inputs give an empty map', () => {
@@ -92,13 +102,27 @@ describe('clientBalances', () => {
 });
 
 describe('balanceView', () => {
-  test('positive is a green credit, negative a red owes', () => {
-    expect(balanceView(6000)).toEqual({ text: '$60.00 credit', tone: 'green' });
-    expect(balanceView(-2000)).toEqual({ text: 'Owes $20.00', tone: 'danger' });
+  test('owed is a red part, held a green part — both shown together', () => {
+    expect(balanceView({ owedCents: 2500, heldCents: 5000 })).toEqual([
+      { text: 'Owes $25.00', tone: 'danger' },
+      { text: 'Holding $50.00', tone: 'green' },
+    ]);
+    expect(balanceView({ owedCents: 3000, heldCents: 0 })).toEqual([
+      { text: 'Owes $30.00', tone: 'danger' },
+    ]);
+    expect(balanceView({ owedCents: 0, heldCents: 6000 })).toEqual([
+      { text: 'Holding $60.00', tone: 'green' },
+    ]);
+  });
+
+  test('an overpaid invoice reads as a real credit, not a negative owe', () => {
+    expect(balanceView({ owedCents: -500, heldCents: 0 })).toEqual([
+      { text: '$5.00 credit', tone: 'green' },
+    ]);
   });
 
   test('settled and unknown are null — the glance stays quiet', () => {
-    expect(balanceView(0)).toBeNull();
+    expect(balanceView({ owedCents: 0, heldCents: 0 })).toBeNull();
     expect(balanceView(undefined)).toBeNull();
   });
 });

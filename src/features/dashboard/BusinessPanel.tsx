@@ -100,16 +100,22 @@ export function BusinessPanel() {
                 {flags.noEmail ? <StatusBadge label="No email" tone="warning" /> : null}
                 {flags.meetGreetPending ? <StatusBadge label="M&G pending" tone="neutral" /> : null}
                 {balance ? (
-                  <Text
-                    style={{
-                      color: balance.tone === 'green' ? t.colors.green : t.colors.danger,
-                      fontWeight: '700',
-                      fontSize: 13,
-                      marginLeft: 'auto',
-                    }}
+                  <View
+                    style={{ marginLeft: 'auto', flexDirection: 'row', gap: t.space.sm }}
                   >
-                    {balance.text}
-                  </Text>
+                    {balance.map((part) => (
+                      <Text
+                        key={part.text}
+                        style={{
+                          color: part.tone === 'green' ? t.colors.green : t.colors.danger,
+                          fontWeight: '700',
+                          fontSize: 13,
+                        }}
+                      >
+                        {part.text}
+                      </Text>
+                    ))}
+                  </View>
                 ) : null}
               </View>
               <Text style={{ color: t.colors.inkMuted, fontSize: 13 }}>

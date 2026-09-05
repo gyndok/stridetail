@@ -73,15 +73,25 @@ export default function Clients() {
                   </View>
                 ) : null}
                 {balance ? (
-                  <Text
+                  <View
                     style={{
-                      color: balance.tone === 'green' ? t.colors.green : t.colors.danger,
-                      fontWeight: '700',
                       marginLeft: 'auto',
+                      alignItems: 'flex-end',
+                      gap: 2,
                     }}
                   >
-                    {balance.text}
-                  </Text>
+                    {balance.map((part) => (
+                      <Text
+                        key={part.text}
+                        style={{
+                          color: part.tone === 'green' ? t.colors.green : t.colors.danger,
+                          fontWeight: '700',
+                        }}
+                      >
+                        {part.text}
+                      </Text>
+                    ))}
+                  </View>
                 ) : null}
               </View>
               {phone ? <Text style={{ color: t.colors.inkMuted }}>{phone}</Text> : null}

@@ -165,7 +165,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Each client row also shows their money at a glance: a green "$50.00 credit" means you hold their deposit, a red "Owes $30.00" means unpaid invoices, and a settled client shows nothing. The same balance sits at the top of their profile — tap it and it unfolds right there into their full transaction history: every invoice with its status and open amount (tap one to open it), what\u2019s been collected including tips, and any held deposit.',
+          'Each client row also shows their money at a glance, and the two sides are always shown separately: a red "Owes $30.00" means unpaid invoices, a green "Holding $50.00" means deposits you hold for future care — a client can show both at once, because a deposit for next week never hides an unpaid walk. A settled client shows nothing. The same balance sits at the top of their profile — tap it and it unfolds right there into their full transaction history: every invoice with its status and open amount (tap one to open it), what\u2019s been collected including tips, and any held deposit.',
       },
       {
         kind: 'p',
@@ -280,7 +280,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Payouts: Billing → Payouts opens with an "Owed now" card — each team member\u2019s earned-but-not-yet-paid amount, their percentage of completed walks plus 100% of their tips. Creating a statement sweeps exactly that amount (wage lines and tip lines are itemized); finalize it and your walker sees it under Settings → Earnings; Mark paid when the money has moved.',
+          'Payouts: Billing → Payouts opens with an "Owed now" card — everything you still owe each team member: their percentage of completed walks plus 100% of their tips, AND any statements you\u2019ve drafted or finalized but not yet marked paid. Creating a statement just organizes the loose amounts onto a document (wage lines and tip lines are itemized) — the total you owe doesn\u2019t change until you tap Mark paid after the money has actually moved. Finalize a statement and your walker sees it under Settings → Earnings. If a walker leaves the team with a statement unpaid, they stay on the card until it\u2019s settled.',
       },
       {
         kind: 'p',

@@ -3,6 +3,33 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Money-review two-bug round** (2026-09-05, from the "Money feature" review
+  prompt — full prompt archived at docs/MONEY-HUB-PROMPT.md, both bugs verified
+  before touching code):
+  - *Owed now was incomplete*: walker_owed_now only counted earnings/tips not
+    yet on a statement, so DRAFTING a statement zeroed "Owed now" with no money
+    moved. Now returns three disjoint parts (loose wages, unclaimed tips,
+    unpaid draft/finalized statement totals) — invariant pinned by pgTAP 025:
+    draft/finalize move money between parts, only Mark paid reduces the total.
+    Bonus from the same rewrite: a REMOVED walker with an unpaid statement
+    stays listed (frozen statement total, null percent, no invented wages).
+    Migration `..11_owed_now_complete` (drop+recreate, regrant).
+  - *Balance glance netted deposits against debt*: "$50 deposit − $25 unpaid
+    walk" showed "+$25 credit", hiding the unpaid invoice. clientBalances now
+    keeps { owedCents, heldCents } apart and every surface (client list, client
+    profile, desktop dashboard) shows up to two parts: red "Owes $X" + green
+    "Holding $Y" (true overpayment still reads "$X credit"). Never netted.
+  1084 jest + 809 pgTAP green; manual updated.
+
+## Parked: the full "Money hub" epic (docs/MONEY-HUB-PROMPT.md)
+The rest of that prompt is a Billing-2.0 reorganization — a people-first Money
+destination (Clients owe / You owe walkers / Deposits held), partial-payout
+schema, multi-walker tip allocation with a "needs allocation" state, an
+overpayment/unapplied-credit model, needs-attention feed, date-range semantics,
+18 acceptance scenarios. Deliberately parked mid-beta (testers just learned the
+current billing surface; several items are new business policy). Revisit as the
+first post-beta phase, fed by beta feedback. The two calculation bugs it
+flagged are fixed above; everything else in the prompt remains open.
 - **External code-review fixes, all 5 findings** (2026-09-05, review doc "stridetail
   review 952026" at commit cc569be — both P1s verified real before touching code):
   1. *Cross-business price overrides (P1)*: composite FKs `(client_id, business_id)`

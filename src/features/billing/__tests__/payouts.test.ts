@@ -6,6 +6,7 @@ import {
   listMyPayoutStatements,
   listPayoutStatements,
   markPayoutPaid,
+  walkerOwedTotal,
   PAYOUT_DETAIL_COLUMNS,
   PAYOUT_LIST_COLUMNS,
   payoutStatusChip,
@@ -214,5 +215,28 @@ describe('signedDollarsToCents', () => {
     expect(signedDollarsToCents('five')).toBeNull();
     expect(signedDollarsToCents('1.234')).toBeNull();
     expect(signedDollarsToCents('--5')).toBeNull();
+  });
+});
+
+describe('walkerOwedTotal (money-review fix A)', () => {
+  const base = {
+    walker_id: 'w1',
+    display_name: 'Kelly',
+    payout_percent: 75 as number | null,
+    wages_cents: 0,
+    tips_cents: 0,
+    statement_cents: 0,
+  };
+
+  test('sums the three disjoint parts', () => {
+    expect(walkerOwedTotal({ ...base, wages_cents: 3750, tips_cents: 1000, statement_cents: 0 })).toBe(4750);
+    // Drafting a statement moves money between parts; the total is unchanged.
+    expect(walkerOwedTotal({ ...base, wages_cents: 0, tips_cents: 0, statement_cents: 4750 })).toBe(4750);
+  });
+
+  test('a departed walker (null percent) still totals their statements', () => {
+    expect(
+      walkerOwedTotal({ ...base, payout_percent: null, statement_cents: 1200 }),
+    ).toBe(1200);
   });
 });

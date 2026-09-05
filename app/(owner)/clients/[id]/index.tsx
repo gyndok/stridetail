@@ -130,14 +130,19 @@ export default function ClientDetail() {
                 {(() => {
                   const balance = balanceView(balances.data.get(c.id));
                   return balance ? (
-                    <Text
-                      style={{
-                        color: balance.tone === 'green' ? t.colors.green : t.colors.danger,
-                        fontWeight: '700',
-                      }}
-                    >
-                      {balance.text}
-                    </Text>
+                    <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                      {balance.map((part) => (
+                        <Text
+                          key={part.text}
+                          style={{
+                            color: part.tone === 'green' ? t.colors.green : t.colors.danger,
+                            fontWeight: '700',
+                          }}
+                        >
+                          {part.text}
+                        </Text>
+                      ))}
+                    </View>
                   ) : (
                     <Text style={{ color: t.colors.inkMuted }}>All settled</Text>
                   );

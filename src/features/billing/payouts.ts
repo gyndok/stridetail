@@ -202,14 +202,26 @@ export function signedDollarsToCents(text: string): number | null {
   return negative ? -cents : cents;
 }
 
-/** "Owed now" (round 7c): what the next statement per member would sweep. */
+/**
+ * "Owed now" (round 7c; completed 2026-09-05, money-review fix A): the FULL
+ * unpaid balance per walker in three disjoint parts — wages not yet on a
+ * statement, unclaimed tips, and unpaid (draft/finalized) statement totals.
+ * Drafting or finalizing a statement moves money between parts without
+ * changing the sum; only marking a statement paid reduces it. A walker
+ * removed from the team keeps appearing while a statement is unpaid —
+ * payout_percent is null then (their membership rate is gone).
+ */
 export type WalkerOwed = {
   walker_id: string;
   display_name: string;
-  payout_percent: number;
+  payout_percent: number | null;
   wages_cents: number;
   tips_cents: number;
+  statement_cents: number;
 };
+
+export const walkerOwedTotal = (w: WalkerOwed): number =>
+  w.wages_cents + w.tips_cents + w.statement_cents;
 
 export async function walkerOwedNow(businessId: string): Promise<WalkerOwed[]> {
   const { data, error } = await supabase.rpc('walker_owed_now', { p_business: businessId });

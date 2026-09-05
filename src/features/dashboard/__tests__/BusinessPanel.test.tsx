@@ -105,7 +105,9 @@ const invoices: InvoiceListItem[] = [
   },
 ];
 
-const mockBalances: { current: Map<string, number> | undefined } = { current: undefined };
+const mockBalances: {
+  current: Map<string, { owedCents: number; heldCents: number }> | undefined;
+} = { current: undefined };
 
 const hookState = {
   clients: { data: clients as BusinessClientRow[] | undefined, error: null as unknown },
@@ -134,7 +136,7 @@ jest.mock('@/src/features/billing/clientBalances', () => ({
 
 beforeEach(() => {
   mockPush.mockClear();
-  mockBalances.current = new Map([['c1', -5000]]);
+  mockBalances.current = new Map([['c1', { owedCents: 5000, heldCents: 0 }]]);
   hookState.clients = { data: clients, error: null };
   hookState.services = { data: services, error: null };
   hookState.billing = { data: { invoices, unbilledCount: 3 }, error: null };

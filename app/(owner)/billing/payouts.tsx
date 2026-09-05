@@ -16,6 +16,7 @@ import {
   signedDollarsToCents,
   voidPayoutStatement,
   walkerOwedNow,
+  walkerOwedTotal,
 } from '@/src/features/billing/payouts';
 import { StatusBadge } from '@/src/features/billing/StatusBadge';
 import { useActiveBusiness } from '@/src/features/business/active';
@@ -124,37 +125,48 @@ export default function PayoutsScreen() {
     <Screen title="Payouts">
       <Button title="Back" variant="ghost" onPress={() => router.back()} />
 
-      {(owed.data ?? []).some((w) => w.wages_cents + w.tips_cents > 0) ? (
+      {(owed.data ?? []).some((w) => walkerOwedTotal(w) > 0) ? (
         <Card style={{ gap: t.space.sm }}>
           <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Owed now</Text>
           <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
-            Everything earned but not yet on a payout statement. Create a statement to sweep it.
+            Everything unpaid: loose earnings plus statements not yet marked paid. Drafting a
+            statement organizes the money — only &ldquo;Mark paid&rdquo; settles it.
           </Text>
           {(owed.data ?? [])
-            .filter((w) => w.wages_cents + w.tips_cents > 0)
-            .map((w) => (
-              <View
-                key={w.walker_id}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: t.space.sm,
-                  paddingVertical: t.space.xs,
-                }}
-              >
-                <View style={{ flexShrink: 1 }}>
-                  <Text style={{ color: t.colors.ink, fontWeight: '600' }}>{w.display_name}</Text>
-                  <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
-                    {formatCents(w.wages_cents)} walks ({w.payout_percent}%)
-                    {w.tips_cents > 0 ? ` + ${formatCents(w.tips_cents)} tips` : ''}
+            .filter((w) => walkerOwedTotal(w) > 0)
+            .map((w) => {
+              const detail = [
+                w.wages_cents > 0
+                  ? `${formatCents(w.wages_cents)} walks${
+                      w.payout_percent != null ? ` (${w.payout_percent}%)` : ''
+                    }`
+                  : null,
+                w.tips_cents > 0 ? `${formatCents(w.tips_cents)} tips` : null,
+                w.statement_cents > 0 ? `${formatCents(w.statement_cents)} on statements` : null,
+              ]
+                .filter(Boolean)
+                .join(' + ');
+              return (
+                <View
+                  key={w.walker_id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: t.space.sm,
+                    paddingVertical: t.space.xs,
+                  }}
+                >
+                  <View style={{ flexShrink: 1 }}>
+                    <Text style={{ color: t.colors.ink, fontWeight: '600' }}>{w.display_name}</Text>
+                    <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>{detail}</Text>
+                  </View>
+                  <Text style={{ color: t.colors.danger, fontWeight: '700' }}>
+                    {formatCents(walkerOwedTotal(w))}
                   </Text>
                 </View>
-                <Text style={{ color: t.colors.danger, fontWeight: '700' }}>
-                  {formatCents(w.wages_cents + w.tips_cents)}
-                </Text>
-              </View>
-            ))}
+              );
+            })}
         </Card>
       ) : null}
 
