@@ -247,6 +247,17 @@ the designed skipped_no_provider — owner fan-out + graceful skip both proven.
 - Demo overpayments reclassified into tips (4 payments). pgTAP 022 (7 tests,
   suite 779 green); restart-button now explains the iOS "crashed" dialog.
 
+## Round 7d — remove mis-recorded payments (sponsor, 2026-09-04 late) — SHIPPED
+- The last append-only corner closed: every payment row on an invoice gets a
+  web-safe Remove (inline two-tap). remove_payment RPC: owner-only, reverts
+  paid -> sent when the invoice drops below total (status machine gained its
+  first reverse arm, paid->sent, for exactly this), audited both ways.
+- GUARD: a payment whose tip is already on a payout statement is FROZEN —
+  void the draft statement first; finalized = support. No silent double-books.
+- Correction model is remove-and-re-record, never in-place edit — mistake and
+  fix both stay visible in the audit log. pgTAP 022 now 13 tests; 011 matrix
+  updated. Manual documented.
+
 ## Round 7c — "Owed now" payout balances (sponsor, 2026-09-04 evening) — SHIPPED
 - The gap: after tips, nothing showed the owner what they owe each walker
   until a statement was created. Payouts now OPENS with "Owed now": per
