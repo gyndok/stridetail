@@ -121,6 +121,15 @@ Productize the hand-built paw-and-whisker page:
   auto-import.
 - Every page footer links back to stridetail.com — each tenant's site is also
   distribution (this is the network-effect loop Easy Busy Pets never built at its price).
+- *Scoped 2026-09-06 (parked — beta code freeze held):* the demo-grade slice is one
+  half-day round: `businesses.website_published` flag (default OFF — no tenant's prices
+  go public without consent) + anon-callable `business_public_profile(slug)` definer
+  RPC (pgTAP pins exactly what it exposes) + a `/p/[slug]` public route in the existing
+  web app (report/invoice-page pattern, tenant brand color, service menu, meet-&-greet
+  CTA) + a Settings "Your website" row with the publish toggle. Static render/caching,
+  bio/testimonials, JSON-LD/SEO, slug claim in onboarding, link mode, and custom
+  domains all stay in the full phase. First post-beta feature candidate — Alexandria
+  as reference tenant.
 
 ### 3c. Legal & trust (before the first stranger signs up)
 - Terms of Service + Privacy Policy (lawyer-reviewed; data is pet + client PII + location
