@@ -121,6 +121,10 @@ export default function PetProfile() {
               <Text style={{ color: t.colors.ink }}>{p.reactivity_md}</Text>
             </Card>
           ) : null}
+          {/* Promoted above the care cards (2026-09-06): booking warns on
+              missing vaccines, so the fix must not hide below the fold —
+              sponsor hunted for it in Edit pet, where it does not exist. */}
+          <DocumentsSection businessId={businessId!} petId={p.id} />
           <Card>
             <Text style={[t.type.label, { color: t.colors.inkMuted }]}>Feeding</Text>
             <Text style={{ color: p.feeding_md ? t.colors.ink : t.colors.inkMuted }}>
@@ -155,7 +159,6 @@ export default function PetProfile() {
               <Text style={{ color: t.colors.inkMuted }}>No vet on file</Text>
             ) : null}
           </Card>
-          <DocumentsSection businessId={businessId!} petId={p.id} />
           <Button title="Edit pet" onPress={() => setEditing(true)} />
           {deleteError ? <Text style={{ color: t.colors.danger }}>{deleteError}</Text> : null}
           {confirmingDelete ? (

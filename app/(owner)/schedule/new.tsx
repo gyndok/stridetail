@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
@@ -301,12 +301,21 @@ export default function NewVisit() {
             <Text style={{ color: t.colors.inkMuted }}>This client has no pets yet.</Text>
           ) : null}
           {issues.map((issue) => (
-            <Text
+            <Pressable
               key={`${issue.petId}-${issue.type}`}
-              style={{ color: t.colors.danger, fontWeight: '600' }}
+              accessibilityRole="button"
+              onPress={() =>
+                router.push(`/clients/${clientId}/pets/${issue.petId}` as Href)
+              }
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             >
-              ⚠ {issueLabel(issue)}
-            </Text>
+              <Text style={{ color: t.colors.danger, fontWeight: '600' }}>
+                ⚠ {issueLabel(issue)}
+              </Text>
+              <Text style={{ color: t.colors.inkMuted, fontSize: 12 }}>
+                Tap to open {issue.petName}’s records and add the document
+              </Text>
+            </Pressable>
           ))}
         </>
       ) : null}
