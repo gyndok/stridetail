@@ -97,12 +97,15 @@ export function SettingsScreen({ extra }: { extra?: ReactNode }) {
           onSaved={() => void qc.invalidateQueries({ queryKey: ['memberships'] })}
         />
       ) : null}
-      {/* Earnings (Plan 6): the walker-group route works from both role groups
-          — owners walk their own visits too and see their own finalized
-          statements (walker-side RLS), or an empty list. */}
+      {/* Earnings (Plan 6): mounted in both groups (tab-shell unification,
+          2026-09-06) — owners walk their own visits too and see their own
+          finalized statements (walker-side RLS), or an empty list, without
+          being teleported into the walker shell. */}
       <Pressable
         accessibilityRole="button"
-        onPress={() => router.push('/(walker)/earnings' as Href)}
+        onPress={() =>
+          router.push((role === 'owner' ? '/(owner)/earnings' : '/(walker)/earnings') as Href)
+        }
       >
         <Card>
           <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>Earnings</Text>

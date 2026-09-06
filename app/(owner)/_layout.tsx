@@ -63,7 +63,7 @@ export default function OwnerTabs() {
                   // Hidden (href: null) routes stay out of the rail too — the
                   // custom tabBar sees the raw route state. Active state keys
                   // off the route, not the (now filtered) array index.
-                  .filter((route) => route.name !== 'requests')
+                  .filter((route) => route.name !== 'requests' && route.name !== 'earnings')
                   .map((route) => ({
                     key: route.key,
                     label: descriptors[route.key]?.options.title ?? route.name,
@@ -153,6 +153,8 @@ export default function OwnerTabs() {
       />
       {/* Plan 8 Task 7: booking requests — reached from Today/Schedule, not a tab. */}
       <Tabs.Screen name="requests" options={{ href: null }} />
+      {/* Earnings — reached from Settings, not a tab (tab-shell unification). */}
+      <Tabs.Screen name="earnings" options={{ href: null }} />
     </Tabs>
   );
 }

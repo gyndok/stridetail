@@ -95,9 +95,14 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-/** The active screen exists only in the walker group; the path is absolute so
- * it works from BOTH mount points (the owner group has no active route). */
-const activeHref = (visitId: string): Href => `/(walker)/visit/${visitId}/active` as Href;
+/** The active screen is mounted in BOTH groups (tab-shell unification,
+ * 2026-09-06): a dual-role owner starts and finishes their own walks without
+ * ever leaving the owner shell — the flip to the walker tabs was Alexandra's
+ * top confusion. Walkers keep their own route unchanged. */
+const activeHref = (visitId: string, ownerShell: boolean): Href =>
+  (ownerShell
+    ? `/(owner)/schedule/${visitId}/active`
+    : `/(walker)/visit/${visitId}/active`) as Href;
 
 /**
  * One pet's info, inline on the visit screen (walkers have no pet-profile
@@ -467,7 +472,7 @@ export default function VisitScreen() {
         }
       }
       kickSync();
-      router.replace(activeHref(v.id));
+      router.replace(activeHref(v.id, isOwnerRole));
     } catch (e) {
       setStartError(errorText(e));
     } finally {
@@ -577,7 +582,7 @@ export default function VisitScreen() {
         <>
           {startError ? <Text style={{ color: t.colors.danger }}>{startError}</Text> : null}
           {v.status === 'in_progress' ? (
-            <Button title="Resume visit" onPress={() => router.replace(activeHref(v.id))} />
+            <Button title="Resume visit" onPress={() => router.replace(activeHref(v.id, isOwnerRole))} />
           ) : (
             <Button
               title="Start visit"

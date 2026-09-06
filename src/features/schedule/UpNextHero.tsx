@@ -39,8 +39,12 @@ import { errorText } from '@/src/lib/errorText';
  * screen exists only in the walker group).
  */
 
-/** Part A pattern: absolute group-qualified href, valid from either group. */
-const activeHref = (visitId: string): Href => `/(walker)/visit/${visitId}/active` as Href;
+/** The active screen is mounted in BOTH groups (tab-shell unification,
+ * 2026-09-06): owners walk their own visits without leaving the owner shell. */
+const activeHref = (visitId: string, ownerShell: boolean): Href =>
+  (ownerShell
+    ? `/(owner)/schedule/${visitId}/active`
+    : `/(walker)/visit/${visitId}/active`) as Href;
 
 function actionFor(visit: Visit, userId: string | null, isOwnerRole: boolean): NextVisitAction {
   return nextVisitAction(visit, {
@@ -54,7 +58,7 @@ function actionFor(visit: Visit, userId: string | null, isOwnerRole: boolean): N
  * Mutation/navigation runners shared by the hero and the inline card action.
  * Invalidates both list keys so either Today variant refreshes.
  */
-function useVisitActionRunner(businessId: string | null) {
+function useVisitActionRunner(businessId: string | null, ownerShell: boolean) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [starting, setStarting] = useState(false);
@@ -82,7 +86,7 @@ function useVisitActionRunner(businessId: string | null) {
     onError: (e) => setError(errorText(e)),
   });
 
-  const resume = (v: Visit) => router.push(activeHref(v.id));
+  const resume = (v: Visit) => router.push(activeHref(v.id, ownerShell));
 
   const start = async (v: Visit, requiresGps: boolean) => {
     setStarting(true);
@@ -115,7 +119,7 @@ function useVisitActionRunner(businessId: string | null) {
         }
       }
       kickSync();
-      router.push(activeHref(v.id));
+      router.push(activeHref(v.id, ownerShell));
     } catch (e) {
       setError(errorText(e));
     } finally {
@@ -151,7 +155,7 @@ type HeroProps = {
 export function UpNextHero({ visit, userId, isOwnerRole, businessId, detailHref }: HeroProps) {
   const t = useTheme();
   const router = useRouter();
-  const runner = useVisitActionRunner(businessId);
+  const runner = useVisitActionRunner(businessId, isOwnerRole);
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState('');
 
@@ -272,7 +276,7 @@ type InlineProps = {
  */
 export function InlineNextAction({ visit, userId, isOwnerRole, businessId }: InlineProps) {
   const t = useTheme();
-  const runner = useVisitActionRunner(businessId);
+  const runner = useVisitActionRunner(businessId, isOwnerRole);
   const action = actionFor(visit, userId, isOwnerRole);
   const requiresGps = useRequiresGps(visit, action.kind === 'start');
 

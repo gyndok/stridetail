@@ -3,6 +3,19 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Tab-shell unification — owners never leave the owner view** (2026-09-06,
+  Alexandra: the flip to the walker view was confusing; closes the parked
+  backlog item via the small door): there never was a toggle — Start/Resume
+  hard-navigated into the walker group because the active-walk screen only
+  existed there, and there was NO route back (relaunch was the escape hatch).
+  Fix: active-walk screen body moved to src/features/visit/ActiveVisitScreen
+  (walker route is now a thin wrapper), a second wrapper mounted at
+  (owner)/schedule/[id]/active ([id].tsx became [id]/index.tsx), activeHref is
+  role-aware in VisitScreen + UpNextHero (runner takes ownerShell), the
+  post-finish go-home lands in the caller's shell, and the Settings Earnings
+  row got the same treatment (EarningsScreen shared; hidden (owner)/earnings
+  route, href-null like requests). Owners start, walk, log, and finish
+  entirely inside the six owner tabs; Kelly's walker shell is unchanged.
 - **`eas submit -p android` LIVE** (2026-09-06 — launch-week backlog item
   closed): Google Cloud service account `eas-submit@stridetail-publishing`
   invited in Play Console (View app info + Release to testing tracks ONLY —
