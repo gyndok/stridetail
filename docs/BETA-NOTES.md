@@ -3,6 +3,16 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **OTA FORMALLY DEMOTED; BUILD 11 CUT** (2026-09-06 evening): the OTA wedge
+  survived onto the fresh 0.2.3 runtime — sponsor's build-10 phone runs the
+  built-in bundle and "Check for updates" claims up-to-date while newer
+  updates exist on the channel (server verified correct days ago; the
+  client-side state is untrustworthy). POLICY, final form: NATIVE FIXES RIDE
+  BINARIES, web rides Vercel; eas update publishes continue only as
+  best-effort bonus. Build 11 (0.2.3, buildNumber 11) cut from 2d93d04 with
+  everything embedded (tab-shell unification, Venmo fix, transactions,
+  roster search, manual). iOS auto-submitted; Android auto-submitted via the
+  new eas-submit pipeline once built.
 - **Tab-shell unification — owners never leave the owner view** (2026-09-06,
   Alexandra: the flip to the walker view was confusing; closes the parked
   backlog item via the small door): there never was a toggle — Start/Resume
