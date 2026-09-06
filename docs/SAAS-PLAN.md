@@ -202,6 +202,19 @@ h. **Sales tax (geographic-expansion gate, added 2026-09-04):** several states t
    separated from service revenue (voluntary tips generally non-taxable), and payout
    statements double as 1099-NEC records for contractors over $600/yr.
 
+i. **Starting balances at migration (added 2026-09-06):** owners switching from another
+   platform arrive with per-client carry-over — clients who still owe (receivables) and
+   clients whose money the business holds (prepaid/deposits), plus walkers owed
+   pre-migration wages. The PRIMITIVES already exist and flow through every surface:
+   owed → an invoice dated migration day with one manual line ("Balance carried over
+   from <platform>"), payable through the normal public page; prepaid → a held deposit
+   with a provenance memo, auto-applied to future invoices; walker owed → a payout
+   statement with a manual adjustment line. Statements/balance-forward come out correct
+   with zero schema. What onboarding needs is PACKAGING: a "Starting balances" wizard —
+   per-client rows ("owes you $__ / you hold $__"), one walker row each — that generates
+   those artifacts in bulk with consistent descriptions. Bookkeeping note surfaced in
+   the manual: carried-over balances are old receivables, not new revenue.
+
 ## 6. Sequencing summary
 
 ```
