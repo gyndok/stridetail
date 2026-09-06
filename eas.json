@@ -34,6 +34,10 @@
     "production": {
       "ios": {
         "ascAppId": "6804488133"
+      },
+      "android": {
+        "serviceAccountKeyPath": "/Users/geffreyklein/.config/stridetail/play-service-account.json",
+        "track": "internal"
       }
     }
   }

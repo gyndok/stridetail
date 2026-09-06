@@ -3,6 +3,16 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **`eas submit -p android` LIVE** (2026-09-06 — launch-week backlog item
+  closed): Google Cloud service account `eas-submit@stridetail-publishing`
+  invited in Play Console (View app info + Release to testing tracks ONLY —
+  no production rights), JSON key at
+  `~/.config/stridetail/play-service-account.json` (chmod 600, outside repo;
+  eas.json stores only the path). First run submitted 0.2.3 (vc6) to the
+  internal track successfully — Android releases are now one command, parity
+  with iOS auto-submit. NOTE (2024+ flow): Play Console's old "API access"
+  page is gone; service accounts are granted via Users and permissions →
+  Invite new user with the service-account email.
 - **Transactions roster search** (2026-09-06, sponsor: chips get messy on a
   large roster): a search field above the person chips narrows them by name
   (case-insensitive, client-side over the cached lists); the selected
