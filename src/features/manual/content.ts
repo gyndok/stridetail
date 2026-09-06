@@ -175,7 +175,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'Required vaccines: in Settings, mark which vaccines your business requires for dogs and for cats. When you book a visit, the New Visit screen warns you if a selected pet is missing a required vaccine or its record has expired — the warning never blocks the booking, it just makes sure you know before you commit.',
+          'Required vaccines: in Settings, mark which vaccines your business requires for dogs and for cats. When you book a visit, the New Visit screen warns you if a selected pet is missing a required vaccine or its record has expired — the warning never blocks the booking, it just makes sure you know before you commit. Tap the warning and it opens that pet’s profile, where the Vaccine documents card sits right under their details ready for a photo or PDF of the record.',
       },
       {
         kind: 'p',

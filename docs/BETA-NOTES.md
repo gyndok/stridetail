@@ -3,6 +3,15 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Vaccine warnings now lead to the fix** (2026-09-06, sponsor field test on
+  build 11: booking warned "Rabies missing — Olivia" but the Documents card
+  hid below five profile cards and does not exist in Edit pet, where he
+  looked first): booking warnings are now tap-throughs to the pet's profile
+  ("Tap to open Olivia's records"), and the Vaccine documents card is
+  promoted to right under the pet's details. Same disease as the
+  missed-visit bug: an alert must land somewhere. ALSO verified on build 11:
+  tab-shell unification works (owner tabs throughout), and TestFlight
+  auto-approved the same-version build — no review wait.
 - **OTA FORMALLY DEMOTED; BUILD 11 CUT** (2026-09-06 evening): the OTA wedge
   survived onto the fresh 0.2.3 runtime — sponsor's build-10 phone runs the
   built-in bundle and "Check for updates" claims up-to-date while newer
