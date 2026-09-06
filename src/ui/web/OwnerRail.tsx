@@ -24,7 +24,6 @@ export function OwnerRail({ businessName, items }: { businessName: string; items
   const t = useTheme();
   return (
     <View
-      nativeID="owner-rail"
       style={{
         width: 232,
         backgroundColor: t.colors.surfaceRaised,

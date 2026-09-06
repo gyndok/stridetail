@@ -19,6 +19,13 @@ Living list for Alexandra's beta week. Items graduate to plans or die here.
   pgTAP (026 also fixed a midnight-UTC date brittleness in 025's fixtures).
   Parked for later: all-clients activity feed; departed walkers in the
   picker.
+  FOLLOW-UP same evening (sponsor: "the PDF is not great and needs to be
+  named more appropriately"): printing no longer prints the app DOM — the
+  page renders a dedicated plain-HTML statement into a hidden iframe (black
+  on white, real table, @page margins, break-inside avoid) and prints THAT;
+  the iframe document title becomes the suggested PDF filename
+  ("<person> — <business> statement — <date>"). All user text HTML-escaped
+  (hostile-name test included).
 - **Venmo pay button dead on client phones** (2026-09-05 evening, Alexandra:
   client "can press on the Venmo link but it doesn't pull anything up"): the
   public invoice page's pay button used Linking.openURL → window.open, which

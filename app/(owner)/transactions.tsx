@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { createElement, useState } from 'react';
+import { useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 
 import { fetchClientStatementData, walkerLedger } from '@/src/features/billing/api';
 import { formatCents, formatIsoDate } from '@/src/features/billing/money';
+import { printStatement } from '@/src/features/billing/statementPrint';
 import {
   buildClientStatement,
   buildWalkerStatement,
@@ -57,15 +58,6 @@ function presetRange(key: PresetKey, custom: { from: string; to: string }): Stat
     };
   return {};
 }
-
-/** @media print: controls and rail vanish, scroll clipping opens up. */
-const PRINT_CSS = `
-@media print {
-  [id="owner-rail"], [id="no-print"] { display: none !important; }
-  * { overflow: visible !important; }
-  body { background: #fff !important; }
-}
-`;
 
 function SummaryRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   const t = useTheme();
@@ -143,11 +135,7 @@ export default function TransactionsScreen() {
 
   return (
     <Screen title="Transactions">
-      {Platform.OS === 'web'
-        ? createElement('style', { dangerouslySetInnerHTML: { __html: PRINT_CSS } })
-        : null}
-
-      <View nativeID="no-print" style={{ gap: t.space.sm }}>
+      <View style={{ gap: t.space.sm }}>
         <View style={chipRow}>
           <Chip
             label="Clients"
@@ -204,7 +192,15 @@ export default function TransactionsScreen() {
           <Button
             title="Print / save as PDF"
             variant="secondary"
-            onPress={() => (globalThis as unknown as { print(): void }).print()}
+            onPress={() =>
+              printStatement(statement!, {
+                businessName,
+                personName,
+                mode,
+                rangeLabel,
+                generatedYmd: dateToYmd(new Date()),
+              })
+            }
           />
         ) : null}
       </View>
