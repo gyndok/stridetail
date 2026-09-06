@@ -22,6 +22,7 @@ import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { DateField } from '@/src/ui/DateField';
 import { Screen } from '@/src/ui/Screen';
+import { TextField } from '@/src/ui/TextField';
 import { useTheme } from '@/src/ui/theme';
 
 /**
@@ -81,6 +82,10 @@ export default function TransactionsScreen() {
 
   const [mode, setMode] = useState<'clients' | 'walkers'>('clients');
   const [personId, setPersonId] = useState<string | null>(null);
+  // Roster search (sponsor, 2026-09-06): with a real-sized roster the chip
+  // row gets unwieldy — typing narrows the chips. Selection is untouched by
+  // filtering, and the chosen person's chip always stays visible.
+  const [search, setSearch] = useState('');
   const [preset, setPreset] = useState<PresetKey>('month');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -143,6 +148,7 @@ export default function TransactionsScreen() {
             onPress={() => {
               setMode('clients');
               setPersonId(null);
+              setSearch('');
             }}
           />
           <Chip
@@ -151,27 +157,38 @@ export default function TransactionsScreen() {
             onPress={() => {
               setMode('walkers');
               setPersonId(null);
+              setSearch('');
             }}
           />
         </View>
+        <TextField
+          label={mode === 'clients' ? 'Search clients' : 'Search walkers'}
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Start typing a name"
+          autoCapitalize="none"
+        />
         <View style={chipRow}>
-          {mode === 'clients'
-            ? (clients.data ?? []).map((c) => (
-                <Chip
-                  key={c.id}
-                  label={c.name}
-                  selected={personId === c.id}
-                  onPress={() => setPersonId(c.id)}
-                />
-              ))
-            : (members.data ?? []).map((m) => (
-                <Chip
-                  key={m.user_id}
-                  label={m.display_name ?? 'Team member'}
-                  selected={personId === m.user_id}
-                  onPress={() => setPersonId(m.user_id)}
-                />
-              ))}
+          {(mode === 'clients'
+            ? (clients.data ?? []).map((c) => ({ id: c.id, label: c.name }))
+            : (members.data ?? []).map((m) => ({
+                id: m.user_id,
+                label: m.display_name ?? 'Team member',
+              }))
+          )
+            .filter(
+              (p) =>
+                p.id === personId ||
+                p.label.toLowerCase().includes(search.trim().toLowerCase()),
+            )
+            .map((p) => (
+              <Chip
+                key={p.id}
+                label={p.label}
+                selected={personId === p.id}
+                onPress={() => setPersonId(p.id)}
+              />
+            ))}
         </View>
         <View style={chipRow}>
           {PRESETS.map((p) => (

@@ -3,6 +3,11 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Transactions roster search** (2026-09-06, sponsor: chips get messy on a
+  large roster): a search field above the person chips narrows them by name
+  (case-insensitive, client-side over the cached lists); the selected
+  person's chip always stays visible, and switching Clients/Walkers clears
+  the search. Web-only page, Vercel deploy is delivery.
 - **Transactions page** (2026-09-05 evening, sponsor design session —
   FreshBooks statement as inspiration): web-rail-only "Transactions" entry
   (manual pattern hides it from native tabs). Clients/Walkers toggle, one
