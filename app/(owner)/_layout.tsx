@@ -14,6 +14,7 @@ import {
   SettingsIcon,
   TeamIcon,
   TodayIcon,
+  TransactionsIcon,
 } from '@/src/ui/icons';
 import { DESKTOP_MIN_WIDTH, OwnerRail } from '@/src/ui/web/OwnerRail';
 import { useTheme } from '@/src/ui/theme';
@@ -118,6 +119,17 @@ export default function OwnerTabs() {
         options={{
           title: 'Billing',
           tabBarIcon: ({ color, size }) => <BillingIcon color={color} size={size ?? 22} />,
+        }}
+      />
+      {/* Transactions (2026-09-05): account statements per client/walker with
+          print-to-PDF — a desktop workflow, so web rail only (manual pattern:
+          href null hides it from the native bottom bar). */}
+      <Tabs.Screen
+        name="transactions"
+        options={{
+          href: Platform.OS === 'web' ? undefined : null,
+          title: 'Transactions',
+          tabBarIcon: ({ color, size }) => <TransactionsIcon color={color} size={size ?? 22} />,
         }}
       />
       {/* User's manual: a rail entry above Settings on web (the rail maps this

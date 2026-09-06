@@ -338,3 +338,57 @@ export async function forfeitDeposit(depositId: string): Promise<void> {
 export async function refundDeposit(depositId: string): Promise<void> {
   await rpc('refund_deposit', { p_deposit: depositId });
 }
+
+// ---- Transactions page (2026-09-05): statement fetches ----
+
+/** One walker's money lines — wages, tips, adjustments, payouts (owner-gated
+ * definer RPC: per-visit wages need the price column the client can't read). */
+export async function walkerLedger(
+  businessId: string,
+  walkerId: string,
+): Promise<import('./statements').WalkerLedgerRow[]> {
+  const { data, error } = await supabase.rpc('walker_ledger', {
+    p_business: businessId,
+    p_walker: walkerId,
+  });
+  if (error) throw error;
+  return (data ?? []) as import('./statements').WalkerLedgerRow[];
+}
+
+/** Everything the client statement needs, named columns only. */
+export async function fetchClientStatementData(
+  businessId: string,
+  clientId: string,
+): Promise<{
+  invoices: import('./statements').StatementInvoice[];
+  payments: import('./statements').StatementPayment[];
+  deposits: import('./statements').StatementDeposit[];
+}> {
+  const [invRes, depRes] = await Promise.all([
+    supabase
+      .from('invoices')
+      .select('id, number, status, issued_on, items:invoice_items(amount_cents, kind)')
+      .eq('business_id', businessId)
+      .eq('client_id', clientId),
+    supabase
+      .from('deposits')
+      .select('amount_cents, status, received_on, created_at, updated_at, memo')
+      .eq('business_id', businessId)
+      .eq('client_id', clientId),
+  ]);
+  if (invRes.error) throw invRes.error;
+  if (depRes.error) throw depRes.error;
+  const invoices = (invRes.data ?? []) as unknown as import('./statements').StatementInvoice[];
+  const ids = invoices.map((i) => i.id);
+  let payments: import('./statements').StatementPayment[] = [];
+  if (ids.length > 0) {
+    const payRes = await supabase
+      .from('payments')
+      .select('invoice_id, amount_cents, tip_cents, method, received_on')
+      .eq('business_id', businessId)
+      .in('invoice_id', ids);
+    if (payRes.error) throw payRes.error;
+    payments = (payRes.data ?? []) as import('./statements').StatementPayment[];
+  }
+  return { invoices, payments, deposits: (depRes.data ?? []) as import('./statements').StatementDeposit[] };
+}

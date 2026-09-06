@@ -98,7 +98,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
-          'The panels mirror the phone: Pending requests (approve or decline right there), Needs attention, and Live walks — visits in progress at this moment. The schedule area shows the week as a table plus a month calendar.',
+          'The panels mirror the phone: Pending requests (approve or decline right there), Needs attention, and Live walks — visits in progress at this moment. The schedule area shows the week as a table plus a month calendar. The rail also has a Transactions page: pick any client or walker and get a dated account statement — every invoice, payment, deposit, wage, tip, and payout with a running balance, over any date range. The "Print / save as PDF" button turns it into a clean statement you can send; tips and held deposits are shown alongside but never mixed into the balance.',
       },
     ],
   },

@@ -173,7 +173,7 @@ function ActiveVisitBody() {
     void poll();
     const timer = setInterval(() => void poll(), POLL_MS);
     return () => clearInterval(timer);
-  }, [id, requiresGps]);
+  }, [id, requiresGps, detail.refetch, queryClient]);
 
   const startMs = d?.visit.started_at ? Date.parse(d.visit.started_at) : localStartMs;
 

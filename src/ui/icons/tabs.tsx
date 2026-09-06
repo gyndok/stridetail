@@ -147,3 +147,14 @@ export function PawIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** Ledger: three ruled lines, amounts right-aligned as short ticks. */
+export function TransactionsIcon(props: IconProps) {
+  const { size, color } = useIconColors(props);
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Rect x={3.75} y={4.25} width={16.5} height={15.5} rx={2.5} {...stroke(color)} />
+      <Path d="M7 9h6.5M17 9h.01M7 12.5h5M16 12.5h1.01M7 16h6M16.5 16h.51" {...stroke(color)} />
+    </Svg>
+  );
+}

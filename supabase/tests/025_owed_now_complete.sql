@@ -84,7 +84,8 @@ select is((select o.statement_cents from walker_owed_now('00000000-0000-0000-000
 -- columns (wages/tips -> statement), never shrink.
 select lives_ok(
   $$select create_payout_statement('00000000-0000-0000-0000-000000000252',
-      (now() - interval '30 days')::date, now()::date)$$,
+      (now() at time zone 'America/Chicago')::date - 30,
+      (now() at time zone 'America/Chicago')::date)$$,
   'owner drafts a statement for walker A');
 select is((select o.wages_cents + o.tips_cents
              from walker_owed_now('00000000-0000-0000-0000-00000025aaaa') o
@@ -113,7 +114,8 @@ select is((select o.wages_cents + o.tips_cents + o.statement_cents
 -- Statement covers only v3 (v4 is today, outside the period), then walker B
 -- leaves the team (remove_walker DELETES the membership row).
 select create_payout_statement('00000000-0000-0000-0000-000000000253',
-  (now() - interval '30 days')::date, (now() - interval '1 day')::date);
+  (now() at time zone 'America/Chicago')::date - 30,
+  (now() at time zone 'America/Chicago')::date - 1);
 select remove_walker('00000000-0000-0000-0000-0000002500a3');
 
 select is((select o.statement_cents from walker_owed_now('00000000-0000-0000-0000-00000025aaaa') o

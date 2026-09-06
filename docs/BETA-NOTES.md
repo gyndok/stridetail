@@ -3,6 +3,22 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Transactions page** (2026-09-05 evening, sponsor design session —
+  FreshBooks statement as inspiration): web-rail-only "Transactions" entry
+  (manual pattern hides it from native tabs). Clients/Walkers toggle, one
+  person at a time, date-range presets + custom, summary block + dated rows
+  with a RUNNING BALANCE, and Print → save-as-PDF (print CSS hides rail +
+  controls, unclips scrollviews). Money rules carried through: tips annotate
+  but never move a balance (both sides — client payments show "includes $X
+  tip", walker side counts them as earnings); held deposits shown beside,
+  never netted; drafts and voids never appear; applied deposits decompose
+  from deposit_credit items so gross charge + credit reconcile exactly.
+  Walker side rides a new owner-gated `walker_ledger` RPC (price stays
+  server-side; migration `..12`), with pgTAP 026 pinning the invariant:
+  ledger earned − paid = walker_owed_now total. Suites: 1101 jest / 817
+  pgTAP (026 also fixed a midnight-UTC date brittleness in 025's fixtures).
+  Parked for later: all-clients activity feed; departed walkers in the
+  picker.
 - **Venmo pay button dead on client phones** (2026-09-05 evening, Alexandra:
   client "can press on the Venmo link but it doesn't pull anything up"): the
   public invoice page's pay button used Linking.openURL → window.open, which

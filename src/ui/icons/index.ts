@@ -10,6 +10,7 @@ export {
   SettingsIcon,
   TeamIcon,
   TodayIcon,
+  TransactionsIcon,
 } from './tabs';
 export {
   AteIcon,
