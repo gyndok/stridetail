@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(11);
 
 -- Review fix #4 (P2, 2026-09-05): start_visit/finish_visit accept a client
 -- occurrence instant so a delayed upload of an offline walk keeps its real
@@ -57,6 +57,14 @@ select is((select finished_at from visits where id = '00000000-0000-0000-0000-00
 select is((select (summary->>'durationMin')::int from visit_reports
             where visit_id = '00000000-0000-0000-0000-000000240071'), 25,
   'the report duration comes from the real instants (25 min, not seconds)');
+-- The snapshot column has NO client grant (compensation data, definer-only
+-- like the price column) — assert as superuser, then resume the walker.
+reset role;
+select ok((select v.payout_percent_snapshot is not null from visits v
+            where v.id = '00000000-0000-0000-0000-000000240071'),
+  'finish_visit stamps the payout percent snapshot at completion (2026-09-06)');
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"00000000-0000-0000-0000-000000000242","role":"authenticated"}';
 
 -- ===== v2: unreasonable instants fall back to now(), never raise =====
 select start_visit('00000000-0000-0000-0000-000000240072', now() + interval '1 hour');

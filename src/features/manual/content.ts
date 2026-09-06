@@ -285,6 +285,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
       {
         kind: 'p',
         text:
+          'Two guarantees behind those numbers. First, each walk locks in its payout rate the moment it\u2019s completed \u2014 change a walker\u2019s percent on the Team tab and only FUTURE walks pay the new rate; everything already done keeps the rate it was earned at. Second, removing a walker never erases what they earned: their unpaid walks and tips stay in "Owed now", they still appear in the Payouts and Transactions pickers marked "(former)", and you can still create, finalize, and mark paid a statement for them \u2014 at the rates their walks locked in.',
+      },
+      {
+        kind: 'p',
+        text:
           'Recorded a payment wrong? Open the invoice — every payment row has a Remove link. Removing a mis-recorded payment reopens the invoice so you can record the right one. The correction is logged, and a payment whose tip already went out on a payout statement is protected until that statement is voided — money shown to a walker never silently disappears. And when you want the whole money story for one person, the desktop web app has a Transactions page in the left rail: pick any client or walker, pick a date range, and read a full account statement — every invoice, payment, deposit, wage, tip, and payout with a running balance. "Print / save as PDF" produces a properly named statement you can send to a client (or hand a walker at tax time). Tips and held deposits are always shown alongside the balance, never mixed into it.',
       },
       {

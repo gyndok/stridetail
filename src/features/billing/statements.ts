@@ -1,3 +1,5 @@
+import { formatInTimeZone } from 'date-fns-tz';
+
 import { formatCents, invoiceNumberLabel, methodLabel } from './money';
 
 import type { PaymentMethod } from './types';
@@ -11,9 +13,19 @@ import type { PaymentMethod } from './types';
  * Client side: charge = invoiced, credit = payments + applied deposits.
  * Walker side: charge = earned (wages/tips/adjustments), credit = payouts —
  * so "balance" reads as what the business still owes, both directions.
+ *
+ * Dates (finding 4, 2026-09-06 review): every timestamptz instant buckets to
+ * a calendar day in the BUSINESS time zone — never `.slice(0, 10)` (UTC) and
+ * never the viewing device's zone, so an evening walk stays on its own day
+ * and the statement reads the same from any device. Values that are already
+ * dates (issued_on, received_on) pass through untouched.
  */
 
 export type StatementRange = { from?: string; to?: string }; // 'YYYY-MM-DD', inclusive
+
+/** Calendar day of a timestamptz instant in the business time zone. */
+export const ymdInZone = (at: string | Date, timeZone: string): string =>
+  formatInTimeZone(new Date(at), timeZone, 'yyyy-MM-dd');
 
 export type StatementRow = {
   date: string; // 'YYYY-MM-DD'
@@ -92,6 +104,42 @@ function assemble(events: Event[], range: StatementRange, tipsInRange: number): 
 const inRange = (date: string, range: StatementRange): boolean =>
   (!range.from || date >= range.from) && (!range.to || date <= range.to);
 
+// ---- range presets (Transactions page) ----
+
+export type PresetKey = 'month' | 'last' | 'year' | 'all' | 'custom';
+
+/**
+ * Presets anchor on "today" in the BUSINESS time zone (finding 4): near
+ * midnight, a device in another zone must not flip which month "This month"
+ * means. Month boundaries are pure calendar string math from that anchor.
+ */
+export function presetRange(
+  key: PresetKey,
+  custom: { from: string; to: string },
+  timeZone: string,
+): StatementRange {
+  const today = ymdInZone(new Date(), timeZone);
+  const y = Number(today.slice(0, 4));
+  const m = Number(today.slice(5, 7)); // 1-12
+  const pad2 = (n: number) => String(n).padStart(2, '0');
+  if (key === 'month') return { from: `${y}-${pad2(m)}-01` };
+  if (key === 'last') {
+    const py = m === 1 ? y - 1 : y;
+    const pm = m === 1 ? 12 : m - 1;
+    // Date.UTC day 0 of this month = the last day of the previous month;
+    // UTC-only fields, so the device zone never touches the arithmetic.
+    const lastDay = new Date(Date.UTC(y, m - 1, 0)).getUTCDate();
+    return { from: `${py}-${pad2(pm)}-01`, to: `${py}-${pad2(pm)}-${pad2(lastDay)}` };
+  }
+  if (key === 'year') return { from: `${y}-01-01` };
+  if (key === 'custom')
+    return {
+      ...(custom.from.trim() && { from: custom.from.trim() }),
+      ...(custom.to.trim() && { to: custom.to.trim() }),
+    };
+  return {};
+}
+
 // ---- client side ----
 
 export type StatementInvoice = {
@@ -122,6 +170,7 @@ export function buildClientStatement(input: {
   payments: StatementPayment[];
   deposits: StatementDeposit[];
   range: StatementRange;
+  timeZone: string;
 }): Statement {
   const events: Event[] = [];
   const labelById = new Map<string, string>();
@@ -181,7 +230,9 @@ export function buildClientStatement(input: {
   let held = 0;
   for (const d of input.deposits) {
     if (d.status === 'held') held += d.amount_cents;
-    const receivedDate = (d.received_on ?? d.created_at).slice(0, 10);
+    // received_on is already a date; only the created_at fallback is an
+    // instant needing the business-tz conversion.
+    const receivedDate = d.received_on ?? ymdInZone(d.created_at, input.timeZone);
     events.push({
       date: receivedDate,
       prio: 3,
@@ -194,7 +245,7 @@ export function buildClientStatement(input: {
     });
     if (d.status === 'refunded' || d.status === 'forfeited') {
       events.push({
-        date: d.updated_at.slice(0, 10),
+        date: ymdInZone(d.updated_at, input.timeZone),
         prio: 3,
         kind: 'deposit_info',
         description: `Deposit ${d.status} — ${formatCents(d.amount_cents)}`,
@@ -222,11 +273,12 @@ export type WalkerLedgerRow = {
 export function buildWalkerStatement(input: {
   rows: WalkerLedgerRow[];
   range: StatementRange;
+  timeZone: string;
 }): Statement {
   const events: Event[] = [];
   let tips = 0;
   for (const r of input.rows) {
-    const date = r.at.slice(0, 10);
+    const date = ymdInZone(r.at, input.timeZone);
     const earned = r.kind !== 'payout';
     if (r.kind === 'tip' && inRange(date, input.range)) tips += r.amount_cents;
     events.push({

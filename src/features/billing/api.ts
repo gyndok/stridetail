@@ -355,6 +355,19 @@ export async function walkerLedger(
   return (data ?? []) as import('./statements').WalkerLedgerRow[];
 }
 
+export type LedgerWalker = { walker_id: string; display_name: string; active: boolean };
+
+/**
+ * The owner pickers' walker roster: active members PLUS anyone with financial
+ * history — statements, or snapshot-stamped completed visits (finding 1,
+ * 2026-09-06 review: removing a walker must never hide what they earned).
+ */
+export async function ledgerWalkers(businessId: string): Promise<LedgerWalker[]> {
+  const { data, error } = await supabase.rpc('ledger_walkers', { p_business: businessId });
+  if (error) throw error;
+  return (data ?? []) as LedgerWalker[];
+}
+
 /** Everything the client statement needs, named columns only. */
 export async function fetchClientStatementData(
   businessId: string,

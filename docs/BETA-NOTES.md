@@ -3,6 +3,27 @@
 Living list for Alexandra's beta week. Items graduate to plans or die here.
 
 ## Shipped during beta
+- **Financial-correctness round: four review findings fixed** (2026-09-06,
+  from the sponsor's pasted code review at 995a7ce; central invariant —
+  earned money never disappears, changes amount, or moves periods because a
+  rate changes, a walker leaves, or a statement is prepared). Migration
+  20260906000001: (1) `visits.payout_percent_snapshot` stamped by
+  finish_visit at completion — rate changes stop rewriting completed
+  earnings (backfill: completed visits of active members get the current
+  rate, documented assumption); (2) removing a walker no longer erases
+  unpaid earnings — owed-now, walker_ledger, and create_payout_statement all
+  work from snapshots for former walkers, and the new `ledger_walkers` RPC
+  keeps them in the Payouts + Transactions pickers labeled "(former)";
+  (3) tips carry a structural `payout_items.payment_id` link and keep their
+  payment's date across sweep/finalize/paid (dated at business-tz midnight —
+  a bare ::timestamptz cast would shift them a day west of UTC); production
+  verified to hold ZERO legacy tip items, so kinds are purely structural, no
+  description-text matching; (4) all statement dates now bucket in the
+  BUSINESS time zone (ymdInZone in statements.ts; presets anchor on
+  business-tz "today") — an evening walk stays on its own day from any
+  device. pgTAP 026 rewritten (18 tests incl. the ledger-vs-owed-now
+  invariant under rate change, removal, void, re-statement); 828 db tests +
+  1113 jest green. Manual: rate-lock + former-walker guarantees added.
 - **Vaccine warnings now lead to the fix** (2026-09-06, sponsor field test on
   build 11: booking warned "Rabies missing — Olivia" but the Documents card
   hid below five profile cards and does not exist in Edit pet, where he

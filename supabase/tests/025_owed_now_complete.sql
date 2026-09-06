@@ -33,27 +33,28 @@ insert into services (id, business_id, name, kind, base_price_cents, duration_mi
 -- Walker B (60%): v3 completed two days ago at $20 (goes on a statement),
 --                 v4 completed today at $20 (outside the statement period).
 insert into visits (id, business_id, client_id, service_id, walker_id, pet_ids,
-                    scheduled_start, scheduled_end, business_tz, status, price_cents_snapshot) values
+                    scheduled_start, scheduled_end, business_tz, status, price_cents_snapshot,
+                    payout_percent_snapshot) values
   ('00000000-0000-0000-0000-000000250071', '00000000-0000-0000-0000-00000025aaaa',
    '00000000-0000-0000-0000-0000000025c1', '00000000-0000-0000-0000-000000250051',
    '00000000-0000-0000-0000-000000000252', '{}',
    now() - interval '2 days', now() - interval '2 days' + interval '30 minutes',
-   'America/Chicago', 'completed', 2500),
+   'America/Chicago', 'completed', 2500, 75),
   ('00000000-0000-0000-0000-000000250072', '00000000-0000-0000-0000-00000025aaaa',
    '00000000-0000-0000-0000-0000000025c1', '00000000-0000-0000-0000-000000250051',
    '00000000-0000-0000-0000-000000000252', '{}',
    now() - interval '2 days', now() - interval '2 days' + interval '30 minutes',
-   'America/Chicago', 'completed', 2500),
+   'America/Chicago', 'completed', 2500, 75),
   ('00000000-0000-0000-0000-000000250073', '00000000-0000-0000-0000-00000025aaaa',
    '00000000-0000-0000-0000-0000000025c1', '00000000-0000-0000-0000-000000250051',
    '00000000-0000-0000-0000-000000000253', '{}',
    now() - interval '2 days', now() - interval '2 days' + interval '30 minutes',
-   'America/Chicago', 'completed', 2000),
+   'America/Chicago', 'completed', 2000, 60),
   ('00000000-0000-0000-0000-000000250074', '00000000-0000-0000-0000-00000025aaaa',
    '00000000-0000-0000-0000-0000000025c1', '00000000-0000-0000-0000-000000250051',
    '00000000-0000-0000-0000-000000000253', '{}',
    now(), now() + interval '30 minutes',
-   'America/Chicago', 'completed', 2000);
+   'America/Chicago', 'completed', 2000, 60);
 -- A $25 invoice for v1 (all lines walker A) paid with a $10 tip.
 insert into invoices (id, business_id, client_id, number, status, issued_on, sent_at) values
   ('00000000-0000-0000-0000-0000002500b1', '00000000-0000-0000-0000-00000025aaaa',
@@ -121,10 +122,10 @@ select remove_walker('00000000-0000-0000-0000-0000002500a3');
 select is((select o.statement_cents from walker_owed_now('00000000-0000-0000-0000-00000025aaaa') o
             where o.walker_id = '00000000-0000-0000-0000-000000000253'), 1200::bigint,
   'a removed walker with an unpaid statement is still listed with its frozen total');
-select ok((select o.payout_percent is null and o.wages_cents = 0
+select ok((select o.payout_percent is null and o.wages_cents = 1200
              from walker_owed_now('00000000-0000-0000-0000-00000025aaaa') o
             where o.walker_id = '00000000-0000-0000-0000-000000000253'),
-  'departed walker: no membership rate, so no percent and no invented wages');
+  'departed walker: percent shows blank but SNAPSHOT wages survive removal (finding 1)');
 
 select * from finish();
 rollback;

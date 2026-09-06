@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { ledgerWalkers } from '@/src/features/billing/api';
 import { formatCents } from '@/src/features/billing/money';
 import {
   addPayoutItem,
@@ -20,7 +21,7 @@ import {
 } from '@/src/features/billing/payouts';
 import { StatusBadge } from '@/src/features/billing/StatusBadge';
 import { useActiveBusiness } from '@/src/features/business/active';
-import { listActiveMembers, memberName, type ScheduleMember } from '@/src/features/schedule/api';
+import { listActiveMembers, memberName } from '@/src/features/schedule/api';
 import { Chip } from '@/src/features/schedule/Chip';
 import { useRefetchOnFocus } from '@/src/lib/useRefetchOnFocus';
 import { Button } from '@/src/ui/Button';
@@ -71,6 +72,14 @@ export default function PayoutsScreen() {
     enabled: !!businessId,
     queryFn: () => listActiveMembers(businessId!),
   });
+  // Picker + naming roster (finding 1, 2026-09-06 review): active members PLUS
+  // former walkers with statements or unswept snapshot earnings — a removed
+  // walker must stay visible and payable here.
+  const roster = useQuery({
+    queryKey: ['ledgerWalkers', businessId],
+    enabled: !!businessId,
+    queryFn: () => ledgerWalkers(businessId!),
+  });
   useRefetchOnFocus(statements.refetch);
 
   const createMut = useMutation({
@@ -96,14 +105,18 @@ export default function PayoutsScreen() {
   }
 
   const memberList = members.data ?? [];
+  const rosterList = roster.data ?? [];
+  const nameOf = (userId: string) =>
+    rosterList.find((w) => w.walker_id === userId)?.display_name ?? memberName(memberList, userId);
   const picked = memberList.find((m) => m.user_id === walkerId);
+  const pickedRoster = rosterList.find((w) => w.walker_id === walkerId);
 
   if (selectedId) {
     return (
       <StatementDetail
         businessId={businessId!}
         id={selectedId}
-        members={memberList}
+        nameOf={nameOf}
         onClose={() => {
           setSelectedId(null);
           void queryClient.invalidateQueries({ queryKey: ['payouts', businessId] });
@@ -175,19 +188,25 @@ export default function PayoutsScreen() {
         <Card style={{ gap: t.space.sm }}>
           <Text style={[t.type.label, { color: t.colors.inkMuted }]}>New payout statement</Text>
           <View style={chipRow}>
-            {memberList.map((m) => (
+            {rosterList.map((w) => (
               <Chip
-                key={m.user_id}
-                label={memberName(memberList, m.user_id)}
-                selected={walkerId === m.user_id}
-                onPress={() => setWalkerId(m.user_id)}
+                key={w.walker_id}
+                label={w.active ? w.display_name : `${w.display_name} (former)`}
+                selected={walkerId === w.walker_id}
+                onPress={() => setWalkerId(w.walker_id)}
               />
             ))}
           </View>
           {picked ? (
             <Text style={{ color: t.colors.inkMuted }}>
-              {memberName(memberList, picked.user_id)} is paid {Number(picked.payout_percent ?? 0)}%
-              of each visit price.
+              {nameOf(picked.user_id)} is paid {Number(picked.payout_percent ?? 0)}% of each visit
+              price.
+            </Text>
+          ) : null}
+          {pickedRoster && !pickedRoster.active ? (
+            <Text style={{ color: t.colors.inkMuted }}>
+              {pickedRoster.display_name} is no longer on the team — unpaid walks pay at the rate
+              saved when each walk was completed.
             </Text>
           ) : null}
           <DateField label="From" value={fromText} onChange={setFromText} />
@@ -209,7 +228,7 @@ export default function PayoutsScreen() {
             <Card style={{ gap: t.space.xs }}>
               <View style={rowBetween}>
                 <Text style={[t.type.body, { color: t.colors.ink, fontWeight: '700' }]}>
-                  {memberName(memberList, st.walker_id)}
+                  {nameOf(st.walker_id)}
                 </Text>
                 <StatusBadge label={chip.label} tone={chip.tone} />
               </View>
@@ -237,12 +256,12 @@ export default function PayoutsScreen() {
 function StatementDetail({
   businessId,
   id,
-  members,
+  nameOf,
   onClose,
 }: {
   businessId: string;
   id: string;
-  members: ScheduleMember[];
+  nameOf: (userId: string) => string;
   onClose: () => void;
 }) {
   const t = useTheme();
@@ -320,7 +339,7 @@ function StatementDetail({
           <Card style={{ gap: t.space.xs }}>
             <View style={rowBetween}>
               <Text style={[t.type.title, { color: t.colors.ink }]}>
-                {memberName(members, st.walker_id)}
+                {nameOf(st.walker_id)}
               </Text>
               <StatusBadge label={chip.label} tone={chip.tone} />
             </View>

@@ -2,22 +2,22 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 
-import { fetchClientStatementData, walkerLedger } from '@/src/features/billing/api';
+import { fetchClientStatementData, ledgerWalkers, walkerLedger } from '@/src/features/billing/api';
 import { formatCents, formatIsoDate } from '@/src/features/billing/money';
 import { printStatement } from '@/src/features/billing/statementPrint';
 import {
   buildClientStatement,
   buildWalkerStatement,
+  presetRange,
+  ymdInZone,
+  type PresetKey,
   type Statement,
-  type StatementRange,
 } from '@/src/features/billing/statements';
 import { useActiveBusiness } from '@/src/features/business/active';
 import { useMemberships } from '@/src/features/business/useMemberships';
 import { listClients } from '@/src/features/clients/api';
 import { Chip } from '@/src/features/schedule/Chip';
-import { listActiveMembers, memberName } from '@/src/features/schedule/api';
 import { errorText } from '@/src/lib/errorText';
-import { dateToYmd } from '@/src/ui/datetime';
 import { Button } from '@/src/ui/Button';
 import { Card } from '@/src/ui/Card';
 import { DateField } from '@/src/ui/DateField';
@@ -35,30 +35,13 @@ import { useTheme } from '@/src/ui/theme';
  * (⌘P → Save as PDF) into a clean statement.
  */
 
-const PRESETS = [
+const PRESETS: { key: PresetKey; label: string }[] = [
   { key: 'month', label: 'This month' },
   { key: 'last', label: 'Last month' },
   { key: 'year', label: 'This year' },
   { key: 'all', label: 'All time' },
   { key: 'custom', label: 'Custom' },
-] as const;
-type PresetKey = (typeof PRESETS)[number]['key'];
-
-function presetRange(key: PresetKey, custom: { from: string; to: string }): StatementRange {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const ymd = (d: Date) => dateToYmd(d);
-  if (key === 'month') return { from: ymd(new Date(y, m, 1)) };
-  if (key === 'last') return { from: ymd(new Date(y, m - 1, 1)), to: ymd(new Date(y, m, 0)) };
-  if (key === 'year') return { from: ymd(new Date(y, 0, 1)) };
-  if (key === 'custom')
-    return {
-      ...(custom.from.trim() && { from: custom.from.trim() }),
-      ...(custom.to.trim() && { to: custom.to.trim() }),
-    };
-  return {};
-}
+];
 
 function SummaryRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   const t = useTheme();
@@ -77,8 +60,11 @@ export default function TransactionsScreen() {
   const t = useTheme();
   const { businessId } = useActiveBusiness();
   const memberships = useMemberships();
-  const businessName =
-    memberships.data?.find((m) => m.business_id === businessId)?.business.name ?? '';
+  const activeMembership = memberships.data?.find((m) => m.business_id === businessId);
+  const businessName = activeMembership?.business.name ?? '';
+  // Business tz for all statement dates (finding 4); device only as fallback.
+  const timeZone =
+    activeMembership?.business.time_zone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const [mode, setMode] = useState<'clients' | 'walkers'>('clients');
   const [personId, setPersonId] = useState<string | null>(null);
@@ -89,17 +75,20 @@ export default function TransactionsScreen() {
   const [preset, setPreset] = useState<PresetKey>('month');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
-  const range = presetRange(preset, { from: customFrom, to: customTo });
+  const range = presetRange(preset, { from: customFrom, to: customTo }, timeZone);
+  const todayYmd = ymdInZone(new Date(), timeZone);
 
   const clients = useQuery({
     queryKey: ['clients', businessId, ''],
     enabled: !!businessId,
     queryFn: () => listClients(businessId!),
   });
-  const members = useQuery({
-    queryKey: ['scheduleMembers', businessId],
+  // ledger_walkers, not the active-member roster (finding 1): former walkers
+  // with financial history stay pickable, labeled "(former)".
+  const walkers = useQuery({
+    queryKey: ['ledgerWalkers', businessId],
     enabled: !!businessId,
-    queryFn: () => listActiveMembers(businessId!),
+    queryFn: () => ledgerWalkers(businessId!),
   });
 
   const clientData = useQuery({
@@ -116,17 +105,15 @@ export default function TransactionsScreen() {
   const active = mode === 'clients' ? clientData : walkerData;
   let statement: Statement | null = null;
   if (mode === 'clients' && clientData.data) {
-    statement = buildClientStatement({ ...clientData.data, range });
+    statement = buildClientStatement({ ...clientData.data, range, timeZone });
   } else if (mode === 'walkers' && walkerData.data) {
-    statement = buildWalkerStatement({ rows: walkerData.data, range });
+    statement = buildWalkerStatement({ rows: walkerData.data, range, timeZone });
   }
 
   const personName =
     mode === 'clients'
       ? (clients.data ?? []).find((c) => c.id === personId)?.name ?? ''
-      : personId
-        ? memberName(members.data ?? [], personId)
-        : '';
+      : (walkers.data ?? []).find((w) => w.walker_id === personId)?.display_name ?? '';
   const owesLabel = mode === 'clients' ? 'owes' : 'is owed';
   const chargeHeader = mode === 'clients' ? 'Charge' : 'Earned';
   const creditHeader = mode === 'clients' ? 'Paid' : 'Paid out';
@@ -171,9 +158,9 @@ export default function TransactionsScreen() {
         <View style={chipRow}>
           {(mode === 'clients'
             ? (clients.data ?? []).map((c) => ({ id: c.id, label: c.name }))
-            : (members.data ?? []).map((m) => ({
-                id: m.user_id,
-                label: m.display_name ?? 'Team member',
+            : (walkers.data ?? []).map((w) => ({
+                id: w.walker_id,
+                label: w.active ? w.display_name : `${w.display_name} (former)`,
               }))
           )
             .filter(
@@ -215,7 +202,7 @@ export default function TransactionsScreen() {
                 personName,
                 mode,
                 rangeLabel,
-                generatedYmd: dateToYmd(new Date()),
+                generatedYmd: todayYmd,
               })
             }
           />
@@ -239,7 +226,7 @@ export default function TransactionsScreen() {
           <Card style={{ gap: t.space.xs }}>
             <Text style={[t.type.title, { color: t.colors.ink }]}>{personName}</Text>
             <Text style={{ color: t.colors.inkMuted }}>
-              {businessName} · Account statement · {rangeLabel} · generated {formatIsoDate(dateToYmd(new Date()))}
+              {businessName} · Account statement · {rangeLabel} · generated {formatIsoDate(todayYmd)}
             </Text>
             <View style={{ height: t.space.sm }} />
             <SummaryRow label="Balance forward" value={money(statement.summary.forwardCents)} />
@@ -348,6 +335,3 @@ export default function TransactionsScreen() {
     </Screen>
   );
 }
-
-/** Kept for parity with other web-leaning screens; used by tests. */
-export { presetRange };
